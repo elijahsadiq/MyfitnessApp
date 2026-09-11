@@ -1,3 +1,29 @@
 <resources>
     <string name="app_name">My Fitness App</string>
+
+    <!-- Bottom navigation labels -->
+    <string name="nav_dashboard">Dashboard</string>
+    <string name="nav_history">History</string>
+    <string name="nav_goals">Goals</string>
+    <string name="nav_profile">Profile</string>
+
+    <!-- Dashboard placeholder (real content lands in Step 8) -->
+    <string name="dashboard_placeholder_title">This week</string>
+    <string name="dashboard_placeholder_body">Your weekly workout summary will appear here.</string>
+
+    <!-- History placeholder (real content lands in Step 6) -->
+    <string name="history_placeholder_title">Workout history</string>
+    <string name="history_placeholder_body">Your logged workouts will appear here.</string>
+
+    <!-- Goals empty state -->
+    <string name="goals_empty_title">Goals coming soon</string>
+    <string name="goals_empty_body">Set weekly distance, workout-count, and volume goals in a later update.</string>
+    <string name="goals_icon_content_description">Flag icon representing goals</string>
+
+    <!-- Profile -->
+    <string name="profile_body_weight_label">Body weight</string>
+    <string name="profile_body_weight_value">%1$.1f kg</string>
+    <string name="profile_body_weight_hint">Used to estimate calories burned.</string>
+    <string name="profile_editing_placeholder_title">Editing your profile</string>
+    <string name="profile_editing_placeholder_body">Weight editing arrives with the accounts feature in a later update.</string>
 </resources>

@@ -115,3 +115,37 @@ Short notes for each step: what was built, the key design decision, one rejected
 **Assignment task supported**
 - **Task 3b (design)** — repository interface is the seam the architecture diagram highlights.
 - **Task 4 (development)** — the data layer that Steps 6–8 collect and display.
+
+## Step 5 — App shell, theme, BaseFragment (inheritance example #2)
+**Built**
+- Migrated the theme from `Theme.MaterialComponents.DayNight.DarkActionBar` to **Material 3** `Theme.Material3.DayNight.NoActionBar`. Two-file palette:
+  - `values/colors.xml` — light: teal primary (`#0F766E`), orange secondary (`#EA580C`), cyan tertiary (`#0891B2`).
+  - `values-night/colors.xml` — same hues at dark-mode lightness.
+  - Per-activity accents (`accent_running`, `accent_cycling`, `accent_weightlifting`) with light and dark variants.
+- Seven vector drawables: `ic_run_24`, `ic_bike_24`, `ic_dumbbell_24` (activity accents) and `ic_dashboard_24`, `ic_history_24`, `ic_flag_24`, `ic_person_24` (bottom nav).
+- Navigation graph `nav_graph.xml` with four destinations wired to the four fragment classes; bottom-nav menu (`menu/bottom_nav_menu.xml`) uses matching item ids so `setupWithNavController` handles selection.
+- `activity_main.xml` — `CoordinatorLayout` with a `MaterialToolbar` in an `AppBarLayout`, a `FragmentContainerView` (NavHostFragment), and a `BottomNavigationView`.
+- `BaseFragment<VB : ViewBinding>` (`ui/base/BaseFragment.kt`) — abstract superclass every fragment extends. Owns the binding lifecycle (`inflate` in `onCreateView`, null in `onDestroyView`), and provides `showError(msg)` (Snackbar), `showEmptyState(emptyView, contentView, isEmpty)`, and `collectOnStart(flow, block)` which wraps `viewLifecycleOwner.lifecycleScope.launch { repeatOnLifecycle(STARTED) { flow.collect } }`. KDoc calls out inheritance example #2.
+- Four placeholder fragments (`DashboardFragment`, `WorkoutHistoryFragment`, `GoalsFragment`, `ProfileFragment`), all extending `BaseFragment`. Profile reads the current `UserSettings.bodyWeightKg` via `collectOnStart`.
+- `MainActivity` (`ui/main/MainActivity.kt`) — sets the toolbar, wires the `NavController` to the toolbar (with an `AppBarConfiguration` listing the four top-level destinations) and the bottom-nav view.
+- Registered `MainActivity` in `AndroidManifest.xml` as the `LAUNCHER` activity.
+- All user-facing text lives in `strings.xml`. Body-weight text uses a formatted resource (`%1$.1f kg`).
+
+**Key design decision**
+- **`BaseFragment.onCreateView` is `final`**, and subclasses only implement `inflateBinding(...)`. That forces every fragment to go through the same lifecycle-safe path — subclasses cannot forget to null the binding, and grepping for `_binding = null` finds exactly one place.
+
+**Rejected alternative**
+- Copy-paste the ViewBinding inflate/null pattern into every fragment. Rejected: it would repeat 8 lines per fragment across six fragments and lose the didactic value that Task 5b needs (one hierarchy = one story about code reuse).
+
+**Kotlin/Android concepts (for my notes)**
+- *Generics with a bound* (`BaseFragment<VB : ViewBinding>`) — the type parameter is constrained to any subtype of `ViewBinding`. Similar to Python's `TypeVar('VB', bound=ViewBinding)`. Lets `binding` be strongly-typed in each subclass with no casts.
+- *`final override`* — locks a method so further subclasses can't re-override. Used for `onCreateView` to protect the invariant.
+- *`repeatOnLifecycle(STARTED)`* — restarts flow collection each time the fragment's view reaches STARTED, and cancels when it goes STOPPED. The right pattern for one-shot UI state; keeps the fragment from receiving updates while off-screen.
+- *`AppBarConfiguration`* — tells the Navigation component which destinations count as "top level" (no Up arrow, drawer icon shows there). Anything not in the set gets an Up arrow automatically.
+
+**Verified**
+- `./gradlew assembleDebug` — BUILD SUCCESSFUL. `./gradlew testDebugUnitTest` — still 21 tests, 0 failures. UI verification on-device is a manual step and hasn't been done yet.
+
+**Assignment task supported**
+- **Task 5b (inheritance)** — second inheritance hierarchy (`BaseFragment` extended by every fragment).
+- **Task 4 (development)** — the shell that Steps 6–8 fill with real content.

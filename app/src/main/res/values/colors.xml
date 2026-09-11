@@ -1,10 +1,33 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="purple_200">#FFBB86FC</color>
-    <color name="purple_500">#FF6200EE</color>
-    <color name="purple_700">#FF3700B3</color>
-    <color name="teal_200">#FF03DAC5</color>
-    <color name="teal_700">#FF018786</color>
-    <color name="black">#FF000000</color>
+    <!-- Neutral -->
     <color name="white">#FFFFFFFF</color>
+    <color name="black">#FF000000</color>
+
+    <!-- Brand palette (light) — energetic teal + warm orange. -->
+    <color name="brand_primary">#0F766E</color>
+    <color name="brand_on_primary">#FFFFFF</color>
+    <color name="brand_primary_container">#B8E6DF</color>
+    <color name="brand_on_primary_container">#002019</color>
+
+    <color name="brand_secondary">#EA580C</color>
+    <color name="brand_on_secondary">#FFFFFF</color>
+    <color name="brand_secondary_container">#FFDCC7</color>
+    <color name="brand_on_secondary_container">#341100</color>
+
+    <color name="brand_tertiary">#0891B2</color>
+    <color name="brand_on_tertiary">#FFFFFF</color>
+
+    <color name="brand_surface">#FFFBFE</color>
+    <color name="brand_on_surface">#1C1B1F</color>
+    <color name="brand_surface_variant">#EEEDF0</color>
+    <color name="brand_on_surface_variant">#49454F</color>
+    <color name="brand_outline">#79747E</color>
+    <color name="brand_background">#FFFBFE</color>
+    <color name="brand_on_background">#1C1B1F</color>
+
+    <!-- Per-activity accents used on chips, list icons, and detail highlights. -->
+    <color name="accent_running">#F97316</color>
+    <color name="accent_cycling">#0891B2</color>
+    <color name="accent_weightlifting">#7C3AED</color>
 </resources>

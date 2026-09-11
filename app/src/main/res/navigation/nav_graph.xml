@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/nav_graph"
+    app:startDestination="@id/dashboardFragment">
+
+    <fragment
+        android:id="@+id/dashboardFragment"
+        android:name="com.elijah.fitness.ui.dashboard.DashboardFragment"
+        android:label="@string/nav_dashboard"
+        tools:layout="@layout/fragment_dashboard" />
+
+    <fragment
+        android:id="@+id/workoutHistoryFragment"
+        android:name="com.elijah.fitness.ui.history.WorkoutHistoryFragment"
+        android:label="@string/nav_history"
+        tools:layout="@layout/fragment_workout_history" />
+
+    <fragment
+        android:id="@+id/goalsFragment"
+        android:name="com.elijah.fitness.ui.goals.GoalsFragment"
+        android:label="@string/nav_goals"
+        tools:layout="@layout/fragment_goals" />
+
+    <fragment
+        android:id="@+id/profileFragment"
+        android:name="com.elijah.fitness.ui.profile.ProfileFragment"
+        android:label="@string/nav_profile"
+        tools:layout="@layout/fragment_profile" />
+</navigation>
