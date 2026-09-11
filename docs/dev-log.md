@@ -223,3 +223,33 @@ Short notes for each step: what was built, the key design decision, one rejected
 
 **Assignment task supported**
 - **Task 4 (development)** — completes the manual logging requirement end-to-end for all three activity types.
+
+## Step 8 — Weekly dashboard
+**Built**
+- `ui/dashboard/WeeklySummary.kt` — plain data class with raw numbers: `workoutCount`, `activeMinutes`, `totalDistanceMeters`, `estimatedCalories`, and a `Map<ActivityType, ActivityBreakdown>` (count + distance + volume + minutes per type). No Android imports so it's cheap to construct and easy to reason about.
+- `ui/dashboard/WeeklySummaryCalculator.kt` — pure-Kotlin function: filters workouts to `[Monday-of-this-week 00:00 in zone, now]`, sums minutes, sums distance across `DistanceWorkout` subclasses, sums calories via the model's own `caloriesBurned`, and builds the per-type breakdown.
+- `ui/dashboard/DashboardViewModel.kt` — `combine(repository.observeWorkouts(), userSettings.bodyWeightKg)` piped through the calculator and exposed as a `StateFlow<WeeklySummary>` via `stateIn(WhileSubscribed(5_000), WeeklySummary.EMPTY)`. Because it shares the same repository flow as `WorkoutHistoryFragment`, a freshly-logged workout updates the dashboard the instant the user returns to it.
+- Rewrote `fragment_dashboard.xml`: title + "Since Mon d MMM" range line, four Material cards in a 2 × 2 grid (Workouts / Active minutes / Distance / Calories), then a "By activity" card with three rows (Running / Cycling / Weightlifting) — each row shows the activity's tinted icon, name, workout count (pluralised) and the appropriate main stat (distance for running/cycling, volume for weightlifting).
+- `DashboardFragment` — reads the VM and renders. Uses `Formatters.formatDistanceKm` for kilometres and `resources.getQuantityString(R.plurals.dashboard_workout_count, ...)` for "1 workout" / "2 workouts".
+- All new strings in `strings.xml`; `dashboard_workout_count` plural added.
+- `WeeklySummaryCalculatorTest` covers: empty list → zeros, workouts before this week's Monday excluded, in-week count and active minutes, distance total excludes strength, per-activity breakdown, calorie total scales with body weight. **6 tests, all passing.**
+
+**Key design decision**
+- **Aggregation is a pure top-level `object` function**, not a method on `WeeklySummary`, so tests don't need any Android context and the VM can inject a fixed `Clock` / `ZoneId`. That's why every dashboard invariant — "date filtering", "type-specific totals", "calories × body weight" — can be verified as a plain JUnit assertion.
+
+**Rejected alternative**
+- Computing the summary in a Room `@Query` (or the future SQL side of the PHP API). Rejected: computing in Kotlin over the already-in-memory `Flow` keeps phase-1 free of infrastructure, avoids duplicating aggregation logic between backend and app, and — more importantly — lets us change the definition of "this week" without a migration.
+
+**Kotlin/Android concepts (for my notes)**
+- `TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)` — walks a `LocalDate` backwards to Monday (or stays put if it's already Monday). Safer than `LocalDate.with(DayOfWeek.MONDAY)` which can go forward on Sundays depending on locale.
+- `filterIsInstance<T>()` — Kotlin standard library collection combinator that keeps only elements that are `T`, and returns a `List<T>` (not `List<*>`), so subsequent property access is typed with no cast.
+- Plurals in resources vs `String.format` — plurals get pulled from `values-<locale>/plurals.xml` and pick the right form via `resources.getQuantityString`. Correct English "1 workout" vs "2 workouts" without a manual `if (n == 1)`.
+
+**Verified**
+- `./gradlew assembleDebug` — BUILD SUCCESSFUL.
+- `./gradlew testDebugUnitTest` — **48 tests, 0 failures** (added 6 calculator tests).
+- On-device UI verification is still manual and outstanding.
+
+**Assignment task supported**
+- **Task 4 (development)** — closes the last piece of the phase-1 UI: history + logging + dashboard are all live and share a single source of truth.
+- **Task 3b (design)** — dashboard is the concrete example of "ViewModel → repository → shared Flow → several screens".

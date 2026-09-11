@@ -8,4 +8,9 @@
         <item quantity="one">%1$d exercise · %2$d set</item>
         <item quantity="other">%1$d exercises · %2$d sets</item>
     </plurals>
+
+    <plurals name="dashboard_workout_count">
+        <item quantity="one">%1$d workout</item>
+        <item quantity="other">%1$d workouts</item>
+    </plurals>
 </resources>

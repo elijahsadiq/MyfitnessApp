@@ -15,7 +15,19 @@
     <string name="activity_type_cycling">Cycling</string>
     <string name="activity_type_weightlifting">Weightlifting</string>
 
-    <!-- Dashboard placeholder (real content lands in Step 8) -->
+    <!-- Dashboard -->
+    <string name="dashboard_title">This week</string>
+    <string name="dashboard_week_range">Since %1$s</string>
+    <string name="dashboard_workouts_label">Workouts</string>
+    <string name="dashboard_active_minutes_label">Active minutes</string>
+    <string name="dashboard_distance_label">Distance</string>
+    <string name="dashboard_calories_label">Est. calories</string>
+    <string name="dashboard_per_activity_title">By activity</string>
+    <string name="dashboard_minutes_value">%1$d min</string>
+    <string name="dashboard_calories_value">%1$.0f kcal</string>
+    <string name="dashboard_volume_value">%1$.0f kg</string>
+
+    <!-- Legacy dashboard placeholder strings (kept in case the layout is edited) -->
     <string name="dashboard_placeholder_title">This week</string>
     <string name="dashboard_placeholder_body">Your weekly workout summary will appear here.</string>
 
