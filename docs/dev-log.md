@@ -30,3 +30,29 @@ Short notes for each step: what was built, the key design decision, one rejected
 
 **Assignment task supported**
 - **Task 4 (development)** — the app can now compile and depend on the AndroidX/Material libraries the rest of phase 1 needs. No production code yet.
+
+## Step 2 — Package tree, Application, AppContainer, CLAUDE.md
+**Built**
+- Created the target package tree under `com.elijah.fitness`:
+  `data/{model,repository}`, `ui/{base,main,dashboard,history,log,goals,profile}`, `util`. Empty folders keep a `.gitkeep` so git tracks them until code arrives.
+- Added `FitnessApp.kt` — an `Application` subclass that owns `AppContainer` via `by lazy`.
+- Added `AppContainer.kt` — an empty manual-DI container that Step 4 will populate with the repository and user settings.
+- Wired `android:name=".FitnessApp"` into `AndroidManifest.xml` so the custom Application is instantiated.
+- Wrote `CLAUDE.md` with the fixed assignment constraints, target architecture, roadmap, package layout, AGP-9 Kotlin quirk, build commands, and the "how we work" checklist.
+
+**Key design decision**
+- **`AppContainer` is a plain class exposed by `FitnessApp` through `by lazy`.** Fragments reach it via `(requireContext().applicationContext as FitnessApp).container`. Simple, no reflection, easy to explain in the report.
+
+**Rejected alternative**
+- Hilt (or Koin) for DI. Rejected because phase 1 has one repository and a settings holder — a runtime DI framework would add annotation processing, a codegen step, and paragraphs of explanation for zero real benefit at this scale.
+
+**Kotlin/Android concepts (for my notes)**
+- *Application class*: the singleton entry point Android instantiates before any activity. Good place to hold app-lifetime dependencies. Registered in the manifest via `android:name=".FitnessApp"`.
+- *`by lazy`*: initialises a `val` on first read and caches the result. Cheap, thread-safe by default. Similar to Python's `functools.cached_property`.
+
+**Verified**
+- `./gradlew assembleDebug` — BUILD SUCCESSFUL (11 tasks executed, 25 up-to-date). `compileDebugKotlin` now compiles the two new files.
+
+**Assignment task supported**
+- **Task 3b (design)** — the package tree and DI approach in `CLAUDE.md` feed the architecture diagram.
+- **Task 4 (development)** — foundation for every later step.
