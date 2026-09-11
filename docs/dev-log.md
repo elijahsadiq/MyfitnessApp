@@ -56,3 +56,32 @@ Short notes for each step: what was built, the key design decision, one rejected
 **Assignment task supported**
 - **Task 3b (design)** — the package tree and DI approach in `CLAUDE.md` feed the architecture diagram.
 - **Task 4 (development)** — foundation for every later step.
+
+## Step 3 — Domain model hierarchy (inheritance example #1)
+**Built**
+- `ActivityType` enum (RUNNING, CYCLING, WEIGHTLIFTING).
+- `MetValues` object with speed-banded MET tables for running and cycling and a moderate weightlifting constant. Every entry is marked `TODO: verify against Compendium` so exact citations get added when I write the report.
+- `Workout` abstract base with `id`, `startTime`, `duration`, `notes`, abstract `type` and `metValue()`, and an `open caloriesBurned(userWeightKg)` implementing `MET × kg × hours`. Overrides `equals` and `hashCode` so content-comparison works for DiffUtil.
+- `DistanceWorkout` abstract subclass adding `distanceMeters` plus `distanceKm()` and `averageSpeedKmh()`.
+- `RunningWorkout` (adds `paceSecondsPerKm()`, MET from `MetValues.running`) and `CyclingWorkout` (MET from `MetValues.cycling`).
+- `StrengthSet` data class, `StrengthWorkout` with `totalVolumeKg()` and Epley `estimatedOneRepMaxKg(exercise)` (case-insensitive match, returns highest estimate or `null`).
+- KDoc on `Workout` and `DistanceWorkout` explains "what this level owns" vs "what it leaves abstract", and calls out this hierarchy as inheritance example #1 for Task 5b.
+- `WorkoutModelTest` covering pace, average speed, total volume, Epley best-of and null cases, calorie calc, polymorphism over a mixed `List<Workout>`, and equality (positive, negative, cross-type). **12 tests, 0 failures.**
+
+**Key design decision**
+- **Concrete classes are plain classes with explicit `equals`/`hashCode`**, not `data class`. Data classes only include their own primary-constructor properties in `equals`, so a data-class subclass of an abstract base would ignore the base's `id`, `startTime`, etc. — the exact fields DiffUtil needs. Manual equals in each level (Workout → DistanceWorkout → StrengthWorkout) makes the semantics obvious and preserves proper cross-type inequality (e.g. a `RunningWorkout` never equals a `CyclingWorkout` with the same base fields).
+
+**Rejected alternative**
+- A `sealed class Workout` with concrete `data class` subclasses at one level. Rejected because that flattens the tree: running and cycling would each have to redeclare `distanceMeters`, `distanceKm()` and `averageSpeedKmh()` instead of inheriting them, defeating the point of the intermediate `DistanceWorkout` level (which is precisely the code-reuse the assignment report needs to describe).
+
+**Kotlin/Android concepts (for my notes)**
+- `abstract` / `open`: Kotlin classes and members are `final` by default. `abstract class` cannot be instantiated and can have `abstract fun`s that subclasses must implement. `open fun` is the "may be overridden" version of a concrete method — `caloriesBurned` uses this because subclasses share the formula in phase 1 but could refine it later.
+- `data class`: auto-generates `equals`, `hashCode`, `toString`, `copy`, and `componentN` from primary-constructor properties. Used here for `StrengthSet` (a plain value carrier) but *not* for the workout classes (see above).
+- `sumOf { ... }` and `maxOf { ... }`: Kotlin standard-library collection reductions — similar to Python's `sum(x.foo for x in xs)` and `max(x.foo for x in xs)`.
+
+**Verified**
+- `./gradlew testDebugUnitTest` — BUILD SUCCESSFUL, 12 model tests + the pre-existing example test pass.
+
+**Assignment task supported**
+- **Task 5b (inheritance)** — first of the three inheritance hierarchies the report has to describe.
+- **Task 4 (development)** — the domain layer that later steps' UI and repository build on.
