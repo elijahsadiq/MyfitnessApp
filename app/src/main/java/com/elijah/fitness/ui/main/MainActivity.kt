@@ -8,6 +8,7 @@ import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.setupWithNavController
 import com.elijah.fitness.R
 import com.elijah.fitness.databinding.ActivityMainBinding
+import com.google.android.material.snackbar.Snackbar
 
 /**
  * Single-activity host. Owns the toolbar, the [NavHostFragment] and the
@@ -44,6 +45,15 @@ class MainActivity : AppCompatActivity() {
         navController.addOnDestinationChangedListener { _, destination, _ ->
             binding.bottomNavigation.isVisible = destination.id !in LOG_DESTINATIONS
         }
+    }
+
+    /**
+     * Anchor a short Snackbar on the activity's CoordinatorLayout. Fragments
+     * call this after popping the back stack so the Snackbar survives their
+     * disappearance.
+     */
+    fun showSnackbar(message: CharSequence) {
+        Snackbar.make(binding.root, message, Snackbar.LENGTH_SHORT).show()
     }
 
     private companion object {

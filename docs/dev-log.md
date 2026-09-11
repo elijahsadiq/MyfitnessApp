@@ -190,3 +190,36 @@ Short notes for each step: what was built, the key design decision, one rejected
 **Assignment task supported**
 - **Task 5b (inheritance)** — third and final inheritance hierarchy (`BaseViewHolder<T>` extended by two typed view holders).
 - **Task 4 (development)** — history screen ticks the RecyclerView + FAB requirements from the brief.
+
+## Step 7 — Manual workout logging
+**Built**
+- **`LogDistanceWorkoutViewModel`** — holds `date` and `time` (picker state that must survive rotation), validates on save, and builds a `RunningWorkout` or `CyclingWorkout` depending on the `ActivityType` passed to the factory. `Clock` + `ZoneId` are constructor params so tests can pin "now" and time zone.
+- **`LogStrengthWorkoutViewModel`** — same date/time model plus a `StateFlow<List<StrengthSet>>` mutated via `addSet` / `removeSetAt`. Save requires ≥ 1 set.
+- Both VMs emit one-shot events (`Saved` / `ValidationFailed(errors)`) through a `Channel<Event>.receiveAsFlow()` so config-change replays don't fire the same toast twice.
+- **`LogDistanceWorkoutFragment`** — date + time via `MaterialDatePicker`/`MaterialTimePicker`, duration H/M/S EditTexts, distance EditText, notes, live pace (running) / speed (cycling) preview computed from `doAfterTextChanged`, and a save button that pipes into the VM. Errors show inline on `TextInputLayout.setError()` and on a small `TextView` under the duration row.
+- **`LogStrengthWorkoutFragment`** — same date/time/duration/notes, plus a RecyclerView of `StrengthSet`s. An "Add set" `MaterialButton` opens a `MaterialAlertDialogBuilder` dialog (`dialog_add_set.xml`) that collects exercise / reps / weight and validates (exercise non-blank, reps 1–100, weight 0–500). Each row has a delete button. **No editable text fields live inside the recycled rows.**
+- **`StrengthSetAdapter`** — deliberately simple: mutable list + `notifyDataSetChanged`, no DiffUtil. Sets have no stable id, duplicates are legitimate, and the list is short.
+- **`MainActivity.showSnackbar(message)`** — anchors a Snackbar on the activity's `CoordinatorLayout` so log fragments can call it *before* `popBackStack()` and the message survives the fragment transition.
+- Both log fragments call `MainActivity.showSnackbar(...)` and then `findNavController().popBackStack()` on save — the new workout is already in the shared `MutableStateFlow`, so it renders at the top of History on return.
+- **`strings.xml`** — all new labels, hints, error strings, success strings live here. No hardcoded user-facing text. Touch targets meet the 48 dp minimum.
+- **Tests** — `LogDistanceWorkoutViewModelTest` (6: happy-path running, happy-path cycling type dispatch, future date rejected, zero duration rejected, distance > 300 km rejected, missing distance rejected) and `LogStrengthWorkoutViewModelTest` (4: happy path, empty sets rejected, `addSet`/`removeSetAt` behavior, future date rejected). Uses `Clock.fixed` for reproducibility. Total suite is now **42 tests, 0 failures**.
+
+**Key design decision**
+- **The VM validates against a fixed `Clock` and a fixed `ZoneId`.** That makes "date can't be in the future" a testable invariant — with `Clock.fixed(...)` we can prove that a picked date one day after the fixed instant is rejected without any tolerance for wall-clock drift. Production code passes `Clock.systemDefaultZone()`.
+
+**Rejected alternative**
+- Editing sets inline in the RecyclerView row (Notion-style). Rejected — and the spec explicitly warns against it. Recycled `EditText`s are extremely bug-prone (state leaks between rows, IME races) and a dialog is faster to build, easier to validate, and enough for a phase-1 form.
+
+**Kotlin/Android concepts (for my notes)**
+- *`MaterialDatePicker` + `MaterialTimePicker`*: fragment-based dialogs. You call `.show(fragmentManager, tag)` and register a listener via `addOnPositiveButtonClickListener { ... }`. The date picker gives you milliseconds since epoch in UTC — I convert with `Instant.ofEpochMilli(...).atZone(UTC).toLocalDate()` so no timezone drift.
+- *`Channel<Event>` + `receiveAsFlow()`*: one-shot events for the UI to consume. Unlike a `StateFlow`, values aren't replayed to new collectors — perfect for "workout saved" so it doesn't fire twice on rotation.
+- *`Clock.fixed(instant, zone)`*: JVM utility to freeze "now". Every `LocalDate.now(clock)` etc. becomes deterministic — no more sleeping in tests to avoid clock races.
+- *`doAfterTextChanged` (from `androidx.core:core-ktx`)*: a Kotlin extension that wraps `TextWatcher.afterTextChanged`. Kept the preview logic imperative because it fires often and building a full Flow pipeline out of `EditText` state is more machinery than the feature deserves.
+
+**Verified**
+- `./gradlew assembleDebug` — BUILD SUCCESSFUL (two harmless K2 forward-compat warnings on `@StringRes` annotation targeting; a future Kotlin release will apply the annotation to both param and field automatically).
+- `./gradlew testDebugUnitTest` — **42 tests, 0 failures** (added 10 log-VM tests).
+- On-device verification is still manual and outstanding.
+
+**Assignment task supported**
+- **Task 4 (development)** — completes the manual logging requirement end-to-end for all three activity types.

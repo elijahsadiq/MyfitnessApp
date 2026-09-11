@@ -1,6 +1,9 @@
 <resources>
     <string name="app_name">My Fitness App</string>
 
+    <!-- Common -->
+    <string name="common_cancel">Cancel</string>
+
     <!-- Bottom navigation labels -->
     <string name="nav_dashboard">Dashboard</string>
     <string name="nav_history">History</string>
@@ -26,8 +29,6 @@
     <string name="history_empty_icon_content_description">History icon</string>
     <string name="history_fab_content_description">Log a workout</string>
     <string name="history_activity_icon_content_description">Activity icon</string>
-
-    <!-- Legacy history placeholder strings (kept for the placeholder layout during phase 1 transitions) -->
     <string name="history_placeholder_title">Workout history</string>
     <string name="history_placeholder_body">Your logged workouts will appear here.</string>
 
@@ -35,11 +36,50 @@
     <string name="choose_activity_title">Log a workout</string>
     <string name="choose_activity_subtitle">Pick the type of activity.</string>
 
-    <!-- Log stubs (Step 7 replaces the bodies) -->
+    <!-- Log forms — shared -->
+    <string name="log_field_date">Date</string>
+    <string name="log_field_time">Time</string>
+    <string name="log_field_duration">Duration</string>
+    <string name="log_field_hours">h</string>
+    <string name="log_field_minutes">min</string>
+    <string name="log_field_seconds">sec</string>
+    <string name="log_field_distance">Distance (km)</string>
+    <string name="log_field_notes">Notes (optional)</string>
+    <string name="log_save_button">Save workout</string>
+    <string name="log_date_picker_title">Select date</string>
+    <string name="log_time_picker_title">Select time</string>
+    <string name="log_live_preview_pending">Pace or speed will appear here.</string>
+    <string name="log_live_preview_pace">Pace %1$s</string>
+    <string name="log_live_preview_speed">Speed %1$s</string>
+
+    <!-- Log form validation -->
+    <string name="log_error_date_in_future">Date can\'t be in the future.</string>
+    <string name="log_error_duration_zero">Duration must be greater than 0.</string>
+    <string name="log_error_distance_positive">Distance must be greater than 0.</string>
+    <string name="log_error_distance_too_far">Distance can\'t exceed 300 km.</string>
+    <string name="log_error_sets_required">Add at least one set before saving.</string>
+
+    <!-- Log strength -->
+    <string name="log_strength_sets_title">Sets</string>
+    <string name="log_strength_sets_empty">No sets yet. Tap Add set to start.</string>
+    <string name="log_strength_add_set_button">Add set</string>
+    <string name="log_strength_add_set_title">Add a set</string>
+    <string name="log_strength_add_set_confirm">Add</string>
+    <string name="log_strength_field_exercise">Exercise</string>
+    <string name="log_strength_field_reps">Reps</string>
+    <string name="log_strength_field_weight">Weight (kg)</string>
+    <string name="log_strength_invalid_set">Enter an exercise, reps 1–100 and weight 0–500 kg.</string>
+    <string name="log_strength_delete_set_content_description">Delete set</string>
+    <string name="log_strength_set_summary">%1$s · %2$d × %3$.1f kg</string>
+
+    <!-- Log titles + success -->
     <string name="log_distance_title_running">Log a run</string>
     <string name="log_distance_title_cycling">Log a ride</string>
     <string name="log_strength_title">Log a strength session</string>
     <string name="log_stub_body">The full logging form arrives in the next step.</string>
+    <string name="log_saved_run">Run saved.</string>
+    <string name="log_saved_ride">Ride saved.</string>
+    <string name="log_saved_strength">Strength session saved.</string>
 
     <!-- Goals empty state -->
     <string name="goals_empty_title">Goals coming soon</string>
