@@ -15,7 +15,11 @@
         android:id="@+id/workoutHistoryFragment"
         android:name="com.elijah.fitness.ui.history.WorkoutHistoryFragment"
         android:label="@string/nav_history"
-        tools:layout="@layout/fragment_workout_history" />
+        tools:layout="@layout/fragment_workout_history">
+        <action
+            android:id="@+id/action_history_to_choose_activity"
+            app:destination="@id/chooseActivityBottomSheet" />
+    </fragment>
 
     <fragment
         android:id="@+id/goalsFragment"
@@ -28,4 +32,41 @@
         android:name="com.elijah.fitness.ui.profile.ProfileFragment"
         android:label="@string/nav_profile"
         tools:layout="@layout/fragment_profile" />
+
+    <dialog
+        android:id="@+id/chooseActivityBottomSheet"
+        android:name="com.elijah.fitness.ui.log.ChooseActivityBottomSheet"
+        android:label="@string/choose_activity_title"
+        tools:layout="@layout/bottom_sheet_choose_activity">
+        <action
+            android:id="@+id/action_choose_to_log_distance"
+            app:destination="@id/logDistanceWorkoutFragment"
+            app:popUpTo="@id/workoutHistoryFragment" />
+        <action
+            android:id="@+id/action_choose_to_log_strength"
+            app:destination="@id/logStrengthWorkoutFragment"
+            app:popUpTo="@id/workoutHistoryFragment" />
+    </dialog>
+
+    <fragment
+        android:id="@+id/logDistanceWorkoutFragment"
+        android:name="com.elijah.fitness.ui.log.LogDistanceWorkoutFragment"
+        android:label="@string/log_distance_title_running"
+        tools:layout="@layout/fragment_log_distance_workout">
+        <argument
+            android:name="activityType"
+            app:argType="string"
+            android:defaultValue="RUNNING" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/logStrengthWorkoutFragment"
+        android:name="com.elijah.fitness.ui.log.LogStrengthWorkoutFragment"
+        android:label="@string/log_strength_title"
+        tools:layout="@layout/fragment_log_strength_workout">
+        <argument
+            android:name="activityType"
+            app:argType="string"
+            android:defaultValue="WEIGHTLIFTING" />
+    </fragment>
 </navigation>

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      %1$d = distinct exercise count, %2$d = total set count.
+      Kept as plurals so future locales can supply proper pluralisation.
+    -->
+    <plurals name="history_row_strength_summary">
+        <item quantity="one">%1$d exercise · %2$d set</item>
+        <item quantity="other">%1$d exercises · %2$d sets</item>
+    </plurals>
+</resources>

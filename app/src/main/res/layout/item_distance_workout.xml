@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:minHeight="72dp"
+    android:paddingHorizontal="16dp"
+    android:paddingVertical="12dp"
+    android:background="?attr/selectableItemBackground">
+
+    <ImageView
+        android:id="@+id/activityIcon"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:padding="8dp"
+        android:contentDescription="@string/history_activity_icon_content_description"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:src="@drawable/ic_run_24"
+        tools:tint="@color/accent_running" />
+
+    <TextView
+        android:id="@+id/typeAndDate"
+        style="?attr/textAppearanceTitleSmall"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="12dp"
+        android:maxLines="1"
+        android:ellipsize="end"
+        app:layout_constraintEnd_toStartOf="@id/paceOrSpeed"
+        app:layout_constraintStart_toEndOf="@id/activityIcon"
+        app:layout_constraintTop_toTopOf="@id/activityIcon"
+        tools:text="Running · Wed 10 Sep" />
+
+    <TextView
+        android:id="@+id/distanceAndDuration"
+        style="?attr/textAppearanceBodySmall"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:textColor="?attr/colorOnSurfaceVariant"
+        app:layout_constraintEnd_toStartOf="@id/paceOrSpeed"
+        app:layout_constraintStart_toStartOf="@id/typeAndDate"
+        app:layout_constraintTop_toBottomOf="@id/typeAndDate"
+        tools:text="5.20 km · 28 min" />
+
+    <TextView
+        android:id="@+id/paceOrSpeed"
+        style="?attr/textAppearanceTitleSmall"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="?attr/colorPrimary"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:text="5:30 /km" />
+</androidx.constraintlayout.widget.ConstraintLayout>

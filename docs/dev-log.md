@@ -149,3 +149,44 @@ Short notes for each step: what was built, the key design decision, one rejected
 **Assignment task supported**
 - **Task 5b (inheritance)** — second inheritance hierarchy (`BaseFragment` extended by every fragment).
 - **Task 4 (development)** — the shell that Steps 6–8 fill with real content.
+
+## Step 6 — Workout history + RecyclerView + FAB (inheritance example #3)
+**Built**
+- `util/Formatters.kt` — pure Kotlin formatting helpers (date, duration, distance in km, pace in min/km, speed in km/h). Zone and locale are parameters so tests are stable across environments.
+- `ui/base/BaseViewHolder<T>` — abstract superclass for RecyclerView rows that use ViewBinding. `abstract fun bind(item: T)`.
+- `ui/history/WorkoutAdapter.kt` — `ListAdapter<Workout, RecyclerView.ViewHolder>` with two view types dispatched by class:
+  - `DistanceWorkoutViewHolder` extends `BaseViewHolder<DistanceWorkout>` and renders `RunningWorkout` (pace) or `CyclingWorkout` (speed) with the right icon and accent colour.
+  - `StrengthWorkoutViewHolder` extends `BaseViewHolder<StrengthWorkout>` and renders exercise count · set count and total volume.
+  - `DiffUtil` uses `id` for identity and `==` (our overridden equality) for contents.
+- `ui/history/HistoryViewModel.kt` — `Filter` enum, `MutableStateFlow` for the filter, `combine(workouts, filter)` piped through `stateIn(viewModelScope, WhileSubscribed(5_000), emptyList())`. Factory uses the `viewModelFactory { initializer { ... } }` DSL.
+- `ui/history/WorkoutHistoryFragment.kt` — rewrote the Step 5 placeholder: RecyclerView + `ListAdapter`, `ChipGroup` filter (All / Running / Cycling / Weightlifting), empty state, FAB that navigates to the bottom sheet. Uses `BaseFragment.collectOnStart` for the workouts flow and `showEmptyState` for the empty state toggle.
+- Row layouts `item_distance_workout.xml` and `item_strength_workout.xml` with proper icons, dates, and per-type accent tint.
+- `res/values/plurals.xml` — `history_row_strength_summary` handles both "1 exercise · 1 set" and plural forms cleanly, ready for future locales.
+- `ui/log/ChooseActivityBottomSheet.kt` — extends `BottomSheetDialogFragment` (the only fragment in the app that can't extend `BaseFragment`). Presents three tonal buttons and navigates via `action_choose_to_log_distance` or `action_choose_to_log_strength` with the chosen `ActivityType.name` in the argument bundle.
+- Stub `LogDistanceWorkoutFragment` and `LogStrengthWorkoutFragment` (Step 7 fills the bodies). The distance stub already reads the passed `activityType` argument and shows the right title ("Log a run" / "Log a ride").
+- Nav graph: added `chooseActivityBottomSheet` (as a `<dialog>`), `logDistanceWorkoutFragment`, `logStrengthWorkoutFragment`, and the three actions. `popUpTo` the history destination on both log actions so the bottom sheet doesn't linger in the back stack.
+- `MainActivity` now hides the `BottomNavigationView` on log destinations via `NavController.OnDestinationChangedListener`. The Up arrow shows on log destinations automatically because they're not in the `AppBarConfiguration`.
+- Tests: `FormattersTest` (8) and `HistoryViewModelTest` (3, using `StandardTestDispatcher` and an in-memory fake repository). Total suite is now **32 tests, 0 failures**.
+
+**Key design decision**
+- **Adapter view-type dispatch reads the item's class directly** (`is DistanceWorkout`, `is StrengthWorkout`) rather than an integer flag on the model. That keeps the model side ignorant of the UI and makes adding a new activity type in phase 5 a matter of one `when` branch, not a model-side field.
+
+**Rejected alternative**
+- A "merged" single-row layout with conditional views (show pace *or* speed *or* volume in the same slot). Rejected because the row heights and information density are genuinely different between distance and strength, and mixing them makes both harder to style and harder to explain in the Task 5b write-up.
+
+**Kotlin/Android concepts (for my notes)**
+- *`ListAdapter` + `DiffUtil`*: RecyclerView's diff-based adapter. On each `submitList`, it computes minimum changes on a background thread and animates them. `areItemsTheSame` gets the "which is which" (`id`), `areContentsTheSame` gets the "did anything change" (`==`).
+- *`combine(a, b) { ... }`*: coroutine-`Flow` combinator that emits a new value every time *either* upstream emits. Perfect for "list × filter → filtered list".
+- *`stateIn(scope, started, initial)`*: turns a cold Flow into a hot `StateFlow`. `WhileSubscribed(N)` starts collecting when the first subscriber arrives and stops N ms after the last one leaves — ideal for ViewModels that survive config changes but shouldn't churn while off-screen.
+- *Bottom sheet == `<dialog>` in the nav graph*: Navigation treats every dialog-flavour destination (including `BottomSheetDialogFragment`) the same way. Actions still work.
+- *`AppBarConfiguration` + not-listed destinations*: any destination not in the top-level set automatically gets the Up arrow via `setupWithNavController`.
+
+**Verified**
+- `./gradlew assembleDebug` — BUILD SUCCESSFUL. `./gradlew testDebugUnitTest` — 32 tests, 0 failures (added 8 formatter + 3 VM tests). On-device UI verification is manual and hasn't been done.
+
+**Test flake fixed on the way**
+- `formatDate` originally asserted with `Locale.UK`, but JDK 20+ ships CLDR 42, which uses "Sept" for the abbreviated form of September in en-GB. Switched to `Locale.US` where "Sep" remains stable.
+
+**Assignment task supported**
+- **Task 5b (inheritance)** — third and final inheritance hierarchy (`BaseViewHolder<T>` extended by two typed view holders).
+- **Task 4 (development)** — history screen ticks the RecyclerView + FAB requirements from the brief.

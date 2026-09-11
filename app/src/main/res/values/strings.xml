@@ -7,13 +7,39 @@
     <string name="nav_goals">Goals</string>
     <string name="nav_profile">Profile</string>
 
+    <!-- Activity type labels -->
+    <string name="activity_type_running">Running</string>
+    <string name="activity_type_cycling">Cycling</string>
+    <string name="activity_type_weightlifting">Weightlifting</string>
+
     <!-- Dashboard placeholder (real content lands in Step 8) -->
     <string name="dashboard_placeholder_title">This week</string>
     <string name="dashboard_placeholder_body">Your weekly workout summary will appear here.</string>
 
-    <!-- History placeholder (real content lands in Step 6) -->
+    <!-- History screen -->
+    <string name="history_filter_all">All</string>
+    <string name="history_row_type_and_date">%1$s · %2$s</string>
+    <string name="history_row_distance_and_duration">%1$s · %2$s</string>
+    <string name="history_row_total_volume">%1$.0f kg</string>
+    <string name="history_empty_title">No workouts yet</string>
+    <string name="history_empty_body">Tap + to log your first workout.</string>
+    <string name="history_empty_icon_content_description">History icon</string>
+    <string name="history_fab_content_description">Log a workout</string>
+    <string name="history_activity_icon_content_description">Activity icon</string>
+
+    <!-- Legacy history placeholder strings (kept for the placeholder layout during phase 1 transitions) -->
     <string name="history_placeholder_title">Workout history</string>
     <string name="history_placeholder_body">Your logged workouts will appear here.</string>
+
+    <!-- Choose activity bottom sheet -->
+    <string name="choose_activity_title">Log a workout</string>
+    <string name="choose_activity_subtitle">Pick the type of activity.</string>
+
+    <!-- Log stubs (Step 7 replaces the bodies) -->
+    <string name="log_distance_title_running">Log a run</string>
+    <string name="log_distance_title_cycling">Log a ride</string>
+    <string name="log_strength_title">Log a strength session</string>
+    <string name="log_stub_body">The full logging form arrives in the next step.</string>
 
     <!-- Goals empty state -->
     <string name="goals_empty_title">Goals coming soon</string>

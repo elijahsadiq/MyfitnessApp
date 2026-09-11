@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingHorizontal="24dp"
+    android:paddingTop="24dp"
+    android:paddingBottom="16dp">
+
+    <TextView
+        style="?attr/textAppearanceHeadlineSmall"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/choose_activity_title" />
+
+    <TextView
+        style="?attr/textAppearanceBodyMedium"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:text="@string/choose_activity_subtitle"
+        android:textColor="?attr/colorOnSurfaceVariant" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/optionRunning"
+        style="@style/Widget.Material3.Button.TonalButton.Icon"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:minHeight="48dp"
+        android:text="@string/activity_type_running"
+        app:icon="@drawable/ic_run_24"
+        app:iconTint="@color/accent_running" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/optionCycling"
+        style="@style/Widget.Material3.Button.TonalButton.Icon"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:minHeight="48dp"
+        android:text="@string/activity_type_cycling"
+        app:icon="@drawable/ic_bike_24"
+        app:iconTint="@color/accent_cycling" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/optionWeightlifting"
+        style="@style/Widget.Material3.Button.TonalButton.Icon"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:minHeight="48dp"
+        android:text="@string/activity_type_weightlifting"
+        app:icon="@drawable/ic_dumbbell_24"
+        app:iconTint="@color/accent_weightlifting" />
+</LinearLayout>
