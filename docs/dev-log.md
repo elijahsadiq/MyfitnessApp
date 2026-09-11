@@ -85,3 +85,33 @@ Short notes for each step: what was built, the key design decision, one rejected
 **Assignment task supported**
 - **Task 5b (inheritance)** — first of the three inheritance hierarchies the report has to describe.
 - **Task 4 (development)** — the domain layer that later steps' UI and repository build on.
+
+## Step 4 — Repository and dependency container
+**Built**
+- `WorkoutRepository` interface: `observeWorkouts(): Flow<List<Workout>>`, `suspend addWorkout(workout)`, `suspend getWorkout(id): Workout?`. Deliberately hides where data lives — phase 2 swaps in Retrofit, phase 4 adds Room, all behind this signature.
+- `FakeWorkoutRepository`: in-memory storage on a `MutableStateFlow<List<Workout>>`, always sorted newest first, using `update {}` for atomic thread-safe writes. Seeded with 9 sample workouts spread across 14 days: three runs, three rides, three lifting sessions.
+- `UserSettings`: a `MutableStateFlow<Double>` for body weight, defaulting to 70 kg, editable in a future Profile screen.
+- Populated `AppContainer` with `workoutRepository` and `userSettings`.
+- Tests: `FakeWorkoutRepositoryTest` (6 — seed count, all three types present, newest-first ordering, `addWorkout` insertion at head, `getWorkout` hit and miss); `UserSettingsTest` (2 — default weight, update).
+
+**Important limitation — recorded intentionally**
+- Phase-1 workout data lives only in the process. Restarting the app resets the list to the seeded workouts. Room + WorkManager sync replace this in phase 4.
+
+**Key design decision**
+- **The repository interface + fake implementation is the only phase-1 seam between UI and data.** ViewModels will depend on the interface, so replacing the fake with a real backend later is a one-line change inside `AppContainer` — no ViewModel or UI code touched.
+
+**Rejected alternative**
+- Making the fake repo talk directly through a lambda-based observer pattern rather than a `Flow`. Rejected because `StateFlow` gives us "current value + all future values" for free, is lifecycle-friendly with `repeatOnLifecycle`, and is the API the rest of phase 1 (dashboard, history) is going to consume.
+
+**Kotlin/Android concepts (for my notes)**
+- `Flow` / `StateFlow`: coroutine-based observable streams. `StateFlow` always holds a current value and re-emits it to new collectors — great for "here is the current list of workouts". Similar in spirit to RxJava's `BehaviorSubject`, or an observable in the front-end sense.
+- `MutableStateFlow.update { current -> newValue }`: atomic read-modify-write. Safer than `value = f(value)` when multiple coroutines could write simultaneously.
+- `suspend fun`: a function that can pause without blocking the thread. Called from a coroutine and safe to do I/O in. In phase 1 the fake repo returns immediately, but the signature is already correct for phase 2's network calls.
+- Companion `private companion object`: the Kotlin equivalent of Python's class-level statics — lets `seedWorkouts` be a "static" helper attached to the class.
+
+**Verified**
+- `./gradlew testDebugUnitTest` — BUILD SUCCESSFUL. Now 21 tests across four suites (12 model + 6 repo + 2 settings + 1 example), 0 failures.
+
+**Assignment task supported**
+- **Task 3b (design)** — repository interface is the seam the architecture diagram highlights.
+- **Task 4 (development)** — the data layer that Steps 6–8 collect and display.

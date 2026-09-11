@@ -1,10 +1,18 @@
 package com.elijah.fitness
 
+import com.elijah.fitness.data.repository.FakeWorkoutRepository
+import com.elijah.fitness.data.repository.UserSettings
+import com.elijah.fitness.data.repository.WorkoutRepository
+
 /**
- * Manual dependency container. Created once in [FitnessApp] and read by
- * ViewModel factories that need shared collaborators (repository, settings).
+ * Manual dependency container. Instantiated once in [FitnessApp] and read
+ * by ViewModel factories that need shared collaborators.
  *
- * Step 2 leaves this empty on purpose; Step 4 wires in the workout repository
- * and user settings.
+ * Phase 1 wires an in-memory [FakeWorkoutRepository]; phase 2 replaces it
+ * with a Retrofit-backed implementation behind the same
+ * [WorkoutRepository] interface.
  */
-class AppContainer
+class AppContainer {
+    val workoutRepository: WorkoutRepository = FakeWorkoutRepository()
+    val userSettings: UserSettings = UserSettings()
+}
