@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<title>Kinetic Glow Fitness - Onboarding 2</title>
+<!-- Google Fonts: Plus Jakarta Sans -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS v3 with plugins -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              lime: '#D4F26A',
+              dark: '#121411',
+              charcoal: '#1A1D18',
+              muted: '#9EA398',
+            },
+          },
+        },
+      },
+    };
+  </script>
+<style data-purpose="base-styling">
+    body {
+      background-color: #0b0c0a;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+    /* Smooth fading gradient for the hero photography */
+    .hero-mask {
+      background: linear-gradient(
+        180deg,
+        rgba(18, 20, 17, 0) 0%,
+        rgba(18, 20, 17, 0.15) 45%,
+        rgba(18, 20, 17, 0.8) 75%,
+        #121411 100%
+      );
+    }
+  </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-0 sm:p-4">
+<!-- BEGIN: MobileDeviceFrame -->
+<main class="relative w-full max-w-[412px] h-[100dvh] sm:h-[870px] bg-[#121411] text-white flex flex-col justify-between overflow-hidden sm:rounded-[40px] shadow-2xl border-0 sm:border sm:border-white/5" data-purpose="app-container">
+<!-- BEGIN: BackgroundHeroSection -->
+<div class="absolute inset-0 z-0 h-[60%]" data-purpose="hero-image-container">
+<!-- Athlete cyclist hero visual -->
+<img alt="Atmospheric, cinematic, dynamic photograph of an athletic cyclist road biking at dusk or twilight on an open asphalt road, shot from a dramatic low angle, strong muscular motion, glowing subtle evening rim light, deep dark moody tones, charcoal and midnight hues fading naturally into deep dark shadow at bottom, modern fitness aesthetic." class="w-full h-full object-cover object-center" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCOJxPSWKPzfXC_48YEn8TY4SHnvK20A9frwmIhoMo5wuRAoYn4jzqK7jQ3XP-8F-887TIvwk4lFPbQmpvSt4U3LVM7uCZaSxul2nNVhTqDzFNWo_NKrJfbvQFrhl8wgvLsBU9dlA1FB7XHeHAQniJ0Q3ldhko5zjFF80I2yLOGO9ZsL1bxp_QMvawt5VN4oyrdlREDwgckOspIw6mGaoy8GH7dbZ8ymROp-YeliG3opPX0aVX9bsXp"/>
+<!-- Bottom vertical blend overlay -->
+<div class="hero-mask absolute inset-0 pointer-events-none"></div>
+</div>
+<!-- END: BackgroundHeroSection -->
+<!-- BEGIN: TopBarControls -->
+<header class="relative z-20 w-full pt-3 px-6 flex flex-col gap-2" data-purpose="status-and-nav-header">
+<!-- Android Status Bar -->
+<div class="w-full flex items-center justify-between text-xs tracking-wide text-white/90 font-medium py-1">
+<span>9:41</span>
+<div class="flex items-center space-x-2">
+<!-- Wifi Icon -->
+<svg class="w-4 h-4 fill-current" viewbox="0 0 24 24">
+<path d="M12 4C7.31 4 3.07 5.9 0 8.98L12 21 24 8.98A16.88 16.88 0 0 0 12 4zm0 2.4c3.8 0 7.27 1.45 9.9 3.86L12 18.25 2.1 10.26A14.47 14.47 0 0 1 12 6.4z"></path>
+</svg>
+<!-- Signal Icon -->
+<svg class="w-3.5 h-3.5 fill-current" viewbox="0 0 24 24">
+<path d="M2 22h20V2L2 22z"></path>
+</svg>
+<!-- Battery Icon -->
+<svg class="w-4 h-4 fill-current" viewbox="0 0 24 24">
+<path d="M17 4h-3V2h-4v2H7v18h10V4z"></path>
+</svg>
+</div>
+</div>
+<!-- Navigation Header: Back Button & Skip -->
+<nav aria-label="Onboarding Controls" class="flex items-center justify-between pt-2">
+<!-- Back Button -->
+<button aria-label="Go to previous screen" class="w-10 h-10 rounded-full bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center text-white active:scale-95 transition-transform hover:bg-black/60 focus:outline-none" type="button">
+<svg class="w-5 h-5 stroke-current stroke-2" fill="none" stroke-linecap="round" stroke-linejoin="round" viewbox="0 0 24 24">
+<path d="M15 18l-6-6 6-6"></path>
+</svg>
+</button>
+<!-- Skip Button -->
+<button class="text-sm font-medium text-white/80 hover:text-white px-2 py-1 transition-colors focus:outline-none" type="button">
+          Skip
+        </button>
+</nav>
+</header>
+<!-- END: TopBarControls -->
+<!-- BEGIN: BottomContentArea -->
+<section class="relative z-10 w-full px-6 pb-4 pt-10 flex flex-col justify-end" data-purpose="onboarding-content">
+<!-- Typography Block -->
+<div class="mb-10 space-y-3">
+<h1 class="text-[32px] sm:text-[36px] font-bold text-white leading-[1.15] tracking-tight">
+          Every route,<br/>mapped.
+        </h1>
+<p class="text-[#9EA398] text-[15px] sm:text-[16px] leading-relaxed max-w-[310px]">
+          GPS tracks your runs and rides, so distance, pace and calories are captured for you.
+        </p>
+</div>
+<!-- Footer Actions: Page Indicator Dots and Next FAB -->
+<div class="flex items-center justify-between pt-2 pb-2">
+<!-- Pagination Dots: Page 2 Active -->
+<div aria-label="Onboarding Steps" class="flex items-center space-x-2" role="tablist">
+<!-- Dot 1 -->
+<span aria-label="Step 1" class="w-2 h-2 rounded-full bg-white/20 transition-all duration-300"></span>
+<!-- Dot 2 (Active Pill) -->
+<span aria-current="step" aria-label="Step 2 of 3" class="w-6 h-2 rounded-full bg-[#D4F26A] transition-all duration-300"></span>
+<!-- Dot 3 -->
+<span aria-label="Step 3" class="w-2 h-2 rounded-full bg-white/20 transition-all duration-300"></span>
+</div>
+<!-- Forward Action FAB Button -->
+<button aria-label="Next slide" class="w-14 h-14 rounded-full bg-[#D4F26A] flex items-center justify-center text-[#111410] active:scale-95 hover:brightness-105 shadow-[0_4px_20px_rgba(212,242,106,0.25)] transition-transform focus:outline-none" type="button">
+<svg class="w-6 h-6 stroke-current stroke-[2.4]" fill="none" stroke-linecap="round" stroke-linejoin="round" viewbox="0 0 24 24">
+<path d="M5 12h14"></path>
+<path d="M12 5l7 7-7 7"></path>
+</svg>
+</button>
+</div>
+<!-- Android Home Navigation Pill Indicator -->
+<div class="w-full flex justify-center pt-5 pb-1">
+<div aria-hidden="true" class="w-32 h-1 bg-white/30 rounded-full"></div>
+</div>
+</section>
+<!-- END: BottomContentArea -->
+</main>
+<!-- END: MobileDeviceFrame -->
+</body></html>

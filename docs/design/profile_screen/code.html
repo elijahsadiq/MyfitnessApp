@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Profile Screen</title>
+  <!-- Google Fonts: Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+          },
+          colors: {
+            lime: {
+              DEFAULT: '#D4F26A',
+              light: '#E6F89E',
+              dark: '#9CB732',
+              hover: '#C2E250',
+            },
+            dark: {
+              DEFAULT: '#111410',
+              surface: '#181B16',
+              muted: '#2A2E26',
+            },
+            neutral: {
+              bg: '#F5F6F2',
+              card: '#FFFFFF',
+              border: '#E3E6DF',
+              subtle: '#8E9487',
+              text: '#111410',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: #F5F6F2;
+      color: #111410;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .custom-shadow {
+      box-shadow: 0 4px 20px -2px rgba(17, 20, 16, 0.04), 0 2px 6px -1px rgba(17, 20, 16, 0.02);
+    }
+  </style>
+</head>
+<body class="bg-[#F5F6F2] min-h-screen flex justify-center items-start antialiased selection:bg-[#D4F26A]">
+  <!-- Mobile Container -->
+  <div class="w-full max-w-[412px] min-h-screen flex flex-col justify-between relative pb-8">
+    
+    <!-- Top App Bar & Status Bar -->
+    <header class="sticky top-0 z-20 bg-[#F5F6F2]/90 backdrop-blur-md px-4 pt-3 pb-2 transition-all">
+      <!-- Android Status Bar -->
+      <div class="flex justify-between items-center text-xs font-semibold text-[#111410] px-2 pt-1 pb-2 tracking-tight">
+        <span>9:41</span>
+        <div class="flex items-center space-x-1.5">
+          <!-- Signal Icon -->
+          <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
+            <path d="M12 3c-4.97 0-9 4.03-9 9 0 2.12.74 4.07 1.97 5.61L12 22l7.03-4.39C20.26 16.07 21 14.12 21 12c0-4.97-4.03-9-9-9z" opacity="0.2"/>
+            <path d="M12 6c-3.31 0-6 2.69-6 6 0 1.48.54 2.83 1.44 3.88L12 19.5l4.56-3.62C17.46 14.83 18 13.48 18 12c0-3.31-2.69-6-6-6z"/>
+          </svg>
+          <!-- Wifi Icon -->
+          <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
+            <path d="M12 4C7.31 4 3.07 5.9 0 8.98L12 21 24 8.98C20.93 5.9 16.69 4 12 4zm0 3.5c3.75 0 7.15 1.45 9.7 3.85L12 19.12 2.3 11.35C4.85 8.95 8.25 7.5 12 7.5z"/>
+          </svg>
+          <!-- Battery Icon -->
+          <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24">
+            <path d="M17 5v14c0 .55-.45 1-1 1H8c-.55 0-1-.45-1-1V5c0-.55.45-1 1-1h2V2h4v2h2c.55 0 1 .45 1 1zm-2 1H9v12h6V6z"/>
+          </svg>
+        </div>
+      </div>
+
+      <!-- App Bar Navigation -->
+      <div class="flex items-center justify-between h-14">
+        <button class="w-10 h-10 rounded-full flex items-center justify-center text-[#111410] hover:bg-black/5 active:scale-95 transition" aria-label="Back">
+          <svg class="w-6 h-6 stroke-[2.2] stroke-current" fill="none" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/>
+          </svg>
+        </button>
+        <h1 class="text-lg font-bold text-[#111410] tracking-tight">Profile</h1>
+        <button class="w-10 h-10 rounded-full flex items-center justify-center text-[#111410] hover:bg-black/5 active:scale-95 transition" aria-label="Edit Profile">
+          <svg class="w-5 h-5 stroke-[2] stroke-current" fill="none" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"/>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-1 px-5 pt-1 space-y-6">
+
+      <!-- Profile Header: Centered Avatar, Name, Email -->
+      <div class="flex flex-col items-center text-center pt-2 pb-1">
+        <div class="relative group">
+          <div class="w-28 h-28 rounded-full p-[3px] bg-gradient-to-tr from-[#D4F26A] via-[#B8D83B] to-[#D4F26A] shadow-md">
+            <img 
+              src="https://lh3.googleusercontent.com/aida/AEtjO1Uh9eJa_rZvNm03Z9XS7rCpKGT4S11zKjCHMZPcv5BlgK_k7mWWlEO864dgnAr5txc65cEuwv8xQ1p_HcaZortllRwUPUU9uv4YeWjXDht9GGu9RDoR4eJEEnL7fVGgRchoMFdKUc5rt78MXT2Ql-BI4RMNPeQmjOo2ji-05BTGe8swecBGE7bjDFygROu6FRRSyqKRudyxbsNGgJcZ5abP5UHVk6RCI76Wi-8wRkgQo4O5mJeARHSgwHQ" 
+              alt="Alex Morgan" 
+              class="w-full h-full object-cover rounded-full border-2 border-white bg-white"
+            />
+          </div>
+          <!-- Camera / Edit Badge -->
+          <button class="absolute bottom-0 right-1 w-8 h-8 rounded-full bg-[#111410] text-[#D4F26A] flex items-center justify-center shadow-md border-2 border-white hover:scale-105 active:scale-95 transition" aria-label="Change photo">
+            <svg class="w-4 h-4 stroke-[2.2] stroke-current" fill="none" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" />
+              <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zM18.75 10.5h.008v.008h-.008V10.5z" />
+            </svg>
+          </button>
+        </div>
+
+        <h2 class="mt-3.5 text-2xl font-bold tracking-tight text-[#111410]">Alex Morgan</h2>
+        <p class="text-sm font-medium text-[#737A6D] mt-0.5">alex.morgan@fitness.app</p>
+      </div>
+
+      <!-- Stat Tiles Row: Total workouts, Total km, Member since -->
+      <div class="grid grid-cols-3 gap-2.5">
+        <!-- Tile 1 -->
+        <div class="bg-white rounded-2xl p-3.5 flex flex-col items-center text-center custom-shadow border border-[#ECEEE7]">
+          <span class="text-xs font-semibold text-[#737A6D] tracking-wide">Workouts</span>
+          <span class="text-xl font-extrabold text-[#111410] mt-1 tracking-tight">142</span>
+          <span class="text-[10px] font-medium text-[#8F9688] mt-0.5">completed</span>
+        </div>
+        <!-- Tile 2 -->
+        <div class="bg-white rounded-2xl p-3.5 flex flex-col items-center text-center custom-shadow border border-[#ECEEE7]">
+          <span class="text-xs font-semibold text-[#737A6D] tracking-wide">Total distance</span>
+          <div class="flex items-baseline mt-1">
+            <span class="text-xl font-extrabold text-[#111410] tracking-tight">846</span>
+            <span class="text-[11px] font-semibold text-[#737A6D] ml-0.5">km</span>
+          </div>
+          <span class="text-[10px] font-medium text-[#8F9688] mt-0.5">run & ride</span>
+        </div>
+        <!-- Tile 3 -->
+        <div class="bg-white rounded-2xl p-3.5 flex flex-col items-center text-center custom-shadow border border-[#ECEEE7]">
+          <span class="text-xs font-semibold text-[#737A6D] tracking-wide">Member since</span>
+          <span class="text-base font-bold text-[#111410] mt-1 tracking-tight">Jan 2023</span>
+          <span class="text-[10px] font-medium text-[#2E7D32] bg-[#E8F5E9] px-1.5 py-0.5 rounded-full mt-1 font-semibold">Pro Plan</span>
+        </div>
+      </div>
+
+      <!-- Body Settings Card -->
+      <div class="bg-white rounded-3xl p-5 custom-shadow border border-[#ECEEE7] space-y-4">
+        <div class="flex items-center justify-between border-b border-[#F0F2EB] pb-3">
+          <div class="flex items-center space-x-2.5">
+            <div class="w-8 h-8 rounded-xl bg-[#F4F6EE] flex items-center justify-center text-[#111410]">
+              <svg class="w-4 h-4 stroke-[2] stroke-current" fill="none" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v18m9-9H3"/>
+                <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/>
+              </svg>
+            </div>
+            <h3 class="text-base font-bold text-[#111410]">Body</h3>
+          </div>
+          <span class="text-xs font-semibold text-[#8B9384]">Metrics</span>
+        </div>
+
+        <!-- Metric Rows -->
+        <div class="space-y-1">
+          <!-- Weight Row -->
+          <div role="button" tabindex="0" class="flex items-center justify-between py-2.5 px-1 rounded-xl hover:bg-[#F9FAF6] active:bg-[#F3F5ED] transition cursor-pointer">
+            <span class="text-sm font-semibold text-[#2C3127]">Weight</span>
+            <div class="flex items-center space-x-2">
+              <span class="text-sm font-bold text-[#111410]">72 kg</span>
+              <svg class="w-4 h-4 stroke-[2.2] text-[#9EA696]" fill="none" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
+              </svg>
+            </div>
+          </div>
+
+          <!-- Height Row -->
+          <div role="button" tabindex="0" class="flex items-center justify-between py-2.5 px-1 rounded-xl hover:bg-[#F9FAF6] active:bg-[#F3F5ED] transition cursor-pointer">
+            <span class="text-sm font-semibold text-[#2C3127]">Height</span>
+            <div class="flex items-center space-x-2">
+              <span class="text-sm font-bold text-[#111410]">178 cm</span>
+              <svg class="w-4 h-4 stroke-[2.2] text-[#9EA696]" fill="none" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        <!-- Helper Text -->
+        <div class="pt-2 border-t border-[#F0F2EB] flex items-center space-x-1.5 text-xs text-[#7B8374]">
+          <svg class="w-3.5 h-3.5 stroke-[2] text-[#9EA696] flex-shrink-0" fill="none" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z"/>
+          </svg>
+          <span class="font-normal">Used for calorie estimates</span>
+        </div>
+      </div>
+
+      <!-- Preferences Card -->
+      <div class="bg-white rounded-3xl p-5 custom-shadow border border-[#ECEEE7] space-y-4">
+        <div class="flex items-center space-x-2.5 border-b border-[#F0F2EB] pb-3">
+          <div class="w-8 h-8 rounded-xl bg-[#F4F6EE] flex items-center justify-center text-[#111410]">
+            <svg class="w-4 h-4 stroke-[2] stroke-current" fill="none" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0"/>
+            </svg>
+          </div>
+          <h3 class="text-base font-bold text-[#111410]">Preferences</h3>
+        </div>
+
+        <div class="space-y-3.5">
+          <!-- Daily workout reminder Switch (ON) -->
+          <div class="flex items-center justify-between py-1">
+            <div class="pr-3">
+              <div class="text-sm font-semibold text-[#111410]">Daily workout reminder</div>
+              <div class="text-xs text-[#7B8374]">Push notification to stay consistent</div>
+            </div>
+            <!-- Lime Toggle Switch (ON) -->
+            <button role="switch" aria-checked="true" class="w-12 h-7 bg-[#D4F26A] rounded-full p-0.5 flex items-center justify-end shadow-inner transition-colors duration-200 cursor-pointer flex-shrink-0">
+              <span class="w-6 h-6 bg-[#111410] rounded-full shadow-md transform transition-transform duration-200 flex items-center justify-center">
+                <!-- Tiny tick in dot -->
+                <svg class="w-3 h-3 text-[#D4F26A] stroke-[2.5]" fill="none" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/>
+                </svg>
+              </span>
+            </button>
+          </div>
+
+          <!-- Reminder time row -->
+          <div role="button" tabindex="0" class="flex items-center justify-between py-2 px-2.5 bg-[#F9FAF6] rounded-xl hover:bg-[#F3F5ED] active:scale-[0.99] transition cursor-pointer border border-[#E9ECE3]">
+            <div class="flex items-center space-x-2">
+              <svg class="w-4 h-4 stroke-[2] text-[#6E7567]" fill="none" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+              <span class="text-xs font-semibold text-[#2C3127]">Reminder time</span>
+            </div>
+            <div class="flex items-center space-x-1.5">
+              <span class="text-xs font-bold text-[#111410] bg-white px-2 py-0.5 rounded-lg border border-[#E0E4D9]">18:00</span>
+              <svg class="w-3.5 h-3.5 stroke-[2.2] text-[#9EA696]" fill="none" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
+              </svg>
+            </div>
+          </div>
+
+          <!-- Achievement notifications Switch (OFF or subtle ON) -->
+          <div class="flex items-center justify-between py-1 pt-1 border-t border-[#F0F2EB]">
+            <div class="pr-3">
+              <div class="text-sm font-semibold text-[#111410]">Achievement notifications</div>
+              <div class="text-xs text-[#7B8374]">Milestones, PRs, and streaks</div>
+            </div>
+            <!-- Toggle Switch (ON) -->
+            <button role="switch" aria-checked="true" class="w-12 h-7 bg-[#D4F26A] rounded-full p-0.5 flex items-center justify-end shadow-inner transition-colors duration-200 cursor-pointer flex-shrink-0">
+              <span class="w-6 h-6 bg-[#111410] rounded-full shadow-md transform transition-transform duration-200 flex items-center justify-center">
+                <svg class="w-3 h-3 text-[#D4F26A] stroke-[2.5]" fill="none" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/>
+                </svg>
+              </span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- App version & secondary info -->
+      <div class="text-center pt-1 pb-1">
+        <span class="text-[11px] font-medium text-[#9EA696]">Kinetic Glow Fitness · v2.4.1</span>
+      </div>
+
+      <!-- Outlined Red-text Pill Button: Log out -->
+      <div class="pt-1">
+        <button class="w-full py-3.5 px-6 rounded-full border-2 border-[#FCA5A5] text-[#DC2626] font-bold text-sm tracking-wide flex items-center justify-center space-x-2 bg-transparent hover:bg-[#FEF2F2] active:bg-[#FEE2E2] active:scale-[0.99] transition duration-150 shadow-sm" aria-label="Log out">
+          <!-- Logout icon -->
+          <svg class="w-4 h-4 stroke-[2.2] stroke-current" fill="none" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75"/>
+          </svg>
+          <span>Log out</span>
+        </button>
+      </div>
+
+    </main>
+
+    <!-- Android Gesture Bar -->
+    <div class="w-full flex justify-center pt-4 pb-1">
+      <div class="w-32 h-1 bg-[#2C3127]/20 rounded-full"></div>
+    </div>
+
+  </div>
+</body>
+</html>
