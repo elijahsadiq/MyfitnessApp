@@ -325,3 +325,42 @@ Short notes for each step: what was built, the key design decision, one rejected
 **Assignment task supported**
 - **Task 4 (development)** — foundation for the PHP API in Step 3.
 - Marker context for **Task 5c (deployment / persistence writeup)** — the schema is the artefact the report will describe.
+
+## Step 3 — PHP API (Composer-free)
+**Built**
+- `backend/fitness-api/.htaccess` — front-controller rewrite (everything → `index.php`) plus a rewrite that re-adds the `Authorization` header when Apache would otherwise drop it.
+- `backend/fitness-api/config.php` — pure array of runtime config; reads env vars (Docker) with XAMPP-friendly fallbacks (`root` / no password).
+- `backend/fitness-api/index.php` — front controller. A ~10-line `spl_autoload_register` maps flat class names to `core/`, `controllers/`, `models/` (no Composer, no PSR-4). Strips the app prefix so routes work at both `/fitness-api/…` (XAMPP) and `/…` (Docker). Catches every `Throwable` into a 500 and logs to Apache's error log.
+- `core/Database.php` — PDO singleton with `ATTR_ERRMODE = EXCEPTION`, `ATTR_EMULATE_PREPARES = false` (server-side prepares only), and `MYSQL_ATTR_INIT_COMMAND = "SET NAMES utf8mb4 …, time_zone = '+00:00'"` so every DATETIME column is unambiguously UTC.
+- `core/Response.php` — the JSON envelope `{success, data}` / `{success, error:{message, fields}}` on the correct HTTP status. `success()` and `error()` are `never`-returning so control never falls through.
+- `core/Validator.php` — fluent per-field validator (`required`, `email`, `minLength`, `maxLength`, `inEnum`, `numeric`, `integer`, `inRange`, `isDatetime`) that accumulates a `field → message` map. Controllers call `Response::error('Validation failed', 422, $v->errors())` on `fails()`.
+- `core/Auth.php` — Bearer-token auth. `issueToken()` generates `bin2hex(random_bytes(32))` and stores the SHA-256 hash in `auth_tokens`. `currentUserId()` verifies and returns `?int`; `requireUser()` short-circuits to 401 when unauthenticated; `revokeCurrentToken()` powers logout.
+- `core/Router.php` — 30-line regex router; `{name}` segments become named groups and land in the handler as a params array.
+- `models/User.php` + `models/Workout.php` — thin PDO mappers. Every query is prepared, and every read is scoped to the caller's `user_id` — no path exists to another user's data. `Workout::create()` runs inside a transaction so a strength workout's sets either all land or the row is rolled back. `toDto()` methods keep DB shape / DTO shape separate.
+- Controllers (`AuthController`, `UserController`, `WorkoutController`) — 9 handlers matching the endpoint table + a `/health` no-auth check. Login returns the same "Invalid email or password" copy for missing user vs bad password so the response can't be used to enumerate accounts. POST /workouts is **upsert on (user_id, client_uuid)** — a repeat POST with the same UUID returns the existing row (200) rather than creating a duplicate; race conditions caught via `PDOException` code `23000` and resolved the same way.
+- `backend/api-tests.http` — 18 requests covering register / login / me GET/PUT / list (with filters) / create distance + strength / show / delete / logout / duplicate-email 409 / bad-password 401 / invalid-input 422.
+
+**Key design decision**
+- **Idempotent POST /workouts.** Instead of returning 409 on repeat, we return the existing row. That's what the phase-4 sync layer wants: the client can retry a network-flaky POST without either failing the second attempt or creating duplicates. Client_uuid is the write-once identity and the unique key enforces it at the DB level.
+
+**Rejected alternative**
+- Signed JWT tokens instead of opaque + hashed. Rejected because JWTs can't be revoked once issued (logout has to become "the client throws it away"), and the assignment's marker checklist explicitly asks for a working logout. Opaque + hashed also gives the DB a natural place to enforce expiry and a per-token revocation story.
+
+**Security bullets worth quoting in the report**
+- Passwords: `password_hash(PASSWORD_BCRYPT)` on write, `password_verify()` on read — no MD5, no unsalted SHA.
+- Tokens: 32 bytes of `random_bytes()` → 64 hex chars; only the SHA-256 lives in the DB.
+- SQL injection: PDO with `ATTR_EMULATE_PREPARES = false` everywhere; no string concatenation.
+- Authorisation: every read/write scoped by the authenticated `user_id`; DB unique keys back it up so a race can't wedge in another user's data.
+- Enumeration: uniform login error message.
+- Timezone: server enforces UTC in the PDO init command; DTO conversion always outputs `…Z`.
+
+**Kotlin/Android concepts (for my notes)**
+- Not applicable — pure PHP.
+
+**Verified**
+- PHP wasn't installed on the workstation and Docker Desktop wasn't running, so `php -l` couldn't be executed in-session. Basic sanity check via Python (all `<?php` tags open, brace/paren/bracket counts match after stripping comments and strings) — **all 12 PHP files pass**. Real linting happens on first `docker compose up -d` before Step 4 (the app-side networking layer).
+- Nothing under `app/` changed.
+
+**Assignment task supported**
+- **Task 4 (development)** — API is now callable; Step 4 gives it a Kotlin client.
+- **Task 5c** — the security bullet list above is directly quotable.

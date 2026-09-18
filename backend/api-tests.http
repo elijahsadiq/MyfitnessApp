@@ -1,0 +1,150 @@
+### Fitness API — end-to-end request suite
+###
+### Works with JetBrains HTTP client, VS Code REST Client, or the `httpyac`
+### CLI. The @baseUrl variable defaults to the Docker Compose port; flip it
+### to the XAMPP one commented below.
+
+@baseUrl = http://localhost:8080
+# @baseUrl = http://localhost/fitness-api
+
+### 1. Health check (no auth)
+GET {{baseUrl}}/health
+Accept: application/json
+
+### 2. Register a fresh user
+# Response includes { token, user }. Copy the token into @token below.
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "sam@example.com",
+  "password": "hunter2hunter",
+  "fullName": "Sam Newcomer",
+  "weightKg": 72.5,
+  "heightCm": 180.0
+}
+
+### 3. Log in as the seeded test user
+# Same shape as register. Use this token for the rest of the suite.
+# @name login
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "alex@example.com",
+  "password": "Password123"
+}
+
+### 4. Save the login token by hand
+# Copy the value from the response above into this variable.
+@token = PASTE_TOKEN_HERE
+
+### 5. Get current user profile
+GET {{baseUrl}}/me
+Authorization: Bearer {{token}}
+
+### 6. Update the profile
+PUT {{baseUrl}}/me
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "fullName": "Alex Runner",
+  "weightKg": 71.0,
+  "heightCm": 178.0
+}
+
+### 7. List all workouts (newest first)
+GET {{baseUrl}}/workouts
+Authorization: Bearer {{token}}
+
+### 8. List only running workouts
+GET {{baseUrl}}/workouts?type=RUNNING
+Authorization: Bearer {{token}}
+
+### 9. List workouts inside a date window
+GET {{baseUrl}}/workouts?from=2026-09-01T00:00:00Z&to=2026-09-30T23:59:59Z
+Authorization: Bearer {{token}}
+
+### 10. Create a new run
+# client_uuid should come from the device. Re-POSTing with the same UUID
+# returns the existing row (upsert), so this request is idempotent.
+POST {{baseUrl}}/workouts
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "clientUuid": "d2b8b2e0-7bf6-4d5c-9c1a-000000000001",
+  "activityType": "RUNNING",
+  "startTime": "2026-09-15T07:30:00Z",
+  "durationSeconds": 1800,
+  "distanceMeters": 5200,
+  "notes": "Morning shakeout"
+}
+
+### 11. Create a strength workout (with sets, transaction on the server)
+POST {{baseUrl}}/workouts
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "clientUuid": "d2b8b2e0-7bf6-4d5c-9c1a-000000000002",
+  "activityType": "WEIGHTLIFTING",
+  "startTime": "2026-09-15T18:00:00Z",
+  "durationSeconds": 2700,
+  "notes": "Lower body",
+  "sets": [
+    { "exerciseName": "Squat", "reps": 5, "weightKg": 100 },
+    { "exerciseName": "Squat", "reps": 5, "weightKg": 105 },
+    { "exerciseName": "Squat", "reps": 5, "weightKg": 110 }
+  ]
+}
+
+### 12. Fetch a single workout with sets (replace {id})
+GET {{baseUrl}}/workouts/1
+Authorization: Bearer {{token}}
+
+### 13. Delete a workout (replace {id})
+DELETE {{baseUrl}}/workouts/10
+Authorization: Bearer {{token}}
+
+### 14. Log out — deletes the current token row
+POST {{baseUrl}}/auth/logout
+Authorization: Bearer {{token}}
+
+### 15. Confirm logout invalidated the token (expect 401)
+GET {{baseUrl}}/me
+Authorization: Bearer {{token}}
+
+### 16. Register with a duplicate email (expect 409)
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "alex@example.com",
+  "password": "AnotherPass123",
+  "fullName": "Impostor",
+  "weightKg": 80.0
+}
+
+### 17. Login with wrong password (expect 401)
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "alex@example.com",
+  "password": "wrongPassword"
+}
+
+### 18. Create a workout with invalid input (expect 422 + fields map)
+POST {{baseUrl}}/workouts
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "clientUuid": "d2b8b2e0-7bf6-4d5c-9c1a-000000000099",
+  "activityType": "RUNNING",
+  "startTime": "not-a-real-timestamp",
+  "durationSeconds": 0,
+  "distanceMeters": -5
+}

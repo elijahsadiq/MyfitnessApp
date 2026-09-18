@@ -1,0 +1,11 @@
+# Front controller: every request that doesn't map to a real file or
+# directory is rewritten to index.php. The query string is preserved.
+RewriteEngine On
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^ index.php [QSA,L]
+
+# Some Apache setups strip Authorization by default. Preserve it so
+# Auth::currentUserId() sees the Bearer token.
+RewriteCond %{HTTP:Authorization} .
+RewriteRule ^ - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
