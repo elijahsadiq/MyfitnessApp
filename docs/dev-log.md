@@ -555,3 +555,46 @@ Short notes for each step: what was built, the key design decision, one rejected
 **Assignment task supported**
 - **Task 3b (design)** — the interface-swap story is exactly what the report needs. `WorkoutRepository` was introduced in phase 1 specifically to make phase 2 cheap; Step 8 is when that pays off.
 - **Task 4 (development)** — the workout side of the app now round-trips through the PHP API.
+
+## Step 9 — Restyle Home, History, Profile + Progress placeholder
+**Built**
+- **Bottom nav** rewired to Home / History / Progress / Goals with the lime pill indicator (`Widget.Fitness.BottomNav.ActiveIndicator`). Profile no longer in the bottom nav — opens from the Home avatar tap. New `ProgressFragment` placeholder (phase-5 note).
+- **Shared toolbar** hidden by default; `MainActivity` shows it only on `logDistanceWorkoutFragment`, `logStrengthWorkoutFragment`, and `profileFragment` — the top-level destinations draw their own headers per the Kinetic Glow design.
+- **Row layouts restyled** — `item_distance_workout.xml` and `item_strength_workout.xml` are now `MaterialCardView`s (20 dp radius, 1dp `divider` border, no elevation) with a `surface_container_low` icon tile and `Fitness.HeadlineSm` primary + `Fitness.LabelMd` secondary text.
+- **History rewrite** (`fragment_workout_history.xml` + `WorkoutHistoryFragment` + `HistoryViewModel` + `WeeklyMomentumView`):
+  - Dark **"Weekly momentum"** card with `inverse_surface` background, `DisplayMetric` km total, a lime `+X%` trend pill (hidden if no prior-week data), and a 7-bar chart drawn by `WeeklyMomentumView` (custom `View`; bars sized by normalised daily distance; today's day letter highlighted in lime).
+  - **Filter chips** with a count badge on `All` (`All · 6`), single-selection, `Widget.Fitness.Chip.Filter` (selects lime).
+  - **Section-headered adapter** — new `HistoryItem` sealed type + updated `WorkoutAdapter` with three view types (`SectionHeader`, `DistanceWorkout` row, `StrengthWorkout` row). ViewModel splits workouts into "This week" / "Earlier" and prepends a header with the per-week workout count + distance.
+  - Lime **FAB** with the new add icon.
+- **Home rewrite** (`fragment_dashboard.xml` + `DashboardFragment` + `DashboardViewModel` + `WeekStripView` + `ProgressRingView`):
+  - Greeting caption + "Your week" headline + streak pill + avatar (avatar → Profile via `action_home_to_profile`).
+  - **`WeekStripView`** (custom `LinearLayout`) — 7 day cells (M–S) with a lime dot on days that have a workout and a dark `surface_dark` pill for today.
+  - **Dark "This week" hero card** (`surface_dark`) with 2 × 2 metric grid (Sessions / Active time / Distance / Energy) using `Fitness.DisplayMetric`; **`ProgressRingView`** (custom `View`; lime arc over a dim track); "Start workout" lime pill CTA.
+  - Insight card with lime tile icon + hardcoded copy (real insights are phase 5).
+  - Goals card with two `LinearProgressIndicator`s driven by the current weekly totals against hardcoded targets (`50 km` / `180 min`). TODOs for phase 5 note where a real Goal repository slots in.
+- **Profile** rebuilt (`fragment_profile.xml` + `ProfileFragment`): avatar circle + name + email, body weight card, and a **Logout** button that calls `authRepository.logout()` and restarts at `LauncherActivity` with `CLEAR_TASK | NEW_TASK`.
+- **Strings + drawables**: `home_*`, `history_headline`, `history_momentum_*`, `history_section_*`, `history_filter_all_with_count`, `progress_placeholder_*`, `profile_logout_button`, `profile_default_name/email`; new drawables `bg_streak_pill`, `bg_home_avatar`, `bg_home_insight_tile`, `bg_week_strip_today`, `bg_week_strip_dot`, `bg_trend_pill`, `bg_section_summary_pill`, `item_week_strip_day.xml`, `item_history_section_header.xml`.
+
+**BaseFragment + BaseViewHolder hierarchies (Task 5b) preserved**
+- Every new fragment (`ProgressFragment`) extends `BaseFragment<VB>`; every existing fragment kept its base class. `WorkoutAdapter`'s three view holders still extend `BaseViewHolder<T>` — the newly added `SectionHeaderViewHolder` is the third.
+
+**Key design decision**
+- **All chrome lives inside each screen's layout, not in a shared toolbar.** The Kinetic Glow design puts a bespoke header on each screen (Home greets by name, History has its own H1, Profile shows the avatar). Trying to compress all of that into a single Material toolbar produced worse results than just hiding it on top-level destinations and letting each screen own its top region.
+
+**Rejected alternative**
+- Two separate concat-adapters (one for the momentum card + one for the list). Rejected because a `NestedScrollView` holding the whole page + a `wrap_content` RecyclerView is simpler and the workout list is bounded (a user won't have hundreds of workouts in the current UI). The two-adapter path becomes worth it in phase 5 when the list can grow.
+
+**Kotlin/Android concepts (for my notes)**
+- *Custom `View` with `onDraw`* — `ProgressRingView`, `WeeklyMomentumView`, `PageIndicatorView` (from step 6). Faster than layering multiple `View`s when the shape is procedural and the state is a handful of numbers.
+- *Section-headered `ListAdapter` via a sealed item type* — one adapter, many view types, still gets `DiffUtil` for animations. Cleaner than concat-adapters when the sections and rows share a scroll container.
+- *Toolbar visibility per destination* — the `NavController.OnDestinationChangedListener` already used for the bottom-nav visibility in Step 5 doubles as the toggle for the AppBarLayout in Step 9. No third listener needed.
+
+**Verified**
+- `./gradlew assembleLocalDebug` — BUILD SUCCESSFUL.
+- `./gradlew testLocalDebugUnitTest` — **90 tests, 0 failures** (no new tests this step; the whole phase-1+phase-2 suite still passes).
+- On-device UI verification (bottom-nav lime pill, week strip, dark hero card, momentum bar chart, toolbar visibility toggle) is manual and not exercised in this session.
+
+**Assignment task supported**
+- **Task 4 (development)** — the app matches the Kinetic Glow design across Home + History + Profile + bottom nav.
+- **Task 3b (design)** — the pattern "top-level destinations draw their own headers; log destinations use the shared toolbar" is a design decision worth writing up.
+- **Task 5b (inheritance)** — every fragment still extends `BaseFragment`; the three RecyclerView view holders still extend `BaseViewHolder<T>`.

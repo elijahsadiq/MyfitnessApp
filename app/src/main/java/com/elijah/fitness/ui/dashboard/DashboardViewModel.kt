@@ -8,6 +8,7 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.elijah.fitness.AppContainer
 import com.elijah.fitness.R
+import com.elijah.fitness.data.model.Workout
 import com.elijah.fitness.data.remote.ApiResult
 import com.elijah.fitness.data.repository.UserSettings
 import com.elijah.fitness.data.repository.WorkoutRepository
@@ -18,43 +19,56 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.Clock
+import java.time.DayOfWeek
+import java.time.LocalDate
 import java.time.ZoneId
+import java.time.temporal.TemporalAdjusters
 
 /**
- * State holder for the dashboard. Recomputes the weekly summary whenever
- * either the workout list or the user's body weight changes — so a
- * freshly-logged workout is reflected instantly with no manual refresh.
+ * State holder for the Home ("Dashboard") screen.
  *
- * Step 8 adds [isLoading] driven by `repository.refresh()` and a
- * one-shot [errorEvents] channel the fragment consumes to render a
- * Snackbar-with-Retry when the refresh fails.
+ * Step 9 additions:
+ *  - [homeUi] — packages everything the Home layout needs: the summary,
+ *    the current week's Monday + today, and the set of days that already
+ *    have workouts (drives the week strip's lime dots).
+ *  - Goals are hardcoded placeholders per the phase-2 brief; real goals
+ *    arrive in phase 5.
  */
 class DashboardViewModel(
     private val repository: WorkoutRepository,
     userSettings: UserSettings,
     private val clock: Clock = Clock.systemDefaultZone(),
-    private val zone: ZoneId = ZoneId.systemDefault()
+    private val zone: ZoneId = ZoneId.systemDefault(),
 ) : ViewModel() {
 
     val summary: StateFlow<WeeklySummary> = combine(
         repository.observeWorkouts(),
-        userSettings.bodyWeightKg
+        userSettings.bodyWeightKg,
     ) { workouts, weight ->
         WeeklySummaryCalculator.compute(
             workouts = workouts,
             now = clock.instant(),
             zone = zone,
-            bodyWeightKg = weight
+            bodyWeightKg = weight,
         )
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS),
-        initialValue = WeeklySummary.EMPTY
+        initialValue = WeeklySummary.EMPTY,
     )
+
+    val homeUi: StateFlow<HomeUi> = repository.observeWorkouts()
+        .map { workouts -> buildHomeUi(workouts) }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS),
+            initialValue = HomeUi.EMPTY,
+        )
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
@@ -67,7 +81,7 @@ class DashboardViewModel(
     fun refresh() {
         viewModelScope.launch {
             _isLoading.value = true
-            when (val result = repository.refresh()) {
+            when (repository.refresh()) {
                 is ApiResult.Success -> Unit
                 ApiResult.NetworkError ->
                     _errorEvents.send(ErrorEvent.Network(R.string.workouts_error_network))
@@ -75,6 +89,31 @@ class DashboardViewModel(
                     _errorEvents.send(ErrorEvent.Generic(R.string.workouts_error_load_failed))
             }
             _isLoading.value = false
+        }
+    }
+
+    private fun buildHomeUi(workouts: List<Workout>): HomeUi {
+        val today = LocalDate.ofInstant(clock.instant(), zone)
+        val monday = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+        val startOfWeek = monday.atStartOfDay(zone).toInstant()
+        val daysWithWorkouts = workouts
+            .filter { !it.startTime.isBefore(startOfWeek) }
+            .map { LocalDate.ofInstant(it.startTime, zone).dayOfWeek }
+            .toSet()
+        return HomeUi(monday = monday, today = today, daysWithWorkouts = daysWithWorkouts)
+    }
+
+    data class HomeUi(
+        val monday: LocalDate,
+        val today: LocalDate,
+        val daysWithWorkouts: Set<DayOfWeek>,
+    ) {
+        companion object {
+            val EMPTY = HomeUi(
+                monday = LocalDate.MIN,
+                today = LocalDate.MIN,
+                daysWithWorkouts = emptySet(),
+            )
         }
     }
 
@@ -89,14 +128,14 @@ class DashboardViewModel(
         fun factory(
             container: AppContainer,
             clock: Clock = Clock.systemDefaultZone(),
-            zone: ZoneId = ZoneId.systemDefault()
+            zone: ZoneId = ZoneId.systemDefault(),
         ): ViewModelProvider.Factory = viewModelFactory {
             initializer {
                 DashboardViewModel(
                     repository = container.workoutRepository,
                     userSettings = container.userSettings,
                     clock = clock,
-                    zone = zone
+                    zone = zone,
                 )
             }
         }

@@ -8,8 +8,12 @@
     <fragment
         android:id="@+id/dashboardFragment"
         android:name="com.elijah.fitness.ui.dashboard.DashboardFragment"
-        android:label="@string/nav_dashboard"
-        tools:layout="@layout/fragment_dashboard" />
+        android:label="@string/nav_home"
+        tools:layout="@layout/fragment_dashboard">
+        <action
+            android:id="@+id/action_home_to_profile"
+            app:destination="@id/profileFragment" />
+    </fragment>
 
     <fragment
         android:id="@+id/workoutHistoryFragment"
@@ -22,11 +26,21 @@
     </fragment>
 
     <fragment
+        android:id="@+id/progressFragment"
+        android:name="com.elijah.fitness.ui.progress.ProgressFragment"
+        android:label="@string/nav_progress"
+        tools:layout="@layout/fragment_progress" />
+
+    <fragment
         android:id="@+id/goalsFragment"
         android:name="com.elijah.fitness.ui.goals.GoalsFragment"
         android:label="@string/nav_goals"
         tools:layout="@layout/fragment_goals" />
 
+    <!--
+      Profile is no longer in the bottom nav — it opens from the Home
+      avatar. Kept as a nav destination so back-navigation works.
+    -->
     <fragment
         android:id="@+id/profileFragment"
         android:name="com.elijah.fitness.ui.profile.ProfileFragment"

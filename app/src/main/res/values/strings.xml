@@ -76,17 +76,48 @@
     <string name="auth_retry">Retry</string>
 
     <!-- Bottom navigation labels -->
-    <string name="nav_dashboard">Dashboard</string>
+    <string name="nav_home">Home</string>
     <string name="nav_history">History</string>
+    <string name="nav_progress">Progress</string>
     <string name="nav_goals">Goals</string>
     <string name="nav_profile">Profile</string>
+    <!-- Legacy name kept so any lingering references resolve. -->
+    <string name="nav_dashboard">Home</string>
+
+    <!-- Progress placeholder -->
+    <string name="progress_placeholder_title">Progress arrives in phase 5</string>
+    <string name="progress_placeholder_body">Charts for personal records, weekly trends and effort will land here.</string>
 
     <!-- Activity type labels -->
     <string name="activity_type_running">Running</string>
     <string name="activity_type_cycling">Cycling</string>
     <string name="activity_type_weightlifting">Weightlifting</string>
 
-    <!-- Dashboard -->
+    <!-- Home (Step 9 restyle of Dashboard) -->
+    <string name="home_greeting_caption">Good day</string>
+    <string name="home_headline">Your week</string>
+    <string name="home_streak_pill">%1$d-day streak</string>
+    <string name="home_avatar_content_description">Open profile</string>
+    <string name="home_hero_title">This week</string>
+    <string name="home_hero_subtitle">%1$d of %2$d workouts completed</string>
+    <string name="home_progress_ring_label">%1$d%%</string>
+    <string name="home_metric_sessions">SESSIONS</string>
+    <string name="home_metric_sessions_unit">workouts</string>
+    <string name="home_metric_active_time">ACTIVE TIME</string>
+    <string name="home_metric_minutes_unit">min</string>
+    <string name="home_metric_distance">DISTANCE</string>
+    <string name="home_metric_distance_unit">km</string>
+    <string name="home_metric_energy">ENERGY</string>
+    <string name="home_metric_energy_unit">kcal</string>
+    <string name="home_start_workout">Start workout</string>
+    <string name="home_insight_body">Keep logging workouts to unlock personalised insights.</string>
+    <string name="home_goals_title">Goals</string>
+    <string name="home_goal_distance">Weekly distance</string>
+    <string name="home_goal_distance_value">%1$d / %2$d km</string>
+    <string name="home_goal_active_time">Active time</string>
+    <string name="home_goal_minutes_value">%1$d / %2$d min</string>
+
+    <!-- Dashboard (legacy — no longer referenced by the current layout) -->
     <string name="dashboard_title">This week</string>
     <string name="dashboard_week_range">Since %1$s</string>
     <string name="dashboard_workouts_label">Workouts</string>
@@ -111,7 +142,16 @@
     <string name="log_error_save_retry">Retry</string>
 
     <!-- History screen -->
+    <string name="history_headline">History</string>
+    <string name="history_momentum_eyebrow">Weekly momentum</string>
+    <string name="history_momentum_unit">km</string>
+    <string name="history_momentum_trend_format">%1$s%2$d%%</string>
     <string name="history_filter_all">All</string>
+    <string name="history_filter_all_with_count">All · %1$d</string>
+    <string name="history_section_this_week">This week</string>
+    <string name="history_section_earlier">Earlier</string>
+    <string name="history_section_summary_with_distance">%1$d workouts · %2$s</string>
+    <string name="history_section_summary_count_only">%1$d workouts</string>
     <string name="history_row_type_and_date">%1$s · %2$s</string>
     <string name="history_row_distance_and_duration">%1$s · %2$s</string>
     <string name="history_row_total_volume">%1$.0f kg</string>
@@ -178,6 +218,9 @@
     <string name="goals_icon_content_description">Flag icon representing goals</string>
 
     <!-- Profile -->
+    <string name="profile_default_name">Alex Runner</string>
+    <string name="profile_default_email">alex@example.com</string>
+    <string name="profile_logout_button">Log out</string>
     <string name="profile_body_weight_label">Body weight</string>
     <string name="profile_body_weight_value">%1$.1f kg</string>
     <string name="profile_body_weight_hint">Used to estimate calories burned.</string>

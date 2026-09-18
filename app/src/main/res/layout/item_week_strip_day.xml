@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/root"
+    android:layout_width="44dp"
+    android:layout_height="56dp"
+    android:gravity="center"
+    android:orientation="vertical"
+    android:paddingVertical="6dp">
+
+    <TextView
+        android:id="@+id/dayLetter"
+        style="@style/TextAppearance.Fitness.LabelSm"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAllCaps="false"
+        android:textColor="@color/text_secondary"
+        tools:text="M" />
+
+    <TextView
+        android:id="@+id/dayNumber"
+        style="@style/TextAppearance.Fitness.HeadlineSm"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:textColor="@color/text_primary"
+        tools:text="19" />
+
+    <View
+        android:id="@+id/dayDot"
+        android:layout_width="6dp"
+        android:layout_height="6dp"
+        android:layout_marginTop="4dp"
+        android:background="@drawable/bg_week_strip_dot"
+        android:visibility="invisible"
+        tools:visibility="visible" />
+</LinearLayout>

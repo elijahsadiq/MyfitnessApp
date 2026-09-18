@@ -5,6 +5,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@color/background_warm"
     tools:context=".ui.history.WorkoutHistoryFragment">
 
     <com.google.android.material.progressindicator.LinearProgressIndicator
@@ -18,109 +19,225 @@
         app:trackColor="@color/surface_container_high"
         tools:visibility="visible" />
 
-    <HorizontalScrollView
-        android:id="@+id/filterChipsScroll"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:paddingHorizontal="16dp"
-        android:paddingVertical="8dp"
-        android:scrollbars="none"
-        app:layout_constraintTop_toBottomOf="@id/loadingBar">
-
-        <com.google.android.material.chip.ChipGroup
-            android:id="@+id/filterChips"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            app:selectionRequired="true"
-            app:singleLine="true"
-            app:singleSelection="true">
-
-            <com.google.android.material.chip.Chip
-                android:id="@+id/chipAll"
-                style="@style/Widget.Material3.Chip.Filter"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:checked="true"
-                android:text="@string/history_filter_all" />
-
-            <com.google.android.material.chip.Chip
-                android:id="@+id/chipRunning"
-                style="@style/Widget.Material3.Chip.Filter"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/activity_type_running" />
-
-            <com.google.android.material.chip.Chip
-                android:id="@+id/chipCycling"
-                style="@style/Widget.Material3.Chip.Filter"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/activity_type_cycling" />
-
-            <com.google.android.material.chip.Chip
-                android:id="@+id/chipWeightlifting"
-                style="@style/Widget.Material3.Chip.Filter"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/activity_type_weightlifting" />
-        </com.google.android.material.chip.ChipGroup>
-    </HorizontalScrollView>
-
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/workoutList"
+    <androidx.core.widget.NestedScrollView
+        android:id="@+id/scroll"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:clipToPadding="false"
-        android:paddingBottom="96dp"
+        android:paddingBottom="@dimen/fab_margin_bottom"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/filterChipsScroll"
-        tools:listitem="@layout/item_distance_workout" />
+        app:layout_constraintTop_toBottomOf="@id/loadingBar">
 
-    <LinearLayout
-        android:id="@+id/emptyState"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:gravity="center"
-        android:orientation="vertical"
-        android:padding="24dp"
-        android:visibility="gone"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/filterChipsScroll"
-        tools:visibility="visible">
-
-        <ImageView
-            android:layout_width="72dp"
-            android:layout_height="72dp"
-            android:contentDescription="@string/history_empty_icon_content_description"
-            android:src="@drawable/ic_history_24"
-            app:tint="?attr/colorPrimary" />
-
-        <TextView
-            style="?attr/textAppearanceTitleMedium"
-            android:layout_width="wrap_content"
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:text="@string/history_empty_title" />
+            android:orientation="vertical">
 
-        <TextView
-            style="?attr/textAppearanceBodyMedium"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:gravity="center"
-            android:text="@string/history_empty_body"
-            android:textColor="?attr/colorOnSurfaceVariant" />
-    </LinearLayout>
+            <!-- Screen header -->
+            <TextView
+                android:id="@+id/historyHeadline"
+                style="@style/TextAppearance.Fitness.HeadlineLg"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/screen_margin"
+                android:layout_marginTop="@dimen/space_xl"
+                android:text="@string/history_headline" />
+
+            <!-- Weekly momentum dark card -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/momentumCard"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="@dimen/screen_margin"
+                android:layout_marginTop="@dimen/space_lg"
+                app:cardBackgroundColor="@color/inverse_surface"
+                app:cardCornerRadius="@dimen/radius_card"
+                app:cardElevation="0dp"
+                app:contentPadding="@dimen/space_lg">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="top"
+                        android:orientation="horizontal">
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                style="@style/TextAppearance.Fitness.LabelSm"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/history_momentum_eyebrow"
+                                android:textColor="@color/text_on_dark_muted" />
+
+                            <LinearLayout
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="@dimen/space_xs"
+                                android:baselineAligned="true"
+                                android:gravity="bottom"
+                                android:orientation="horizontal">
+
+                                <TextView
+                                    android:id="@+id/momentumTotal"
+                                    style="@style/TextAppearance.Fitness.DisplayMetric"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:textColor="@color/text_on_dark"
+                                    tools:text="37.2" />
+
+                                <TextView
+                                    style="@style/TextAppearance.Fitness.HeadlineSm"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginStart="@dimen/space_sm"
+                                    android:text="@string/history_momentum_unit"
+                                    android:textColor="@color/lime_accent" />
+                            </LinearLayout>
+                        </LinearLayout>
+
+                        <TextView
+                            android:id="@+id/momentumTrendPill"
+                            style="@style/TextAppearance.Fitness.LabelSm"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="@dimen/space_xs"
+                            android:background="@drawable/bg_trend_pill"
+                            android:paddingHorizontal="10dp"
+                            android:paddingVertical="4dp"
+                            android:textAllCaps="false"
+                            android:textColor="@color/text_on_lime"
+                            android:visibility="gone"
+                            tools:text="+14%"
+                            tools:visibility="visible" />
+                    </LinearLayout>
+
+                    <com.elijah.fitness.ui.history.WeeklyMomentumView
+                        android:id="@+id/momentumChart"
+                        android:layout_width="match_parent"
+                        android:layout_height="64dp"
+                        android:layout_marginTop="@dimen/space_md" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Filter chips (horizontal scroller) -->
+            <HorizontalScrollView
+                android:id="@+id/filterChipsScroll"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_lg"
+                android:clipToPadding="false"
+                android:paddingHorizontal="@dimen/screen_margin"
+                android:scrollbars="none">
+
+                <com.google.android.material.chip.ChipGroup
+                    android:id="@+id/filterChips"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    app:chipSpacingHorizontal="@dimen/space_sm"
+                    app:selectionRequired="true"
+                    app:singleLine="true"
+                    app:singleSelection="true">
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipAll"
+                        style="@style/Widget.Fitness.Chip.Filter"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:checked="true"
+                        android:text="@string/history_filter_all"
+                        tools:text="All  6" />
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipRunning"
+                        style="@style/Widget.Fitness.Chip.Filter"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/activity_type_running" />
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipCycling"
+                        style="@style/Widget.Fitness.Chip.Filter"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/activity_type_cycling" />
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipWeightlifting"
+                        style="@style/Widget.Fitness.Chip.Filter"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/activity_type_weightlifting" />
+                </com.google.android.material.chip.ChipGroup>
+            </HorizontalScrollView>
+
+            <!-- Section-headered workout list -->
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/workoutList"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_sm"
+                android:nestedScrollingEnabled="false"
+                tools:listitem="@layout/item_distance_workout" />
+
+            <!-- Empty state (shown when the whole list is empty) -->
+            <LinearLayout
+                android:id="@+id/emptyState"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_2xl"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:padding="@dimen/space_xl"
+                android:visibility="gone"
+                tools:visibility="visible">
+
+                <ImageView
+                    android:layout_width="64dp"
+                    android:layout_height="64dp"
+                    android:background="@drawable/bg_icon_tile"
+                    android:contentDescription="@string/history_empty_icon_content_description"
+                    android:padding="16dp"
+                    android:src="@drawable/ic_history_24"
+                    app:tint="@color/lime_deep" />
+
+                <TextView
+                    style="@style/TextAppearance.Fitness.HeadlineSm"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_lg"
+                    android:text="@string/history_empty_title" />
+
+                <TextView
+                    style="@style/TextAppearance.Fitness.BodyMd"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_xs"
+                    android:gravity="center"
+                    android:text="@string/history_empty_body"
+                    android:textColor="@color/text_secondary" />
+            </LinearLayout>
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/addWorkoutFab"
+        style="@style/Widget.Fitness.FAB"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_margin="16dp"
+        android:layout_marginEnd="@dimen/fab_margin_end"
+        android:layout_marginBottom="@dimen/space_lg"
         android:contentDescription="@string/history_fab_content_description"
-        android:src="@android:drawable/ic_input_add"
+        android:src="@drawable/ic_add_24"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -1,353 +1,524 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView
+<androidx.constraintlayout.widget.ConstraintLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:fillViewport="true"
+    android:background="@color/background_warm"
     tools:context=".ui.dashboard.DashboardFragment">
 
-    <LinearLayout
+    <com.google.android.material.progressindicator.LinearProgressIndicator
+        android:id="@+id/loadingBar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="16dp">
+        android:indeterminate="true"
+        android:visibility="gone"
+        app:indicatorColor="@color/lime_deep"
+        app:layout_constraintTop_toTopOf="parent"
+        app:trackColor="@color/surface_container_high"
+        tools:visibility="visible" />
 
-        <com.google.android.material.progressindicator.LinearProgressIndicator
-            android:id="@+id/loadingBar"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="@dimen/space_sm"
-            android:indeterminate="true"
-            android:visibility="gone"
-            app:indicatorColor="@color/lime_deep"
-            app:trackColor="@color/surface_container_high"
-            tools:visibility="visible" />
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:clipToPadding="false"
+        android:paddingBottom="@dimen/space_2xl"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/loadingBar">
 
-        <TextView
-            style="?attr/textAppearanceHeadlineSmall"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/dashboard_title" />
-
-        <TextView
-            android:id="@+id/weekRange"
-            style="?attr/textAppearanceBodySmall"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="2dp"
-            android:textColor="?attr/colorOnSurfaceVariant"
-            tools:text="Mon 14 Sep – now" />
-
-        <!-- Row 1: workouts + minutes -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:orientation="horizontal">
+            android:orientation="vertical"
+            android:paddingTop="@dimen/space_xl">
 
-            <com.google.android.material.card.MaterialCardView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                app:cardCornerRadius="16dp"
-                app:cardElevation="0dp"
-                app:strokeColor="?attr/colorOutline"
-                app:strokeWidth="1dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="16dp">
-
-                    <TextView
-                        style="?attr/textAppearanceLabelLarge"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/dashboard_workouts_label"
-                        android:textColor="?attr/colorOnSurfaceVariant" />
-
-                    <TextView
-                        android:id="@+id/workoutCountValue"
-                        style="?attr/textAppearanceHeadlineMedium"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
-                        tools:text="4" />
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
-
-            <Space
-                android:layout_width="12dp"
-                android:layout_height="wrap_content" />
-
-            <com.google.android.material.card.MaterialCardView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                app:cardCornerRadius="16dp"
-                app:cardElevation="0dp"
-                app:strokeColor="?attr/colorOutline"
-                app:strokeWidth="1dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="16dp">
-
-                    <TextView
-                        style="?attr/textAppearanceLabelLarge"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/dashboard_active_minutes_label"
-                        android:textColor="?attr/colorOnSurfaceVariant" />
-
-                    <TextView
-                        android:id="@+id/activeMinutesValue"
-                        style="?attr/textAppearanceHeadlineMedium"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
-                        tools:text="182 min" />
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
-        </LinearLayout>
-
-        <!-- Row 2: distance + calories -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:orientation="horizontal">
-
-            <com.google.android.material.card.MaterialCardView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                app:cardCornerRadius="16dp"
-                app:cardElevation="0dp"
-                app:strokeColor="?attr/colorOutline"
-                app:strokeWidth="1dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="16dp">
-
-                    <TextView
-                        style="?attr/textAppearanceLabelLarge"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/dashboard_distance_label"
-                        android:textColor="?attr/colorOnSurfaceVariant" />
-
-                    <TextView
-                        android:id="@+id/totalDistanceValue"
-                        style="?attr/textAppearanceHeadlineMedium"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
-                        tools:text="24.7 km" />
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
-
-            <Space
-                android:layout_width="12dp"
-                android:layout_height="wrap_content" />
-
-            <com.google.android.material.card.MaterialCardView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                app:cardCornerRadius="16dp"
-                app:cardElevation="0dp"
-                app:strokeColor="?attr/colorOutline"
-                app:strokeWidth="1dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="16dp">
-
-                    <TextView
-                        style="?attr/textAppearanceLabelLarge"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/dashboard_calories_label"
-                        android:textColor="?attr/colorOnSurfaceVariant" />
-
-                    <TextView
-                        android:id="@+id/estimatedCaloriesValue"
-                        style="?attr/textAppearanceHeadlineMedium"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
-                        tools:text="1 480 kcal" />
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
-        </LinearLayout>
-
-        <!-- Per-activity breakdown -->
-        <TextView
-            style="?attr/textAppearanceTitleMedium"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
-            android:text="@string/dashboard_per_activity_title" />
-
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            app:cardCornerRadius="16dp"
-            app:cardElevation="0dp"
-            app:strokeColor="?attr/colorOutline"
-            app:strokeWidth="1dp">
-
+            <!-- Greeting header + streak pill + avatar -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="12dp">
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingHorizontal="@dimen/screen_margin">
 
-                <!-- Running row -->
                 <LinearLayout
-                    android:layout_width="match_parent"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal"
-                    android:paddingVertical="8dp">
-
-                    <ImageView
-                        android:layout_width="32dp"
-                        android:layout_height="32dp"
-                        android:contentDescription="@string/activity_type_running"
-                        android:src="@drawable/ic_run_24"
-                        app:tint="@color/text_primary" />
+                    android:layout_weight="1"
+                    android:orientation="vertical">
 
                     <TextView
-                        style="?attr/textAppearanceBodyLarge"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="12dp"
-                        android:layout_weight="1"
-                        android:text="@string/activity_type_running" />
-
-                    <TextView
-                        android:id="@+id/runningCount"
-                        style="?attr/textAppearanceBodyMedium"
+                        android:id="@+id/greetingCaption"
+                        style="@style/TextAppearance.Fitness.LabelMd"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginEnd="12dp"
-                        android:textColor="?attr/colorOnSurfaceVariant"
-                        tools:text="2 workouts" />
+                        android:text="@string/home_greeting_caption"
+                        android:textAllCaps="false"
+                        android:textColor="@color/text_secondary" />
 
-                    <TextView
-                        android:id="@+id/runningStat"
-                        style="?attr/textAppearanceTitleSmall"
+                    <LinearLayout
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:textColor="?attr/colorPrimary"
-                        tools:text="15.6 km" />
+                        android:layout_marginTop="2dp"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            style="@style/TextAppearance.Fitness.HeadlineLg"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/home_headline" />
+
+                        <TextView
+                            android:id="@+id/streakPill"
+                            style="@style/TextAppearance.Fitness.LabelSm"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="@dimen/space_sm"
+                            android:background="@drawable/bg_streak_pill"
+                            android:paddingHorizontal="10dp"
+                            android:paddingVertical="4dp"
+                            android:textAllCaps="false"
+                            android:textColor="@color/text_primary"
+                            tools:text="4-day streak" />
+                    </LinearLayout>
                 </LinearLayout>
 
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="1dp"
-                    android:background="?attr/colorOutlineVariant" />
-
-                <!-- Cycling row -->
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal"
-                    android:paddingVertical="8dp">
-
-                    <ImageView
-                        android:layout_width="32dp"
-                        android:layout_height="32dp"
-                        android:contentDescription="@string/activity_type_cycling"
-                        android:src="@drawable/ic_bike_24"
-                        app:tint="@color/text_primary" />
-
-                    <TextView
-                        style="?attr/textAppearanceBodyLarge"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="12dp"
-                        android:layout_weight="1"
-                        android:text="@string/activity_type_cycling" />
-
-                    <TextView
-                        android:id="@+id/cyclingCount"
-                        style="?attr/textAppearanceBodyMedium"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginEnd="12dp"
-                        android:textColor="?attr/colorOnSurfaceVariant"
-                        tools:text="1 workout" />
-
-                    <TextView
-                        android:id="@+id/cyclingStat"
-                        style="?attr/textAppearanceTitleSmall"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:textColor="?attr/colorPrimary"
-                        tools:text="22.4 km" />
-                </LinearLayout>
-
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="1dp"
-                    android:background="?attr/colorOutlineVariant" />
-
-                <!-- Weightlifting row -->
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal"
-                    android:paddingVertical="8dp">
-
-                    <ImageView
-                        android:layout_width="32dp"
-                        android:layout_height="32dp"
-                        android:contentDescription="@string/activity_type_weightlifting"
-                        android:src="@drawable/ic_dumbbell_24"
-                        app:tint="@color/text_primary" />
-
-                    <TextView
-                        style="?attr/textAppearanceBodyLarge"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="12dp"
-                        android:layout_weight="1"
-                        android:text="@string/activity_type_weightlifting" />
-
-                    <TextView
-                        android:id="@+id/weightliftingCount"
-                        style="?attr/textAppearanceBodyMedium"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginEnd="12dp"
-                        android:textColor="?attr/colorOnSurfaceVariant"
-                        tools:text="1 workout" />
-
-                    <TextView
-                        android:id="@+id/weightliftingStat"
-                        style="?attr/textAppearanceTitleSmall"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:textColor="?attr/colorPrimary"
-                        tools:text="1 620 kg" />
-                </LinearLayout>
+                <ImageView
+                    android:id="@+id/avatar"
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:background="@drawable/bg_home_avatar"
+                    android:clickable="true"
+                    android:contentDescription="@string/home_avatar_content_description"
+                    android:focusable="true"
+                    android:padding="10dp"
+                    android:src="@drawable/ic_person_24"
+                    app:tint="@color/text_secondary" />
             </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
-    </LinearLayout>
-</ScrollView>
+
+            <!-- Week strip -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="@dimen/screen_margin"
+                android:layout_marginTop="@dimen/space_xl"
+                app:cardBackgroundColor="@color/surface_white"
+                app:cardCornerRadius="20dp"
+                app:cardElevation="0dp"
+                app:strokeColor="@color/divider"
+                app:strokeWidth="@dimen/stroke_hairline">
+
+                <com.elijah.fitness.ui.dashboard.WeekStripView
+                    android:id="@+id/weekStrip"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content" />
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Dark "This week" hero card -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/heroCard"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="@dimen/screen_margin"
+                android:layout_marginTop="@dimen/space_xl"
+                app:cardBackgroundColor="@color/surface_dark"
+                app:cardCornerRadius="@dimen/radius_card"
+                app:cardElevation="0dp"
+                app:contentPadding="@dimen/space_xl">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                style="@style/TextAppearance.Fitness.HeadlineSm"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/home_hero_title"
+                                android:textColor="@color/text_on_dark" />
+
+                            <TextView
+                                android:id="@+id/heroSubtitle"
+                                style="@style/TextAppearance.Fitness.LabelMd"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="2dp"
+                                android:textAllCaps="false"
+                                android:textColor="@color/text_on_dark_muted"
+                                tools:text="3 of 4 workouts completed" />
+                        </LinearLayout>
+
+                        <FrameLayout
+                            android:layout_width="56dp"
+                            android:layout_height="56dp">
+
+                            <com.elijah.fitness.ui.dashboard.ProgressRingView
+                                android:id="@+id/progressRing"
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent" />
+
+                            <TextView
+                                android:id="@+id/progressRingLabel"
+                                style="@style/TextAppearance.Fitness.LabelMd"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_gravity="center"
+                                android:textAllCaps="false"
+                                android:textColor="@color/text_on_dark"
+                                android:textStyle="bold"
+                                tools:text="75%" />
+                        </FrameLayout>
+                    </LinearLayout>
+
+                    <!-- Metrics row 1 -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/space_lg"
+                        android:orientation="horizontal">
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                style="@style/TextAppearance.Fitness.LabelSm"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/home_metric_sessions"
+                                android:textColor="@color/text_on_dark_muted" />
+
+                            <LinearLayout
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="2dp"
+                                android:baselineAligned="true"
+                                android:gravity="bottom"
+                                android:orientation="horizontal">
+
+                                <TextView
+                                    android:id="@+id/metricSessions"
+                                    style="@style/TextAppearance.Fitness.DisplayMetric"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:textColor="@color/text_on_dark"
+                                    tools:text="3" />
+
+                                <TextView
+                                    style="@style/TextAppearance.Fitness.LabelMd"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginStart="6dp"
+                                    android:layout_marginBottom="6dp"
+                                    android:text="@string/home_metric_sessions_unit"
+                                    android:textColor="@color/text_on_dark_muted" />
+                            </LinearLayout>
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                style="@style/TextAppearance.Fitness.LabelSm"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/home_metric_active_time"
+                                android:textColor="@color/text_on_dark_muted" />
+
+                            <LinearLayout
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="2dp"
+                                android:baselineAligned="true"
+                                android:gravity="bottom"
+                                android:orientation="horizontal">
+
+                                <TextView
+                                    android:id="@+id/metricMinutes"
+                                    style="@style/TextAppearance.Fitness.DisplayMetric"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:textColor="@color/text_on_dark"
+                                    tools:text="142" />
+
+                                <TextView
+                                    style="@style/TextAppearance.Fitness.LabelMd"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginStart="6dp"
+                                    android:layout_marginBottom="6dp"
+                                    android:text="@string/home_metric_minutes_unit"
+                                    android:textColor="@color/text_on_dark_muted" />
+                            </LinearLayout>
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <!-- Metrics row 2 -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/space_md"
+                        android:orientation="horizontal">
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                style="@style/TextAppearance.Fitness.LabelSm"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/home_metric_distance"
+                                android:textColor="@color/text_on_dark_muted" />
+
+                            <LinearLayout
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="2dp"
+                                android:baselineAligned="true"
+                                android:gravity="bottom"
+                                android:orientation="horizontal">
+
+                                <TextView
+                                    android:id="@+id/metricDistance"
+                                    style="@style/TextAppearance.Fitness.DisplayMetric"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:textColor="@color/text_on_dark"
+                                    tools:text="18.4" />
+
+                                <TextView
+                                    style="@style/TextAppearance.Fitness.LabelMd"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginStart="6dp"
+                                    android:layout_marginBottom="6dp"
+                                    android:text="@string/home_metric_distance_unit"
+                                    android:textColor="@color/text_on_dark_muted" />
+                            </LinearLayout>
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                style="@style/TextAppearance.Fitness.LabelSm"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/home_metric_energy"
+                                android:textColor="@color/text_on_dark_muted" />
+
+                            <LinearLayout
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="2dp"
+                                android:baselineAligned="true"
+                                android:gravity="bottom"
+                                android:orientation="horizontal">
+
+                                <TextView
+                                    android:id="@+id/metricEnergy"
+                                    style="@style/TextAppearance.Fitness.DisplayMetric"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:textColor="@color/text_on_dark"
+                                    tools:text="1,860" />
+
+                                <TextView
+                                    style="@style/TextAppearance.Fitness.LabelMd"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginStart="6dp"
+                                    android:layout_marginBottom="6dp"
+                                    android:text="@string/home_metric_energy_unit"
+                                    android:textColor="@color/text_on_dark_muted" />
+                            </LinearLayout>
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/startWorkoutButton"
+                        style="@style/Widget.Fitness.Button.Primary"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/space_lg"
+                        android:text="@string/home_start_workout"
+                        app:icon="@drawable/ic_play_arrow_24"
+                        app:iconGravity="textStart" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Insight card -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="@dimen/screen_margin"
+                android:layout_marginTop="@dimen/space_lg"
+                app:cardBackgroundColor="@color/surface_white"
+                app:cardCornerRadius="@dimen/radius_card"
+                app:cardElevation="0dp"
+                app:contentPadding="@dimen/space_lg"
+                app:strokeColor="@color/divider"
+                app:strokeWidth="@dimen/stroke_hairline">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <ImageView
+                        android:layout_width="44dp"
+                        android:layout_height="44dp"
+                        android:background="@drawable/bg_home_insight_tile"
+                        android:contentDescription="@null"
+                        android:padding="10dp"
+                        android:src="@drawable/ic_trending_up_24"
+                        app:tint="@color/text_on_lime" />
+
+                    <TextView
+                        style="@style/TextAppearance.Fitness.BodyLg"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="@dimen/space_md"
+                        android:layout_weight="1"
+                        android:text="@string/home_insight_body" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Goals header -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_xl"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingHorizontal="@dimen/screen_margin">
+
+                <TextView
+                    style="@style/TextAppearance.Fitness.HeadlineSm"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/home_goals_title" />
+            </LinearLayout>
+
+            <!-- Goals card (hardcoded — TODO(phase 5): real Goal repository) -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="@dimen/screen_margin"
+                android:layout_marginTop="@dimen/space_sm"
+                app:cardBackgroundColor="@color/surface_white"
+                app:cardCornerRadius="@dimen/radius_card"
+                app:cardElevation="0dp"
+                app:contentPadding="20dp"
+                app:strokeColor="@color/divider"
+                app:strokeWidth="@dimen/stroke_hairline">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            style="@style/TextAppearance.Fitness.BodyMd"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="@string/home_goal_distance"
+                            android:textColor="@color/text_primary" />
+
+                        <TextView
+                            android:id="@+id/goalDistanceValue"
+                            style="@style/TextAppearance.Fitness.BodyMd"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:textColor="@color/text_primary"
+                            tools:text="32 / 50 km" />
+                    </LinearLayout>
+
+                    <com.google.android.material.progressindicator.LinearProgressIndicator
+                        android:id="@+id/goalDistanceBar"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/space_xs"
+                        app:indicatorColor="@color/lime_accent"
+                        app:trackColor="@color/surface_container_high"
+                        app:trackCornerRadius="4dp"
+                        app:trackThickness="8dp"
+                        tools:progress="64" />
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="@dimen/stroke_hairline"
+                        android:layout_marginTop="@dimen/space_md"
+                        android:background="@color/divider" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/space_md"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            style="@style/TextAppearance.Fitness.BodyMd"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="@string/home_goal_active_time"
+                            android:textColor="@color/text_primary" />
+
+                        <TextView
+                            android:id="@+id/goalMinutesValue"
+                            style="@style/TextAppearance.Fitness.BodyMd"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:textColor="@color/text_primary"
+                            tools:text="142 / 180 min" />
+                    </LinearLayout>
+
+                    <com.google.android.material.progressindicator.LinearProgressIndicator
+                        android:id="@+id/goalMinutesBar"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/space_xs"
+                        app:indicatorColor="@color/lime_accent"
+                        app:trackColor="@color/surface_container_high"
+                        app:trackCornerRadius="4dp"
+                        app:trackThickness="8dp"
+                        tools:progress="78" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+</androidx.constraintlayout.widget.ConstraintLayout>

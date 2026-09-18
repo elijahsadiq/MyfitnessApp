@@ -19,15 +19,18 @@ import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.launch
 
 /**
- * Single-activity host. Owns the toolbar, the [NavHostFragment] and the
- * bottom navigation. Log destinations hide the bottom nav and get an Up
- * arrow (the latter comes for free from `AppBarConfiguration`).
+ * Single-activity host. Owns the toolbar (only shown on log destinations),
+ * the [NavHostFragment], and the bottom navigation.
  *
- * Also owns the app-wide "your session expired" reaction: it subscribes
- * to [AuthEventBus] and, on an `Unauthorized` event, clears the local
- * token (belt-and-braces — the interceptor already saw the 401) and
- * restarts the task through [LauncherActivity], which will now route to
- * `AuthActivity` because the token is gone.
+ * ### Chrome per destination (Step 9)
+ * Top-level destinations (Home / History / Progress / Goals) draw their
+ * own headers, so the shared toolbar stays hidden on those. Log
+ * destinations and the standalone Profile page show the toolbar with
+ * the Up arrow, and hide the bottom nav.
+ *
+ * ### Central 401 handling (Step 5)
+ * Subscribes to [AuthEventBus] and, on an `Unauthorized` event, clears
+ * the local token and restarts the task through [LauncherActivity].
  */
 class MainActivity : AppCompatActivity() {
 
@@ -48,26 +51,24 @@ class MainActivity : AppCompatActivity() {
             setOf(
                 R.id.dashboardFragment,
                 R.id.workoutHistoryFragment,
+                R.id.progressFragment,
                 R.id.goalsFragment,
-                R.id.profileFragment
             )
         )
         binding.toolbar.setupWithNavController(navController, topLevel)
         binding.bottomNavigation.setupWithNavController(navController)
 
-        // Hide the bottom nav on log destinations. Everything else keeps it.
         navController.addOnDestinationChangedListener { _, destination, _ ->
-            binding.bottomNavigation.isVisible = destination.id !in LOG_DESTINATIONS
+            val isTopLevel = destination.id in TOP_LEVEL_DESTINATIONS
+            binding.bottomNavigation.isVisible = isTopLevel
+            // Toolbar only for the log flow + standalone Profile.
+            binding.appBarLayout.isVisible = destination.id in CHROME_DESTINATIONS
         }
 
         observeAuthEvents()
     }
 
-    /**
-     * Anchor a short Snackbar on the activity's CoordinatorLayout. Fragments
-     * call this after popping the back stack so the Snackbar survives their
-     * disappearance.
-     */
+    /** Anchor a short Snackbar on the activity's CoordinatorLayout. */
     fun showSnackbar(message: CharSequence) {
         Snackbar.make(binding.root, message, Snackbar.LENGTH_SHORT).show()
     }
@@ -86,10 +87,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun handleUnauthorized() {
-        // Extra safety: clear the local token even though the interceptor
-        // that surfaced the 401 doesn't know about the store. Fire-and-forget
-        // is fine — the launcher will read whichever state is current on the
-        // next boot.
         val container = (application as FitnessApp).container
         lifecycleScope.launch { container.tokenStore.clear() }
         startActivity(
@@ -100,9 +97,18 @@ class MainActivity : AppCompatActivity() {
     }
 
     private companion object {
-        val LOG_DESTINATIONS = setOf(
+        val TOP_LEVEL_DESTINATIONS = setOf(
+            R.id.dashboardFragment,
+            R.id.workoutHistoryFragment,
+            R.id.progressFragment,
+            R.id.goalsFragment,
+        )
+
+        /** Destinations that show the shared toolbar + Up arrow. */
+        val CHROME_DESTINATIONS = setOf(
             R.id.logDistanceWorkoutFragment,
-            R.id.logStrengthWorkoutFragment
+            R.id.logStrengthWorkoutFragment,
+            R.id.profileFragment,
         )
     }
 }

@@ -12,16 +12,16 @@ import com.elijah.fitness.FitnessApp
 import com.elijah.fitness.R
 import com.elijah.fitness.databinding.FragmentWorkoutHistoryBinding
 import com.elijah.fitness.ui.base.BaseFragment
+import com.elijah.fitness.util.Formatters
 import com.google.android.material.snackbar.Snackbar
 
 /**
- * Workout history screen: RecyclerView with two row types, filter chips,
- * empty state, and a FAB that opens the "choose activity" bottom sheet.
+ * Workout history screen (Step 9 restyle).
  *
- * Phase-2 additions: a top LinearProgressIndicator while the repository
- * refreshes, and a Snackbar-with-Retry when the refresh fails. Any
- * cached data stays on screen during a failed refresh — the user isn't
- * left staring at a blank list.
+ * Renders the dark "Weekly momentum" card (this week's total km + the
+ * 7-bar chart + a trend pill), the filter chips (with a count badge on
+ * "All"), and a section-headered list of workouts. FAB opens the
+ * "Choose activity" bottom sheet.
  */
 class WorkoutHistoryFragment : BaseFragment<FragmentWorkoutHistoryBinding>() {
 
@@ -35,7 +35,7 @@ class WorkoutHistoryFragment : BaseFragment<FragmentWorkoutHistoryBinding>() {
 
     override fun inflateBinding(
         inflater: LayoutInflater,
-        container: ViewGroup?
+        container: ViewGroup?,
     ): FragmentWorkoutHistoryBinding =
         FragmentWorkoutHistoryBinding.inflate(inflater, container, false)
 
@@ -59,14 +59,20 @@ class WorkoutHistoryFragment : BaseFragment<FragmentWorkoutHistoryBinding>() {
             findNavController().navigate(R.id.action_history_to_choose_activity)
         }
 
-        collectOnStart(viewModel.workouts) { workouts ->
-            adapter.submitList(workouts)
-            showEmptyState(
-                emptyView = binding.emptyState,
-                contentView = binding.workoutList,
-                isEmpty = workouts.isEmpty()
-            )
+        collectOnStart(viewModel.sectioned) { items ->
+            adapter.submitList(items)
+            val isEmpty = items.isEmpty()
+            binding.emptyState.isVisible = isEmpty
+            binding.workoutList.isVisible = !isEmpty
         }
+        collectOnStart(viewModel.totalCount) { count ->
+            binding.chipAll.text = if (count > 0) {
+                getString(R.string.history_filter_all_with_count, count)
+            } else {
+                getString(R.string.history_filter_all)
+            }
+        }
+        collectOnStart(viewModel.momentum) { renderMomentum(it) }
         collectOnStart(viewModel.isLoading) { loading ->
             binding.loadingBar.isVisible = loading
         }
@@ -84,5 +90,26 @@ class WorkoutHistoryFragment : BaseFragment<FragmentWorkoutHistoryBinding>() {
     override fun onDestroyView() {
         binding.workoutList.adapter = null
         super.onDestroyView()
+    }
+
+    private fun renderMomentum(m: HistoryViewModel.Momentum) {
+        binding.momentumTotal.text = String.format(
+            java.util.Locale.getDefault(),
+            "%.1f",
+            m.totalDistanceMeters / 1000.0,
+        )
+        binding.momentumChart.setData(m.perDayMeters, m.activeDayIndex)
+
+        val trend = m.trendPercent
+        if (trend != null) {
+            binding.momentumTrendPill.isVisible = true
+            binding.momentumTrendPill.text = getString(
+                R.string.history_momentum_trend_format,
+                if (trend >= 0) "+" else "",
+                trend,
+            )
+        } else {
+            binding.momentumTrendPill.isVisible = false
+        }
     }
 }
