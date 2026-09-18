@@ -12,25 +12,34 @@ import kotlinx.coroutines.flow.map
 private val Context.tokenDataStore: DataStore<Preferences> by preferencesDataStore(name = "auth_prefs")
 
 /**
- * Persistent home for the bearer token. Backed by androidx.datastore-preferences
- * (a coroutine-friendly, transactional replacement for SharedPreferences).
- *
- * Reads via a `Flow<String?>` — collectors get the current value on
- * subscribe and every subsequent change. `AuthInterceptor` reads
- * synchronously through `blockingCurrent()` since OkHttp interceptors
- * don't run on the main thread.
+ * Persistent home for the bearer token. Kept as an interface so unit
+ * tests can swap in a fake without a DataStore or an Android context.
+ * Production uses [DataStoreTokenStore]; tests use `FakeTokenStore`.
  */
-class TokenStore(context: Context) {
+interface TokenStore {
+    val token: Flow<String?>
+    suspend fun save(token: String)
+    suspend fun clear()
+}
+
+/**
+ * androidx.datastore-preferences implementation of [TokenStore]. Reads
+ * via a `Flow<String?>` — collectors get the current value on subscribe
+ * and every subsequent change. `AuthInterceptor` reads synchronously via
+ * `runBlocking { token.first() }`; OkHttp interceptors don't run on the
+ * main thread so that's safe.
+ */
+class DataStoreTokenStore(context: Context) : TokenStore {
 
     private val store = context.applicationContext.tokenDataStore
 
-    val token: Flow<String?> = store.data.map { it[TOKEN_KEY] }
+    override val token: Flow<String?> = store.data.map { it[TOKEN_KEY] }
 
-    suspend fun save(token: String) {
+    override suspend fun save(token: String) {
         store.edit { it[TOKEN_KEY] = token }
     }
 
-    suspend fun clear() {
+    override suspend fun clear() {
         store.edit { it.remove(TOKEN_KEY) }
     }
 

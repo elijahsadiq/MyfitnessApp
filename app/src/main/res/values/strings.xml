@@ -4,6 +4,21 @@
     <!-- Common -->
     <string name="common_cancel">Cancel</string>
 
+    <!-- Auth screens (Step 5 placeholders; Steps 6-7 replace the bodies) -->
+    <string name="auth_onboarding_title">Welcome</string>
+    <string name="auth_onboarding_placeholder_title">Welcome to Fitness</string>
+    <string name="auth_onboarding_placeholder_body">The full three-page onboarding lands in the next step. Tap Continue to skip to sign-in.</string>
+    <string name="auth_onboarding_continue">Continue</string>
+    <string name="auth_login_title">Log in</string>
+    <string name="auth_login_placeholder_body">The real login form lands in Step 7. In the meantime, use the button below to sign in as the seeded test user.</string>
+    <string name="auth_login_continue_as_alex">Continue as Alex</string>
+    <string name="auth_login_go_to_register">Create an account</string>
+    <string name="auth_register_title">Create your account</string>
+    <string name="auth_register_placeholder_body">The registration form lands in Step 7.</string>
+    <string name="auth_register_go_to_login">Back to log in</string>
+    <string name="auth_error_network">No connection. Check your network and try again.</string>
+    <string name="auth_error_generic">Something went wrong. Please try again.</string>
+
     <!-- Bottom navigation labels -->
     <string name="nav_dashboard">Dashboard</string>
     <string name="nav_history">History</string>

@@ -13,14 +13,31 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.MyFitnessApp">
 
+        <!--
+          LAUNCHER is a tiny "router" activity: it reads TokenStore +
+          OnboardingStore and starts either AuthActivity or MainActivity.
+          Neither of those is exported as LAUNCHER themselves so the
+          decision always goes through LauncherActivity.
+        -->
         <activity
-            android:name=".ui.main.MainActivity"
-            android:exported="true">
+            android:name=".ui.launcher.LauncherActivity"
+            android:exported="true"
+            android:theme="@style/Theme.MyFitnessApp">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <activity
+            android:name=".ui.auth.AuthActivity"
+            android:exported="false"
+            android:theme="@style/Theme.MyFitnessApp" />
+
+        <activity
+            android:name=".ui.main.MainActivity"
+            android:exported="false"
+            android:theme="@style/Theme.MyFitnessApp" />
     </application>
 
 </manifest>

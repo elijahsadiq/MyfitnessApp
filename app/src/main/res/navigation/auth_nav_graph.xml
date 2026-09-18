@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/auth_nav_graph"
+    app:startDestination="@id/loginFragment">
+
+    <!--
+      Start destination is set at runtime by AuthActivity based on the
+      show_onboarding intent extra. The value declared here is only the
+      fallback when the intent is missing (e.g. process restore).
+    -->
+
+    <fragment
+        android:id="@+id/onboardingHostFragment"
+        android:name="com.elijah.fitness.ui.auth.onboarding.OnboardingHostFragment"
+        android:label="@string/auth_onboarding_title"
+        tools:layout="@layout/fragment_onboarding_host">
+        <action
+            android:id="@+id/action_onboarding_to_login"
+            app:destination="@id/loginFragment"
+            app:popUpTo="@id/onboardingHostFragment"
+            app:popUpToInclusive="true" />
+        <action
+            android:id="@+id/action_onboarding_to_register"
+            app:destination="@id/registerFragment"
+            app:popUpTo="@id/onboardingHostFragment"
+            app:popUpToInclusive="true" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/loginFragment"
+        android:name="com.elijah.fitness.ui.auth.LoginFragment"
+        android:label="@string/auth_login_title"
+        tools:layout="@layout/fragment_login">
+        <action
+            android:id="@+id/action_login_to_register"
+            app:destination="@id/registerFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/registerFragment"
+        android:name="com.elijah.fitness.ui.auth.RegisterFragment"
+        android:label="@string/auth_register_title"
+        tools:layout="@layout/fragment_register">
+        <action
+            android:id="@+id/action_register_to_login"
+            app:destination="@id/loginFragment"
+            app:popUpTo="@id/loginFragment"
+            app:popUpToInclusive="true" />
+    </fragment>
+</navigation>

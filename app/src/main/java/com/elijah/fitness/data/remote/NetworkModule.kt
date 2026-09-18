@@ -32,12 +32,12 @@ object NetworkModule {
         coerceInputValues = true
     }
 
-    fun buildRetrofit(tokenStore: TokenStore): Retrofit {
+    fun buildRetrofit(tokenStore: TokenStore, authEventBus: AuthEventBus): Retrofit {
         val httpBuilder = OkHttpClient.Builder()
             .connectTimeout(15, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
             .writeTimeout(30, TimeUnit.SECONDS)
-            .addInterceptor(AuthInterceptor(tokenStore))
+            .addInterceptor(AuthInterceptor(tokenStore, authEventBus))
 
         if (BuildConfig.DEBUG) {
             httpBuilder.addInterceptor(

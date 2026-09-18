@@ -407,3 +407,39 @@ Short notes for each step: what was built, the key design decision, one rejected
 **Assignment task supported**
 - **Task 4 (development)** — the app now has a fully wired networking stack ready for Step 5's `AuthRepository` and Step 8's `RemoteWorkoutRepository`.
 - **Task 3b (design)** — the DTO-vs-domain rationale above is directly quotable.
+
+## Step 5 — Auth flow plumbing
+**Built**
+- **`AuthEventBus`** (`data/remote/`) — a `MutableSharedFlow<AuthEvent>` with `extraBufferCapacity = 1` + `DROP_OLDEST` so bursts of 401s collapse to one signal. Single event: `Unauthorized`.
+- **`AuthInterceptor`** now takes an `AuthEventBus` and, after `chain.proceed(…)`, fires `postUnauthorized()` when a non-auth endpoint comes back 401. Legitimate 401s on `/auth/login` (wrong password) stay plain errors that the login screen handles.
+- **`AuthRepository` + `RemoteAuthRepository`** — interface + Retrofit-backed implementation. Signatures: `isLoggedIn: Flow<Boolean>`, `register(email, password, fullName, weightKg?, heightCm?)`, `login(email, password)`, `logout()`. Register + login persist the returned bearer token in `TokenStore` **and** mark onboarding completed. Logout always clears the local token even if the network call fails (returns `Success(Unit)` so the UI still routes to auth).
+- **`OnboardingStore`** (`data/local/`) — separate DataStore preferences file (`onboarding_prefs`) so clearing the auth token can't accidentally force onboarding to re-appear. Exposes `hasCompletedOnboarding: Flow<Boolean>` + `markCompleted()`.
+- **Interface extraction for testability** — both `TokenStore` and `OnboardingStore` became interfaces, with the production DataStore-backed classes renamed to `DataStoreTokenStore` and `DataStoreOnboardingStore`. Tests supply plain in-memory fakes without pulling DataStore or Android context into the JVM classpath.
+- **`LauncherActivity`** (`ui/launcher/`) — the manifest LAUNCHER. Reads `TokenStore` + `OnboardingStore`, then routes to `MainActivity` (token present) or `AuthActivity` (no token, optionally with the `show_onboarding` intent extra on first launch). Finishes itself immediately, so it never leaves a blank activity behind.
+- **`AuthActivity`** (`ui/auth/`) — owns a dedicated nav graph (`res/navigation/auth_nav_graph.xml`) with `onboardingHostFragment`, `loginFragment`, `registerFragment`. Sets the graph's start destination programmatically from the `EXTRA_SHOW_ONBOARDING` intent extra. Exposes a `goToMain()` helper that starts `MainActivity` with `CLEAR_TASK | NEW_TASK` and finishes.
+- **Placeholder fragments** — `OnboardingHostFragment` (Continue → `markCompleted()` → login), `LoginFragment` (Continue as Alex → `authRepository.login(alex@example.com, Password123)` → `AuthActivity.goToMain()`), `RegisterFragment` (link back to login). Step 6 replaces the onboarding pages; Step 7 replaces the two form screens. The Continue-as-Alex button exists specifically so the plumbing can be end-to-end tested against a running backend right now.
+- **`MainActivity` 401 observer** — subscribes to `authEventBus.events` via `repeatOnLifecycle(STARTED)`. On `Unauthorized`: clears the token (belt-and-braces) and restarts the task at `LauncherActivity` with `CLEAR_TASK | NEW_TASK`. Centralised — no ViewModel needs to handle 401 individually.
+- **Manifest rewire** — `LauncherActivity` is now the LAUNCHER; `MainActivity` and `AuthActivity` are internal (`android:exported="false"`).
+- **`AppContainer`** — added `onboardingStore`, `authEventBus`, and `authRepository`.
+- **Tests** — `RemoteAuthRepositoryTest` (7): login+register success paths persist the token and mark onboarding completed, login 401 doesn't persist a token, register 422 surfaces field-scoped errors, logout clears the token on server success **and** server failure, `isLoggedIn` tracks the store.
+
+**Key design decision**
+- **A LauncherActivity dedicated to routing.** Two alternatives — routing inside `MainActivity.onCreate` or inside a fragment — both leave the "wrong" activity or fragment visible for a frame before we bounce. A tiny router activity with the same theme keeps the launch flicker to zero and gives us one place to reason about "which activity does the app open with?".
+
+**Rejected alternative**
+- Wiring 401 handling into each screen's ViewModel (each one would compare the ApiResult status). Rejected because it forces every future screen to remember to opt in, and because logout side effects (token clear + task restart) belong at the app scope, not the screen scope. A single `AuthEventBus` + one MainActivity observer keeps it in one place.
+
+**Kotlin/Android concepts (for my notes)**
+- *`MutableSharedFlow` with `DROP_OLDEST`* — a hot flow that never suspends the producer. Perfect for signal-style events; `extraBufferCapacity = 1` + `DROP_OLDEST` means concurrent producers collapse into a single "please react" rather than spamming subscribers.
+- *`Intent.FLAG_ACTIVITY_CLEAR_TASK or FLAG_ACTIVITY_NEW_TASK`* — starts the target as a fresh root of a new task, killing everything currently in the stack. The standard way to reset the whole app back to sign-in.
+- *`NavController.setGraph(graph)` at runtime* — lets the host activity decide the start destination from Intent extras / saved state, rather than baking it into the XML.
+- *Interface extraction for testability* — the DataStore-backed classes stay behind an interface so JVM unit tests can construct fakes without an `androidx.datastore` runtime or an Android `Context`.
+
+**Verified**
+- `./gradlew assembleLocalDebug` — BUILD SUCCESSFUL.
+- `./gradlew testLocalDebugUnitTest` — **55 tests, 0 failures** (added 7 `RemoteAuthRepositoryTest` cases).
+- On-device verification still requires the backend running; not exercised in this session.
+
+**Assignment task supported**
+- **Task 4 (development)** — the login/register/logout auth flow is fully wired; Steps 6/7 replace the placeholder UI with the real forms.
+- **Task 5c (security)** — token handling, 401 handling, and the boundary between "logged out locally" vs "logged out on the server" are all covered by tests.
