@@ -480,3 +480,42 @@ Short notes for each step: what was built, the key design decision, one rejected
 **Assignment task supported**
 - **Task 4 (development)** — the real onboarding + location priming screens replace the Step 5 placeholders; Step 7 replaces the login/register placeholders next.
 - **Task 5b (inheritance)** — every new fragment (`OnboardingHostFragment`, `OnboardingPageFragment`, `LocationPermissionFragment`) extends the required `BaseFragment`.
+
+## Step 7 — Real Login + Register forms
+**Built**
+- **`AuthValidators`** (pure Kotlin, no Android imports) — five rule functions returning a `ValidationResult.Ok` or `ValidationResult.Invalid(@StringRes)`. Rules:
+  - `validateEmail` — non-blank + RFC-shaped regex (deliberately avoids `android.util.Patterns` so it stays JVM-testable).
+  - `validatePassword` — non-blank + at least `PASSWORD_MIN_LENGTH = 8` characters.
+  - `validateFullName` — non-blank + ≤ 120 chars.
+  - `validateWeightKg` — empty allowed (API-optional); otherwise numeric and within 20–300 kg.
+  - `validateTermsAccepted`.
+- **`FieldError`** (sealed) — `Res(@StringRes)` for client validators, `Text(String)` for server-side 4xx messages. Fragments resolve either.
+- **`LoginViewModel`** — `UiState(submitting, emailError, passwordError)` + `Event.LoggedIn` / `Event.ShowNetworkError(res)` via a `Channel`. `submit()` runs client validation first, then hits `authRepository.login()`. 401 with no field map hangs the server's message off the password row; 422 field errors map onto matching fields; `NetworkError` + other errors go to the Snackbar path. Double-submit while in flight is a no-op (guarded by `submitting`). `onEmailChanged / onPasswordChanged` clear the corresponding error the moment the user starts fixing it.
+- **`RegisterViewModel`** — same shape with an extra `fullNameError` / `weightError` / `termsError`. Empty weight submits as `null`; typed weight submits as `Double`. Terms-not-accepted is an inline error under the checkbox.
+- **`LoginFragment`** — real form: `TextInputLayout`s with leading `ic_mail_24` + `ic_lock_24` icons and a `password_toggle` end icon. Autofill hints (`emailAddress` / `password`), IME actions (`actionNext` → `actionDone`), and enter-to-submit on the password IME. Primary button disables + shows an inline `CircularProgressIndicator` over its label while submitting. Snackbar-with-Retry on network failure.
+- **`RegisterFragment`** — same pattern with `ic_person_24` (name), `ic_mail_24`, `ic_lock_24` (with password hint helper text "At least 8 characters"), `ic_scale_24` (weight, helper "Used to estimate calories burned"), a `MaterialCheckBox` for terms, and an inline error TextView under the checkbox for the terms-required message.
+- **`strings.xml`** — full auth copy (labels, hints, error messages, Snackbar retry). No hardcoded strings in either fragment.
+- **`ic_arrow_back_24`** vector drawable added.
+- **`text_field_stroke.xml` fix** — the color state list previously had an unintended `error_red` default (state matched when nothing else did). Simplified to focused → `text_primary`, else → `divider`. Error colouring stays on `boxStrokeErrorColor`.
+- **Tests (30 new, 85 total)** — `AuthValidatorsTest` (18) covers every branch of every rule. `LoginViewModelTest` (7) covers client-blocking, happy-path event, 401 → password row mapping, 422 field-error mapping, network-error event, double-submit guard, per-field error clearing. `RegisterViewModelTest` (5) covers multi-field client validation, happy path, empty-weight → null, 422 field mapping, network-error event.
+
+**Key design decision**
+- **A single `FieldError` sealed type for both validators and server errors.** The alternative — two parallel `Int?` and `String?` fields per row — creates rendering ambiguity (which one wins?) and forces every fragment to remember the resolution order. One `FieldError` type + a `errorText(fieldError)` helper in each fragment collapses both cases into one branch.
+
+**Rejected alternative**
+- Auto-validating on every keystroke. Rejected because tapping the first character of an email would immediately flash "Enter a valid email address" — bad UX. Instead, validation runs on submit; the moment the user starts typing again, `onFieldChanged()` clears just that field's error (server or client). Feedback stays immediate without being nagging.
+
+**Kotlin/Android concepts (for my notes)**
+- *`TextInputLayout.startIconDrawable` / `endIconMode="password_toggle"`* — Material 3 built-in leading icon slot and the show/hide password toggle. No custom code required.
+- *`autofillHints` + `imeOptions`* — tells the system autofill provider what a field expects (`emailAddress`, `password`, `newPassword`, `personName`) and how the IME's action button should behave (`actionNext` moves to the next field, `actionDone` submits).
+- *`CircularProgressIndicator.trackThickness` / `indicatorSize`* — sizing knobs for the M3 spinner; useful when overlaying inside a pill button.
+- *`Channel<Event>` + `receiveAsFlow()`* — one-shot events already used in phase 1; here they distinguish "log in succeeded → navigate" from "no network → show a Snackbar" without polluting `UiState`.
+
+**Verified**
+- `./gradlew assembleLocalDebug` — BUILD SUCCESSFUL.
+- `./gradlew testLocalDebugUnitTest` — **85 tests, 0 failures** (added 18 validator + 7 login VM + 5 register VM).
+- On-device verification of the form UX (autofill prompt, keyboard IME, retry Snackbar interaction with a stopped backend) is manual and hasn't been done in this session.
+
+**Assignment task supported**
+- **Task 4 (development)** — the real login + register forms; the placeholder plumbing from Step 5 now has a real UI.
+- **Task 5c** — the client/server validation split, autofill hints, and password toggle each land straight in the security / UX write-up.

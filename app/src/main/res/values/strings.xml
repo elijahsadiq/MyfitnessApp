@@ -26,19 +26,54 @@
     <string name="auth_location_allow">Allow location</string>
     <string name="auth_location_not_now">Not now</string>
 
-    <!-- Kept temporarily to satisfy other code paths still referencing them (Step 5 stub). -->
+    <!-- Onboarding host placeholder (Step 5) — no longer used but kept
+         so any stale reference resolves. -->
     <string name="auth_onboarding_placeholder_title">Welcome to Fitness</string>
     <string name="auth_onboarding_placeholder_body">Welcome copy.</string>
     <string name="auth_onboarding_continue">Continue</string>
+
+    <!-- Login screen (Step 7) -->
     <string name="auth_login_title">Log in</string>
-    <string name="auth_login_placeholder_body">The real login form lands in Step 7. In the meantime, use the button below to sign in as the seeded test user.</string>
-    <string name="auth_login_continue_as_alex">Continue as Alex</string>
-    <string name="auth_login_go_to_register">Create an account</string>
-    <string name="auth_register_title">Create your account</string>
-    <string name="auth_register_placeholder_body">The registration form lands in Step 7.</string>
-    <string name="auth_register_go_to_login">Back to log in</string>
+    <string name="auth_login_eyebrow">My Fitness App</string>
+    <string name="auth_login_headline">Welcome back</string>
+    <string name="auth_login_subtitle">Log in to continue your progress.</string>
+    <string name="auth_login_submit">Log in</string>
+    <string name="auth_login_no_account">New here?</string>
+    <string name="auth_login_go_to_register">Create account</string>
+
+    <!-- Register screen (Step 7) -->
+    <string name="auth_register_title">Create account</string>
+    <string name="auth_register_headline">Create your account</string>
+    <string name="auth_register_subtitle">Set up your profile so we can tailor calorie estimates.</string>
+    <string name="auth_register_submit">Create account</string>
+    <string name="auth_register_have_account">Already have an account?</string>
+    <string name="auth_register_go_to_login">Log in</string>
+    <string name="auth_register_back_content_description">Back</string>
+    <string name="auth_register_terms">I agree to the Terms and Privacy Policy.</string>
+
+    <!-- Shared field labels + hints -->
+    <string name="auth_field_email">Email</string>
+    <string name="auth_field_password">Password</string>
+    <string name="auth_field_password_hint">At least 8 characters.</string>
+    <string name="auth_field_full_name">Full name</string>
+    <string name="auth_field_weight">Body weight (kg)</string>
+    <string name="auth_field_weight_hint">Used to estimate calories burned.</string>
+
+    <!-- Validation error messages (client-side) -->
+    <string name="auth_error_email_required">Email is required.</string>
+    <string name="auth_error_email_invalid">Enter a valid email address.</string>
+    <string name="auth_error_password_required">Password is required.</string>
+    <string name="auth_error_password_too_short">Must be at least 8 characters.</string>
+    <string name="auth_error_name_required">Full name is required.</string>
+    <string name="auth_error_name_too_long">Name is too long.</string>
+    <string name="auth_error_weight_invalid">Enter a number in kilograms.</string>
+    <string name="auth_error_weight_out_of_range">Weight should be between 20 and 300 kg.</string>
+    <string name="auth_error_terms_required">Please accept the terms to continue.</string>
+
+    <!-- Snackbar-friendly network / generic errors -->
     <string name="auth_error_network">No connection. Check your network and try again.</string>
     <string name="auth_error_generic">Something went wrong. Please try again.</string>
+    <string name="auth_retry">Retry</string>
 
     <!-- Bottom navigation labels -->
     <string name="nav_dashboard">Dashboard</string>

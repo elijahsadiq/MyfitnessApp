@@ -5,22 +5,29 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.core.view.isVisible
-import androidx.lifecycle.lifecycleScope
+import androidx.core.widget.doAfterTextChanged
+import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
 import com.elijah.fitness.FitnessApp
 import com.elijah.fitness.R
-import com.elijah.fitness.data.remote.ApiResult
 import com.elijah.fitness.databinding.FragmentLoginBinding
 import com.elijah.fitness.ui.base.BaseFragment
-import kotlinx.coroutines.launch
+import com.google.android.material.snackbar.Snackbar
 
 /**
- * Placeholder login screen. Step 7 replaces it with the real form (fields,
- * validation, autofill, error mapping). Until then, "Continue as Alex"
- * exercises the whole auth pipeline (Retrofit → API → TokenStore →
- * AuthActivity.goToMain) so we can smoke-test the plumbing end-to-end.
+ * Login screen — real form (Step 7 replaces the Step-5 placeholder).
+ *
+ * Client-side validation runs in [LoginViewModel] via [AuthValidators].
+ * Server-side field errors (422) are mapped onto the matching
+ * `TextInputLayout`; network failures show a Snackbar with a Retry
+ * action. The primary button is disabled + shows an inline spinner
+ * while a request is in flight.
  */
 class LoginFragment : BaseFragment<FragmentLoginBinding>() {
+
+    private val viewModel: LoginViewModel by viewModels {
+        LoginViewModel.factory((requireContext().applicationContext as FitnessApp).container)
+    }
 
     override fun inflateBinding(
         inflater: LayoutInflater,
@@ -31,34 +38,56 @@ class LoginFragment : BaseFragment<FragmentLoginBinding>() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        binding.continueAsAlex.setOnClickListener { attemptSignIn() }
+        binding.emailInput.doAfterTextChanged { viewModel.onEmailChanged() }
+        binding.passwordInput.doAfterTextChanged { viewModel.onPasswordChanged() }
+
+        binding.loginButton.setOnClickListener { submit() }
+        binding.passwordInput.setOnEditorActionListener { _, _, _ ->
+            submit(); true
+        }
+
         binding.goToRegister.setOnClickListener {
             findNavController().navigate(R.id.action_login_to_register)
         }
-    }
 
-    private fun attemptSignIn() {
-        val container = (requireContext().applicationContext as FitnessApp).container
-        setLoading(true)
-        viewLifecycleOwner.lifecycleScope.launch {
-            val result = container.authRepository.login(
-                email = "alex@example.com",
-                password = "Password123",
-            )
-            setLoading(false)
-            when (result) {
-                is ApiResult.Success -> (requireActivity() as? AuthActivity)?.goToMain()
-                is ApiResult.NetworkError ->
-                    showError(getString(R.string.auth_error_network))
-                is ApiResult.Error ->
-                    showError(result.message.ifBlank { getString(R.string.auth_error_generic) })
+        collectOnStart(viewModel.uiState) { render(it) }
+        collectOnStart(viewModel.events) { event ->
+            when (event) {
+                LoginViewModel.Event.LoggedIn ->
+                    (requireActivity() as? AuthActivity)?.goToMain()
+                is LoginViewModel.Event.ShowNetworkError ->
+                    showRetrySnackbar(event.messageRes)
             }
         }
     }
 
-    private fun setLoading(loading: Boolean) {
-        binding.loginProgress.isVisible = loading
-        binding.continueAsAlex.isEnabled = !loading
-        binding.goToRegister.isEnabled = !loading
+    private fun submit() {
+        viewModel.submit(
+            email = binding.emailInput.text?.toString().orEmpty(),
+            password = binding.passwordInput.text?.toString().orEmpty(),
+        )
+    }
+
+    private fun render(state: LoginViewModel.UiState) {
+        binding.loginProgress.isVisible = state.submitting
+        binding.loginButton.isEnabled = !state.submitting
+        binding.loginButton.text =
+            if (state.submitting) "" else getString(R.string.auth_login_submit)
+        binding.goToRegister.isEnabled = !state.submitting
+
+        binding.emailFieldLayout.error = errorText(state.emailError)
+        binding.passwordFieldLayout.error = errorText(state.passwordError)
+    }
+
+    private fun errorText(fieldError: FieldError?): CharSequence? = when (fieldError) {
+        null -> null
+        is FieldError.Res -> getString(fieldError.messageRes)
+        is FieldError.Text -> fieldError.message
+    }
+
+    private fun showRetrySnackbar(messageRes: Int) {
+        Snackbar.make(binding.root, messageRes, Snackbar.LENGTH_LONG)
+            .setAction(R.string.auth_retry) { submit() }
+            .show()
     }
 }

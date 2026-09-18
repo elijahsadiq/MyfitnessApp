@@ -1,43 +1,205 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout
+<ScrollView
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="?attr/colorSurface"
-    android:padding="@dimen/screen_margin"
+    android:fillViewport="true"
     tools:context=".ui.auth.RegisterFragment">
 
-    <TextView
-        android:id="@+id/registerTitle"
-        style="@style/TextAppearance.Fitness.HeadlineLg"
-        android:layout_width="0dp"
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="@string/auth_register_title"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        android:orientation="vertical"
+        android:paddingHorizontal="@dimen/screen_margin"
+        android:paddingTop="@dimen/space_2xl"
+        android:paddingBottom="@dimen/space_xl">
 
-    <TextView
-        style="@style/TextAppearance.Fitness.BodyLg"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="@dimen/space_sm"
-        android:text="@string/auth_register_placeholder_body"
-        android:textColor="@color/text_secondary"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/registerTitle" />
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/backButton"
+            style="@style/Widget.Material3.Button.IconButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:contentDescription="@string/auth_register_back_content_description"
+            app:icon="@drawable/ic_arrow_back_24"
+            app:iconTint="@color/text_primary" />
 
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/goToLogin"
-        style="@style/Widget.Fitness.Button.Text"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="@dimen/section_gap"
-        android:text="@string/auth_register_go_to_login"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/registerTitle" />
-</androidx.constraintlayout.widget.ConstraintLayout>
+        <TextView
+            android:id="@+id/registerTitle"
+            style="@style/TextAppearance.Fitness.HeadlineLg"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_lg"
+            android:text="@string/auth_register_headline" />
+
+        <TextView
+            style="@style/TextAppearance.Fitness.BodyLg"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_xs"
+            android:text="@string/auth_register_subtitle"
+            android:textColor="@color/text_secondary" />
+
+        <!-- Full name -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/fullNameFieldLayout"
+            style="@style/Widget.Fitness.TextField"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/section_gap"
+            android:hint="@string/auth_field_full_name"
+            app:startIconDrawable="@drawable/ic_person_24"
+            app:startIconTint="@color/text_secondary">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/fullNameInput"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:autofillHints="personName"
+                android:imeOptions="actionNext"
+                android:inputType="textPersonName|textCapWords"
+                android:minHeight="@dimen/button_pill_height" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Email -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/emailFieldLayout"
+            style="@style/Widget.Fitness.TextField"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_md"
+            android:hint="@string/auth_field_email"
+            app:startIconDrawable="@drawable/ic_mail_24"
+            app:startIconTint="@color/text_secondary">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/emailInput"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:autofillHints="newUsername"
+                android:imeOptions="actionNext"
+                android:inputType="textEmailAddress"
+                android:minHeight="@dimen/button_pill_height" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Password with show/hide toggle -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/passwordFieldLayout"
+            style="@style/Widget.Fitness.TextField"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_md"
+            android:hint="@string/auth_field_password"
+            app:endIconMode="password_toggle"
+            app:endIconTint="@color/text_secondary"
+            app:helperText="@string/auth_field_password_hint"
+            app:helperTextTextColor="@color/text_secondary"
+            app:startIconDrawable="@drawable/ic_lock_24"
+            app:startIconTint="@color/text_secondary">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/passwordInput"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:autofillHints="newPassword"
+                android:imeOptions="actionNext"
+                android:inputType="textPassword"
+                android:minHeight="@dimen/button_pill_height" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Body weight -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/weightFieldLayout"
+            style="@style/Widget.Fitness.TextField"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_md"
+            android:hint="@string/auth_field_weight"
+            app:helperText="@string/auth_field_weight_hint"
+            app:helperTextTextColor="@color/text_secondary"
+            app:startIconDrawable="@drawable/ic_scale_24"
+            app:startIconTint="@color/text_secondary">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/weightInput"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:imeOptions="actionDone"
+                android:inputType="numberDecimal"
+                android:minHeight="@dimen/button_pill_height" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Terms checkbox + inline error -->
+        <com.google.android.material.checkbox.MaterialCheckBox
+            android:id="@+id/termsCheckbox"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_lg"
+            android:minHeight="@dimen/touch_target_min"
+            android:text="@string/auth_register_terms"
+            android:textAppearance="@style/TextAppearance.Fitness.BodyMd" />
+
+        <TextView
+            android:id="@+id/termsError"
+            style="@style/TextAppearance.Fitness.LabelMd"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/space_xl"
+            android:layout_marginTop="@dimen/space_xs"
+            android:textColor="@color/error_red"
+            android:visibility="gone"
+            tools:text="Please accept the terms"
+            tools:visibility="visible" />
+
+        <!-- Primary CTA with inline spinner -->
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/section_gap">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/registerButton"
+                style="@style/Widget.Fitness.Button.Primary"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/auth_register_submit" />
+
+            <com.google.android.material.progressindicator.CircularProgressIndicator
+                android:id="@+id/registerProgress"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:indeterminate="true"
+                android:visibility="gone"
+                app:indicatorColor="@color/text_on_lime"
+                app:indicatorSize="22dp"
+                app:trackThickness="3dp" />
+        </FrameLayout>
+
+        <!-- Bottom link to login -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/section_gap"
+            android:gravity="center"
+            android:orientation="horizontal">
+
+            <TextView
+                style="@style/TextAppearance.Fitness.BodyMd"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/auth_register_have_account"
+                android:textColor="@color/text_secondary" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/goToLogin"
+                style="@style/Widget.Fitness.Button.Text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:minHeight="@dimen/touch_target_min"
+                android:text="@string/auth_register_go_to_login" />
+        </LinearLayout>
+    </LinearLayout>
+</ScrollView>
