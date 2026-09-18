@@ -364,3 +364,46 @@ Short notes for each step: what was built, the key design decision, one rejected
 **Assignment task supported**
 - **Task 4 (development)** — API is now callable; Step 4 gives it a Kotlin client.
 - **Task 5c** — the security bullet list above is directly quotable.
+
+## Step 4 — Networking layer (Retrofit + kotlinx.serialization + DataStore)
+**Built**
+- **Build config** — added retrofit `2.11.0`, okhttp-logging-interceptor `4.12.0`, kotlinx-serialization-json `1.7.3`, retrofit2-kotlinx-serialization-converter `1.0.0`, androidx.datastore-preferences `1.1.1` to the version catalog. Applied the `org.jetbrains.kotlin.plugin.serialization` compiler plugin (version 2.1.20, matching what AGP 9.4.0 bundles).
+- **Flavors** — two productFlavors on the `env` dimension: `local` (`http://10.0.2.2:8080/fitness-api/`) and `cloud` (HTTPS placeholder). `buildFeatures { buildConfig = true }` re-enabled so `BuildConfig.BASE_URL` is generated per flavor. Default gradle command becomes `./gradlew assembleLocalDebug testLocalDebugUnitTest`.
+- **Debug-only cleartext** — `app/src/debug/AndroidManifest.xml` overlay + `app/src/debug/res/xml/network_security_config.xml` allow HTTP against `10.0.2.2` and `localhost` **only in debug builds**. Release manifests never see the overlay, so production stays HTTPS-only.
+- **DTOs** (`data/remote/dto/`) — `ApiEnvelope<T>` + `ApiError` (with per-field `fields` map), `RegisterRequestDto` / `LoginRequestDto` / `AuthResponseDto`, `UserDto` / `UpdateProfileRequestDto`, `WorkoutDto` / `WorkoutRequestDto` / `StrengthSetDto` / `StrengthSetRequestDto`. All `@Serializable`; strings for timestamps and enum names.
+- **Domain model** — new `data/model/UserProfile.kt` (pure Kotlin; no Android or serialization imports).
+- **Mappers** (`data/remote/mapper/`) — `WorkoutMapper.kt` reconstructs the phase-1 `Workout` hierarchy from the DTO's `activityType` string (running/cycling → `DistanceWorkout` subclasses; weightlifting → `StrengthWorkout` with sorted sets). `UserMapper.kt` maps `UserDto` ↔ `UserProfile` + builds `UpdateProfileRequestDto`.
+- **`ApiResult<T>` + helpers** — sealed interface with three cases (`Success<T>`, `Error(message, status, fieldErrors)`, `NetworkError`). `apiCall { … }` runs a `Response<ApiEnvelope<T>>` block and translates every outcome (2xx + `success:true` → `Success`; 4xx/5xx or `success:false` → `Error` with server field messages preserved via a lenient JSON parse of `errorBody()`; `IOException` → `NetworkError`; anything else → `Error(status = -1)`). `apiCallEmpty { … }` covers logout / delete which return no body.
+- **`TokenStore`** — `androidx.datastore-preferences` singleton keyed off `preferencesDataStore(name = "auth_prefs")`, exposes `token: Flow<String?>`, `suspend save()`, `suspend clear()`.
+- **`AuthInterceptor`** — adds `Authorization: Bearer <token>` to every request except `/auth/register` and `/auth/login`. Reads the token via `runBlocking { tokenStore.token.first() }`; safe because OkHttp interceptors never run on the main thread.
+- **`NetworkModule`** — assembles OkHttp (15/30/30-second timeouts + `AuthInterceptor` + `HttpLoggingInterceptor.BODY` **guarded by `BuildConfig.DEBUG`**) and Retrofit (kotlinx-serialization converter with `ignoreUnknownKeys = true`, `explicitNulls = false`, `coerceInputValues = true`).
+- **API interfaces** (`data/remote/api/`) — `AuthApi` (register/login/logout), `UserApi` (me/updateMe), `WorkoutApi` (list/create/get/delete with `type`/`from`/`to` query params). Split into three so each screen's repository only depends on what it needs.
+- **`AppContainer`** — now takes `Context`, exposes `tokenStore`, `authApi`, `userApi`, `workoutApi`. `FitnessApp` passes `applicationContext`. Phase-1 `workoutRepository` (in-memory) and `userSettings` remain until Step 8 swaps in the remote implementation.
+
+**Key design decision (also called out in the spec)**
+- **DTOs are separate from domain models** — three good reasons:
+  1. **API stability.** The server owns the DTO shape and can add fields, change `startTime` from a `String` to a `Long`, or introduce nullability without touching `Workout`/`StrengthWorkout`. The mapper absorbs the drift.
+  2. **Serialisation is a concern that doesn't belong in the domain.** Domain models stay pure Kotlin — unit tests instantiate them without Retrofit or kotlinx-serialization on the classpath, and Room / Compose / any future consumer sees the same clean types.
+  3. **Different shapes at each edge.** The wire format uses `activityType: String`; the domain uses subclass polymorphism. The mapper is the only place that has to know both shapes; every layer above sees one, every layer below sees the other.
+
+**Rejected alternative**
+- Registering a custom Retrofit `CallAdapter.Factory` that unwraps `ApiEnvelope<T>` automatically and returns `ApiResult<T>` directly from the API interface. Rejected — it obscures where the mapping happens (compile-time errors move from the call site into a factory registration), and the two-helper `apiCall` / `apiCallEmpty` pattern is 30 lines total, explicit, and easy to explain in the report.
+
+**AGP 9 quirks worth remembering**
+- The `kotlin.plugin.serialization` compiler plugin **applies cleanly under AGP 9.4.0** (only `kotlin.android` conflicts, because it tries to register a duplicate `kotlin` extension). Serialization is a compiler plugin, not an extension, so no clash.
+- A build-config-friendly Kotlin version is required for the serialization plugin. Kotlin 2.1.20 works with AGP 9.4.0's bundled runtime.
+
+**Kotlin/Android concepts (for my notes)**
+- *Product flavors* — an axis of variant along a `flavorDimension`. Combined with build types, `local` + `debug` → variant `localDebug`. Each flavor can override `buildConfigField`s, resources, and even manifest overlays.
+- *`BuildConfig` generated class* — one per variant, holding constants (`DEBUG`, `APPLICATION_ID`, and any `buildConfigField` we declare). Moves configuration from runtime lookups to compile-time constants.
+- *Manifest overlays* — Android merges `main` + variant / flavor / build-type manifests before packaging. `app/src/debug/AndroidManifest.xml` only merges into debug variants.
+- *`preferencesDataStore(name = "…")`* — an extension that lazily creates a singleton `DataStore<Preferences>` scoped to the app. Reads / writes are transactional and yield a `Flow`.
+- *`runBlocking` in an OkHttp interceptor* — safe because OkHttp uses its own dispatcher (never main). The idiomatic way to read a suspend-only API (DataStore) from a non-suspend surface (`Interceptor.intercept`).
+
+**Verified**
+- `./gradlew assembleLocalDebug` — BUILD SUCCESSFUL (0 warnings after the `tools:replace` cleanup).
+- `./gradlew testLocalDebugUnitTest` — **48 tests, 0 failures**. No new tests this step; the whole phase-1 suite still passes under the `local` flavor.
+
+**Assignment task supported**
+- **Task 4 (development)** — the app now has a fully wired networking stack ready for Step 5's `AuthRepository` and Step 8's `RemoteWorkoutRepository`.
+- **Task 3b (design)** — the DTO-vs-domain rationale above is directly quotable.

@@ -1,5 +1,6 @@
 plugins {
     alias(libs.plugins.android.application)
+    alias(libs.plugins.kotlin.serialization)
 }
 
 android {
@@ -20,6 +21,33 @@ android {
 
     buildFeatures {
         viewBinding = true
+        buildConfig = true
+    }
+
+    // Two build flavors on the `env` dimension. BASE_URL is exposed through
+    // BuildConfig; NetworkModule reads it at runtime. The `local` flavor
+    // targets the docker-compose stack from the emulator (10.0.2.2 is the
+    // host's loopback as seen from an Android emulator).
+    flavorDimensions += "env"
+    productFlavors {
+        create("local") {
+            dimension = "env"
+            buildConfigField(
+                "String",
+                "BASE_URL",
+                "\"http://10.0.2.2:8080/fitness-api/\""
+            )
+        }
+        create("cloud") {
+            dimension = "env"
+            // Placeholder — replaced once a real deployment exists. Kept as
+            // HTTPS so the release network security config stays HTTPS-only.
+            buildConfigField(
+                "String",
+                "BASE_URL",
+                "\"https://fitness-api.example.com/\""
+            )
+        }
     }
 
     buildTypes {
@@ -46,7 +74,12 @@ dependencies {
     implementation(libs.androidx.navigation.ui.ktx)
     implementation(libs.androidx.lifecycle.viewmodel.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.androidx.datastore.preferences)
     implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.kotlinx.serialization.json)
+    implementation(libs.retrofit)
+    implementation(libs.retrofit.converter.kotlinx.serialization)
+    implementation(libs.okhttp.logging.interceptor)
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)

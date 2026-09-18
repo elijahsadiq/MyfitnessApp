@@ -20,7 +20,7 @@ import androidx.appcompat.app.AppCompatDelegate
  * we intentionally don't ship a dark values folder.
  */
 class FitnessApp : Application() {
-    val container: AppContainer by lazy { AppContainer() }
+    val container: AppContainer by lazy { AppContainer(applicationContext) }
 
     override fun onCreate() {
         super.onCreate()
