@@ -14,6 +14,17 @@
         android:orientation="vertical"
         android:padding="16dp">
 
+        <com.google.android.material.progressindicator.LinearProgressIndicator
+            android:id="@+id/loadingBar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/space_sm"
+            android:indeterminate="true"
+            android:visibility="gone"
+            app:indicatorColor="@color/lime_deep"
+            app:trackColor="@color/surface_container_high"
+            tools:visibility="visible" />
+
         <TextView
             style="?attr/textAppearanceHeadlineSmall"
             android:layout_width="wrap_content"

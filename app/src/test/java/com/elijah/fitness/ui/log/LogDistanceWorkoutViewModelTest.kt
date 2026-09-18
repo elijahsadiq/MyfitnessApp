@@ -142,9 +142,19 @@ class LogDistanceWorkoutViewModelTest {
 
     private class InMemoryRepo : WorkoutRepository {
         private val state = MutableStateFlow<List<Workout>>(emptyList())
+        var nextAddResult: com.elijah.fitness.data.remote.ApiResult<Unit> =
+            com.elijah.fitness.data.remote.ApiResult.Success(Unit)
+
         override fun observeWorkouts(): Flow<List<Workout>> = state
-        override suspend fun addWorkout(workout: Workout) {
-            state.value = state.value + workout
+        override suspend fun refresh(): com.elijah.fitness.data.remote.ApiResult<Unit> =
+            com.elijah.fitness.data.remote.ApiResult.Success(Unit)
+
+        override suspend fun addWorkout(workout: Workout): com.elijah.fitness.data.remote.ApiResult<Unit> {
+            val result = nextAddResult
+            if (result is com.elijah.fitness.data.remote.ApiResult.Success) {
+                state.value = state.value + workout
+            }
+            return result
         }
 
         override suspend fun getWorkout(id: String): Workout? =

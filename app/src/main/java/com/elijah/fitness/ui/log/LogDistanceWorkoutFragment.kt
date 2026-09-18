@@ -82,6 +82,7 @@ class LogDistanceWorkoutFragment : BaseFragment<FragmentLogDistanceWorkoutBindin
             when (event) {
                 LogDistanceWorkoutViewModel.Event.Saved -> onSaved()
                 is LogDistanceWorkoutViewModel.Event.ValidationFailed -> showValidation(event.errors)
+                is LogDistanceWorkoutViewModel.Event.SaveFailed -> showSaveRetry(event.messageRes)
             }
         }
 
@@ -176,6 +177,17 @@ class LogDistanceWorkoutFragment : BaseFragment<FragmentLogDistanceWorkoutBindin
         }
         (requireActivity() as? MainActivity)?.showSnackbar(getString(res))
         findNavController().popBackStack()
+    }
+
+    /**
+     * Save hit the network / server and failed. Keep the form as-is — the
+     * user's typed values are untouched — and offer a Retry via Snackbar.
+     */
+    private fun showSaveRetry(messageRes: Int) {
+        com.google.android.material.snackbar.Snackbar
+            .make(binding.root, messageRes, com.google.android.material.snackbar.Snackbar.LENGTH_LONG)
+            .setAction(R.string.log_error_save_retry) { attemptSave() }
+            .show()
     }
 
     private fun updateLivePreview() {

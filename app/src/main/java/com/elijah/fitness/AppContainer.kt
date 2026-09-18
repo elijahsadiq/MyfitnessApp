@@ -13,6 +13,7 @@ import com.elijah.fitness.data.remote.api.WorkoutApi
 import com.elijah.fitness.data.repository.AuthRepository
 import com.elijah.fitness.data.repository.FakeWorkoutRepository
 import com.elijah.fitness.data.repository.RemoteAuthRepository
+import com.elijah.fitness.data.repository.RemoteWorkoutRepository
 import com.elijah.fitness.data.repository.UserSettings
 import com.elijah.fitness.data.repository.WorkoutRepository
 
@@ -20,18 +21,14 @@ import com.elijah.fitness.data.repository.WorkoutRepository
  * Manual dependency container. Instantiated once in [FitnessApp] and read
  * by ViewModel factories that need shared collaborators.
  *
- * Phase 1 wires an in-memory [FakeWorkoutRepository]; phase 2 adds the
- * remote API surface (Auth / User / Workout), a [TokenStore] backed by
- * DataStore, an [AuthEventBus] for global 401 handling, an
- * [OnboardingStore] for the first-launch flag, and an [AuthRepository].
- * Step 8 swaps `workoutRepository` to the remote implementation — the
- * interface stays the same, so nothing above the repository moves.
+ * ### Repository swap (Step 8)
+ * `workoutRepository` is now the [RemoteWorkoutRepository] talking to the
+ * PHP API. [FakeWorkoutRepository] stays in the codebase — it's used by
+ * unit tests and can be reinstated here for offline development by
+ * flipping the type on one line. That swap is exactly the payoff of the
+ * [WorkoutRepository] interface introduced in phase 1: no UI code moves.
  */
 class AppContainer(applicationContext: Context) {
-
-    // Phase-1 pieces — still active until Step 8 wires the remote repo.
-    val workoutRepository: WorkoutRepository = FakeWorkoutRepository()
-    val userSettings: UserSettings = UserSettings()
 
     // Phase-2 preferences.
     val tokenStore: TokenStore = DataStoreTokenStore(applicationContext)
@@ -47,7 +44,16 @@ class AppContainer(applicationContext: Context) {
     val userApi: UserApi = NetworkModule.buildUserApi(retrofit)
     val workoutApi: WorkoutApi = NetworkModule.buildWorkoutApi(retrofit)
 
-    // Repository over auth endpoints.
+    // Domain surface.
+    val userSettings: UserSettings = UserSettings()
+
+    /**
+     * Real API-backed repository. To develop offline, swap in
+     * `FakeWorkoutRepository()` here — every screen still compiles and
+     * runs unchanged because they only depend on [WorkoutRepository].
+     */
+    val workoutRepository: WorkoutRepository = RemoteWorkoutRepository(workoutApi)
+
     val authRepository: AuthRepository = RemoteAuthRepository(
         authApi = authApi,
         tokenStore = tokenStore,

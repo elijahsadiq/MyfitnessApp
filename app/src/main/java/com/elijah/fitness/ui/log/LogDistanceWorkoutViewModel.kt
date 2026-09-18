@@ -13,6 +13,7 @@ import com.elijah.fitness.data.model.ActivityType
 import com.elijah.fitness.data.model.CyclingWorkout
 import com.elijah.fitness.data.model.RunningWorkout
 import com.elijah.fitness.data.model.Workout
+import com.elijah.fitness.data.remote.ApiResult
 import com.elijah.fitness.data.repository.WorkoutRepository
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -56,6 +57,12 @@ class LogDistanceWorkoutViewModel(
     sealed interface Event {
         data object Saved : Event
         data class ValidationFailed(val errors: List<FieldError>) : Event
+        /**
+         * Save failed on the network layer. The fragment keeps the user's
+         * typed values on screen and offers a Retry Snackbar — never
+         * discards input.
+         */
+        data class SaveFailed(@StringRes val messageRes: Int) : Event
     }
 
     /** Field-scoped validation error. [messageRes] is what the fragment shows inline. */
@@ -97,8 +104,13 @@ class LogDistanceWorkoutViewModel(
         }
         val workout = buildWorkout(startInstant, duration, distanceKm!!, notes)
         viewModelScope.launch {
-            repository.addWorkout(workout)
-            _events.send(Event.Saved)
+            when (repository.addWorkout(workout)) {
+                is ApiResult.Success -> _events.send(Event.Saved)
+                ApiResult.NetworkError ->
+                    _events.send(Event.SaveFailed(R.string.log_error_save_network))
+                is ApiResult.Error ->
+                    _events.send(Event.SaveFailed(R.string.log_error_save_generic))
+            }
         }
     }
 

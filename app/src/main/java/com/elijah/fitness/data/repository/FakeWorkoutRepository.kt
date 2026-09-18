@@ -5,6 +5,7 @@ import com.elijah.fitness.data.model.RunningWorkout
 import com.elijah.fitness.data.model.StrengthSet
 import com.elijah.fitness.data.model.StrengthWorkout
 import com.elijah.fitness.data.model.Workout
+import com.elijah.fitness.data.remote.ApiResult
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -31,10 +32,14 @@ class FakeWorkoutRepository(
 
     override fun observeWorkouts(): Flow<List<Workout>> = _workouts.asStateFlow()
 
-    override suspend fun addWorkout(workout: Workout) {
+    /** In-memory backend has no remote fetch — always succeeds instantly. */
+    override suspend fun refresh(): ApiResult<Unit> = ApiResult.Success(Unit)
+
+    override suspend fun addWorkout(workout: Workout): ApiResult<Unit> {
         _workouts.update { current ->
             (current + workout).sortedByDescending { it.startTime }
         }
+        return ApiResult.Success(Unit)
     }
 
     override suspend fun getWorkout(id: String): Workout? =

@@ -7,6 +7,17 @@
     android:layout_height="match_parent"
     tools:context=".ui.history.WorkoutHistoryFragment">
 
+    <com.google.android.material.progressindicator.LinearProgressIndicator
+        android:id="@+id/loadingBar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:indeterminate="true"
+        android:visibility="gone"
+        app:indicatorColor="@color/lime_deep"
+        app:layout_constraintTop_toTopOf="parent"
+        app:trackColor="@color/surface_container_high"
+        tools:visibility="visible" />
+
     <HorizontalScrollView
         android:id="@+id/filterChipsScroll"
         android:layout_width="match_parent"
@@ -14,7 +25,7 @@
         android:paddingHorizontal="16dp"
         android:paddingVertical="8dp"
         android:scrollbars="none"
-        app:layout_constraintTop_toTopOf="parent">
+        app:layout_constraintTop_toBottomOf="@id/loadingBar">
 
         <com.google.android.material.chip.ChipGroup
             android:id="@+id/filterChips"

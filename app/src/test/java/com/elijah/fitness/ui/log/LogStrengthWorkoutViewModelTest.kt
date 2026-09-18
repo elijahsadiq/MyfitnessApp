@@ -108,8 +108,12 @@ class LogStrengthWorkoutViewModelTest {
     private class InMemoryRepo : WorkoutRepository {
         private val state = MutableStateFlow<List<Workout>>(emptyList())
         override fun observeWorkouts(): Flow<List<Workout>> = state
-        override suspend fun addWorkout(workout: Workout) {
+        override suspend fun refresh(): com.elijah.fitness.data.remote.ApiResult<Unit> =
+            com.elijah.fitness.data.remote.ApiResult.Success(Unit)
+
+        override suspend fun addWorkout(workout: Workout): com.elijah.fitness.data.remote.ApiResult<Unit> {
             state.value = state.value + workout
+            return com.elijah.fitness.data.remote.ApiResult.Success(Unit)
         }
 
         override suspend fun getWorkout(id: String): Workout? =

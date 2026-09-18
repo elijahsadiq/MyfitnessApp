@@ -10,6 +10,7 @@ import com.elijah.fitness.AppContainer
 import com.elijah.fitness.R
 import com.elijah.fitness.data.model.StrengthSet
 import com.elijah.fitness.data.model.StrengthWorkout
+import com.elijah.fitness.data.remote.ApiResult
 import com.elijah.fitness.data.repository.WorkoutRepository
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -54,6 +55,7 @@ class LogStrengthWorkoutViewModel(
     sealed interface Event {
         data object Saved : Event
         data class ValidationFailed(val errors: List<FieldError>) : Event
+        data class SaveFailed(@StringRes val messageRes: Int) : Event
     }
 
     data class FieldError(val field: Field, @StringRes val messageRes: Int)
@@ -116,8 +118,13 @@ class LogStrengthWorkoutViewModel(
             notes = notes.trim().takeIf { it.isNotEmpty() }
         )
         viewModelScope.launch {
-            repository.addWorkout(workout)
-            _events.send(Event.Saved)
+            when (repository.addWorkout(workout)) {
+                is ApiResult.Success -> _events.send(Event.Saved)
+                ApiResult.NetworkError ->
+                    _events.send(Event.SaveFailed(R.string.log_error_save_network))
+                is ApiResult.Error ->
+                    _events.send(Event.SaveFailed(R.string.log_error_save_generic))
+            }
         }
     }
 

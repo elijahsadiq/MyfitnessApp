@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.view.isVisible
 import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -11,10 +12,16 @@ import com.elijah.fitness.FitnessApp
 import com.elijah.fitness.R
 import com.elijah.fitness.databinding.FragmentWorkoutHistoryBinding
 import com.elijah.fitness.ui.base.BaseFragment
+import com.google.android.material.snackbar.Snackbar
 
 /**
  * Workout history screen: RecyclerView with two row types, filter chips,
  * empty state, and a FAB that opens the "choose activity" bottom sheet.
+ *
+ * Phase-2 additions: a top LinearProgressIndicator while the repository
+ * refreshes, and a Snackbar-with-Retry when the refresh fails. Any
+ * cached data stays on screen during a failed refresh — the user isn't
+ * left staring at a blank list.
  */
 class WorkoutHistoryFragment : BaseFragment<FragmentWorkoutHistoryBinding>() {
 
@@ -59,6 +66,18 @@ class WorkoutHistoryFragment : BaseFragment<FragmentWorkoutHistoryBinding>() {
                 contentView = binding.workoutList,
                 isEmpty = workouts.isEmpty()
             )
+        }
+        collectOnStart(viewModel.isLoading) { loading ->
+            binding.loadingBar.isVisible = loading
+        }
+        collectOnStart(viewModel.errorEvents) { event ->
+            val messageRes = when (event) {
+                is HistoryViewModel.ErrorEvent.Network -> event.messageRes
+                is HistoryViewModel.ErrorEvent.Generic -> event.messageRes
+            }
+            Snackbar.make(binding.root, messageRes, Snackbar.LENGTH_LONG)
+                .setAction(R.string.workouts_retry) { viewModel.refresh() }
+                .show()
         }
     }
 

@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.view.isVisible
 import androidx.fragment.app.viewModels
 import com.elijah.fitness.FitnessApp
 import com.elijah.fitness.R
@@ -11,9 +12,9 @@ import com.elijah.fitness.data.model.ActivityType
 import com.elijah.fitness.databinding.FragmentDashboardBinding
 import com.elijah.fitness.ui.base.BaseFragment
 import com.elijah.fitness.util.Formatters
+import com.google.android.material.snackbar.Snackbar
 import java.time.DayOfWeek
 import java.time.LocalDate
-import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.temporal.TemporalAdjusters
 
@@ -23,6 +24,9 @@ import java.time.temporal.TemporalAdjusters
  * come from the shared [DashboardViewModel] which pipes the repository's
  * workout flow through [WeeklySummaryCalculator], so a freshly-logged
  * workout is reflected instantly.
+ *
+ * Phase-2 additions: a top LinearProgressIndicator while the repository
+ * refreshes, and a Snackbar-with-Retry when refresh fails.
  */
 class DashboardFragment : BaseFragment<FragmentDashboardBinding>() {
 
@@ -44,6 +48,18 @@ class DashboardFragment : BaseFragment<FragmentDashboardBinding>() {
         binding.weekRange.text = formatWeekRange()
 
         collectOnStart(viewModel.summary) { render(it) }
+        collectOnStart(viewModel.isLoading) { loading ->
+            binding.loadingBar.isVisible = loading
+        }
+        collectOnStart(viewModel.errorEvents) { event ->
+            val messageRes = when (event) {
+                is DashboardViewModel.ErrorEvent.Network -> event.messageRes
+                is DashboardViewModel.ErrorEvent.Generic -> event.messageRes
+            }
+            Snackbar.make(binding.root, messageRes, Snackbar.LENGTH_LONG)
+                .setAction(R.string.workouts_retry) { viewModel.refresh() }
+                .show()
+        }
     }
 
     private fun formatWeekRange(): String {

@@ -79,6 +79,8 @@ class LogStrengthWorkoutFragment : BaseFragment<FragmentLogStrengthWorkoutBindin
                 LogStrengthWorkoutViewModel.Event.Saved -> onSaved()
                 is LogStrengthWorkoutViewModel.Event.ValidationFailed ->
                     showValidation(event.errors)
+                is LogStrengthWorkoutViewModel.Event.SaveFailed ->
+                    showSaveRetry(event.messageRes)
             }
         }
     }
@@ -193,6 +195,13 @@ class LogStrengthWorkoutFragment : BaseFragment<FragmentLogStrengthWorkoutBindin
         (requireActivity() as? MainActivity)
             ?.showSnackbar(getString(R.string.log_saved_strength))
         findNavController().popBackStack()
+    }
+
+    private fun showSaveRetry(messageRes: Int) {
+        com.google.android.material.snackbar.Snackbar
+            .make(binding.root, messageRes, com.google.android.material.snackbar.Snackbar.LENGTH_LONG)
+            .setAction(R.string.log_error_save_retry) { attemptSave() }
+            .show()
     }
 
     companion object {

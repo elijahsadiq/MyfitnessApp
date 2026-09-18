@@ -519,3 +519,39 @@ Short notes for each step: what was built, the key design decision, one rejected
 **Assignment task supported**
 - **Task 4 (development)** — the real login + register forms; the placeholder plumbing from Step 5 now has a real UI.
 - **Task 5c** — the client/server validation split, autofill hints, and password toggle each land straight in the security / UX write-up.
+
+## Step 8 — Real repository (RemoteWorkoutRepository)
+**Built**
+- **`WorkoutRepository` interface (extended)**: added `suspend refresh(): ApiResult<Unit>` and changed `addWorkout` to return `ApiResult<Unit>`. ViewModels can now show loading / error states and log fragments can offer a Retry without a try/catch on exceptions.
+- **`FakeWorkoutRepository` (kept)**: still in the codebase — used by tests, and can be reinstated in `AppContainer` for offline development by flipping one line. `refresh()` no-ops and `addWorkout()` returns `Success(Unit)` after the local in-memory insert.
+- **`RemoteWorkoutRepository` (new)**: Retrofit-backed implementation. Keeps a local `MutableStateFlow<List<Workout>>` so `observeWorkouts()` remains a hot stream (Retrofit itself is call/response — no push). `refresh()` pulls the list, maps DTO → domain, sorts newest-first, replaces the state. `addWorkout()` POSTs then upserts into the state on `client_uuid` (a retry that eventually succeeded on the second try never leaves a duplicate row locally).
+- **`AppContainer` swap**: `workoutRepository = RemoteWorkoutRepository(workoutApi)`. Every ViewModel above still depends only on `WorkoutRepository` — this swap is exactly the payoff of the interface introduced in phase 1 (great Task 3b material).
+- **`HistoryViewModel`** / **`DashboardViewModel`**: added an `isLoading: StateFlow<Boolean>` driven by `refresh()`, and an `errorEvents` Channel with `Network` / `Generic` cases. Both `init { refresh() }` on start; the fragment renders a top `LinearProgressIndicator` while loading and a Snackbar-with-Retry on error. Any cached data stays on screen during a failed refresh — the user isn't left staring at a blank list.
+- **`LogDistanceWorkoutViewModel`** / **`LogStrengthWorkoutViewModel`**: the save flow now branches on `ApiResult`. Success emits `Saved` (existing flow); NetworkError and Error emit a new `SaveFailed(@StringRes)`. Fragments show a Snackbar with a Retry action and **do not clear the form** — the user's typed values survive so retry is one tap. Client-side validation still runs first, so `Success` implies both client + server validation passed.
+- **Layouts**: `fragment_workout_history.xml` gets a top `LinearProgressIndicator` (`@id/loadingBar`) above the chip row; `fragment_dashboard.xml` gets one at the top of the header block.
+- **Strings**: `workouts_error_network`, `workouts_error_load_failed`, `workouts_retry`; `log_error_save_network`, `log_error_save_generic`, `log_error_save_retry`.
+- **Tests (90 total, 0 failures — added 5)**:
+  - `RemoteWorkoutRepositoryTest` (5): `refresh` populates newest-first, `refresh` server error leaves store empty + returns `Error`, `addWorkout` success inserts, `addWorkout` idempotent on same client_uuid, `addWorkout` server error doesn't mutate the store.
+  - Existing test doubles (`HistoryViewModelTest.InMemoryTestRepo`, both log-VM test repos) updated to the new interface: `refresh()` returns `Success(Unit)`, `addWorkout()` returns `ApiResult<Unit>`. LogDistance test repo also exposes `nextAddResult` so future NetworkError-path tests slot in cleanly.
+
+**Key design decision — the interface-swap payoff**
+- `RemoteWorkoutRepository` is a **drop-in replacement** for `FakeWorkoutRepository`. `AppContainer`'s change is a one-line edit; every ViewModel keeps consuming `WorkoutRepository`; every fragment keeps consuming its ViewModel. This is exactly the "phase-2 payoff of the phase-1 interface" the assignment brief was set up for — the report will describe the phase-1 `WorkoutRepository` as the seam that made phase 2 cheap.
+
+**Recorded phase-2 limitation**
+- **No offline cache yet.** A cold start with no network leaves `RemoteWorkoutRepository`'s state empty until `refresh()` succeeds. Room + WorkManager sync arrive in phase 4; until then, the app is online-only. This is called out in every screen's Snackbar-with-Retry copy and in the `RemoteWorkoutRepository` KDoc.
+
+**Rejected alternative**
+- Making `addWorkout` throw on failure and wrapping every call site in try/catch. Rejected because the ViewModel branching logic (`Success` vs `NetworkError` vs `Error` with a server message) belongs in a `when` on `ApiResult`, not in an exception handler — exceptions for expected outcomes make control flow harder to read and encourage swallowing.
+
+**Kotlin/Android concepts (for my notes)**
+- *Hot `StateFlow` fed by a suspend refresh* — the pattern for wrapping a REST API in a `Flow`-shaped repository. `observeWorkouts()` is `StateFlow`; consumers get the latest snapshot on subscribe; `refresh()` is the "trigger" that pulls new data into it. Room + WorkManager (phase 4) fit the same seam.
+- *Upsert-on-client_uuid locally* — mirrors the server-side upsert semantics, so a retry that succeeds on the second try produces exactly one local row.
+
+**Verified**
+- `./gradlew assembleLocalDebug` — BUILD SUCCESSFUL.
+- `./gradlew testLocalDebugUnitTest` — **90 tests, 0 failures** (added 5).
+- On-device verification against a running backend (Docker or XAMPP) is still manual and hasn't been done in this session.
+
+**Assignment task supported**
+- **Task 3b (design)** — the interface-swap story is exactly what the report needs. `WorkoutRepository` was introduced in phase 1 specifically to make phase 2 cheap; Step 8 is when that pays off.
+- **Task 4 (development)** — the workout side of the app now round-trips through the PHP API.

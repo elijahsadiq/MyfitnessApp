@@ -102,6 +102,14 @@
     <string name="dashboard_placeholder_title">This week</string>
     <string name="dashboard_placeholder_body">Your weekly workout summary will appear here.</string>
 
+    <!-- Loading + retry (used by History + Dashboard + log fragments) -->
+    <string name="workouts_error_network">Can\'t reach the server. Check your connection.</string>
+    <string name="workouts_error_load_failed">Couldn\'t load your workouts.</string>
+    <string name="workouts_retry">Retry</string>
+    <string name="log_error_save_network">Couldn\'t save — check your connection.</string>
+    <string name="log_error_save_generic">Couldn\'t save your workout.</string>
+    <string name="log_error_save_retry">Retry</string>
+
     <!-- History screen -->
     <string name="history_filter_all">All</string>
     <string name="history_row_type_and_date">%1$s · %2$s</string>
