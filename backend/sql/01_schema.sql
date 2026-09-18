@@ -1,0 +1,102 @@
+-- Fitness API — schema.
+-- Runs on both MySQL 8.4 (Docker) and MariaDB 10.x (XAMPP): utf8mb4 with
+-- utf8mb4_unicode_ci is declared explicitly on every table so the XAMPP
+-- import doesn't fall back to MySQL 8's utf8mb4_0900_ai_ci default (which
+-- MariaDB rejects).
+
+CREATE DATABASE IF NOT EXISTS fitness_app
+    DEFAULT CHARACTER SET utf8mb4
+    DEFAULT COLLATE utf8mb4_unicode_ci;
+
+USE fitness_app;
+
+-- ---------------------------------------------------------------------
+-- users
+-- ---------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS users (
+    id              BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    email           VARCHAR(191) NOT NULL,
+    password_hash   VARCHAR(255) NOT NULL,
+    full_name       VARCHAR(120) NOT NULL,
+    weight_kg       DECIMAL(5,2) NULL,
+    height_cm       DECIMAL(5,2) NULL,
+    created_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_users_email (email)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ---------------------------------------------------------------------
+-- auth_tokens
+--   Stores only the SHA-256 hash of the issued token, not the token itself.
+--   idx_auth_tokens_hash covers the lookup path AuthMiddleware uses.
+-- ---------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS auth_tokens (
+    id           BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    user_id      BIGINT UNSIGNED NOT NULL,
+    token_hash   CHAR(64) NOT NULL,
+    expires_at   TIMESTAMP NOT NULL,
+    created_at   TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_auth_tokens_user
+        FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
+    KEY idx_auth_tokens_hash (token_hash)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ---------------------------------------------------------------------
+-- workouts
+--   client_uuid is the device-generated identity from phase 1. The unique
+--   (user_id, client_uuid) key makes the phase-4 sync idempotent — the same
+--   local UUID from the client can be POSTed twice and only the first row
+--   survives.
+-- ---------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS workouts (
+    id                BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    user_id           BIGINT UNSIGNED NOT NULL,
+    client_uuid       CHAR(36) NOT NULL,
+    activity_type     ENUM('RUNNING', 'CYCLING', 'WEIGHTLIFTING') NOT NULL,
+    start_time        DATETIME NOT NULL,
+    duration_seconds  INT UNSIGNED NOT NULL,
+    distance_meters   DECIMAL(9,2) NULL,
+    notes             TEXT NULL,
+    created_at        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+                      ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_workouts_user
+        FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
+    UNIQUE KEY uq_workouts_user_client (user_id, client_uuid),
+    KEY idx_workouts_user_time (user_id, start_time)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ---------------------------------------------------------------------
+-- strength_sets
+--   Set-by-set breakdown for a WEIGHTLIFTING workout. Cascade delete so
+--   removing a workout removes its sets in the same transaction.
+-- ---------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS strength_sets (
+    id             BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    workout_id     BIGINT UNSIGNED NOT NULL,
+    set_order      INT UNSIGNED NOT NULL,
+    exercise_name  VARCHAR(120) NOT NULL,
+    reps           INT UNSIGNED NOT NULL,
+    weight_kg      DECIMAL(6,2) NOT NULL,
+    CONSTRAINT fk_strength_sets_workout
+        FOREIGN KEY (workout_id) REFERENCES workouts (id) ON DELETE CASCADE,
+    KEY idx_strength_sets_workout (workout_id, set_order)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ---------------------------------------------------------------------
+-- goals
+--   Placeholder for phase 5. activity_type is nullable so a goal can apply
+--   to the whole user (e.g. weekly workout count) or to one activity.
+-- ---------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS goals (
+    id             BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    user_id        BIGINT UNSIGNED NOT NULL,
+    activity_type  ENUM('RUNNING', 'CYCLING', 'WEIGHTLIFTING') NULL,
+    goal_type      VARCHAR(40) NOT NULL,
+    target_value   DECIMAL(10,2) NOT NULL,
+    period_start   DATE NOT NULL,
+    period_end     DATE NOT NULL,
+    created_at     TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_goals_user
+        FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
+    KEY idx_goals_user_period (user_id, period_start, period_end)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

@@ -1,0 +1,3 @@
+# Placeholder — the PHP front controller, router, and controllers land in
+# Step 3. Keeping the folder in git so `docker compose up` doesn't fail on
+# a missing bind-mount source.

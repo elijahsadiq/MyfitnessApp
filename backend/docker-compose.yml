@@ -1,0 +1,67 @@
+# Local dev stack for the Fitness API.
+#
+# Bring up:   docker compose up -d
+# Tear down:  docker compose down
+# Reset db:   docker compose down -v && docker compose up -d
+#
+# All three images publish arm64 manifests so this stack runs natively on
+# Apple Silicon (no QEMU emulation).
+
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: fitness-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: fitness_app
+      MYSQL_USER: fitness_user
+      MYSQL_PASSWORD: fitness_pass
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      # Anything in /docker-entrypoint-initdb.d is executed on first launch,
+      # in alphabetical order. Prefixes 01_ / 02_ keep the order explicit.
+      - ./sql:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-prootpassword"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  php:
+    build:
+      context: ./docker/php
+    container_name: fitness-php
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    ports:
+      - "8080:80"
+    volumes:
+      - ./fitness-api:/var/www/html
+    environment:
+      DB_HOST: mysql
+      DB_PORT: "3306"
+      DB_NAME: fitness_app
+      DB_USER: fitness_user
+      DB_PASS: fitness_pass
+
+  phpmyadmin:
+    image: phpmyadmin:5.2
+    container_name: fitness-phpmyadmin
+    restart: unless-stopped
+    depends_on:
+      - mysql
+    ports:
+      - "8081:80"
+    environment:
+      PMA_HOST: mysql
+      PMA_USER: root
+      PMA_PASSWORD: rootpassword
+      UPLOAD_LIMIT: 64M
+
+volumes:
+  mysql_data:
