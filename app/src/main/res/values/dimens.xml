@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Kinetic Glow spacing + radius scale.
+  Baseline rhythm: 8dp. Screen margin: 20dp. Section gap: 24dp.
+-->
+<resources>
+    <!-- Spacing scale -->
+    <dimen name="space_xs">4dp</dimen>
+    <dimen name="space_sm">8dp</dimen>
+    <dimen name="space_md">12dp</dimen>
+    <dimen name="space_lg">16dp</dimen>
+    <dimen name="space_xl">24dp</dimen>
+    <dimen name="space_2xl">32dp</dimen>
+
+    <!-- Screen edges -->
+    <dimen name="screen_margin">20dp</dimen>
+    <dimen name="section_gap">24dp</dimen>
+
+    <!-- Corner radii -->
+    <dimen name="radius_card">24dp</dimen>
+    <dimen name="radius_row">20dp</dimen>
+    <dimen name="radius_text_field">16dp</dimen>
+    <dimen name="radius_icon_tile">14dp</dimen>
+    <dimen name="radius_bottom_sheet_top">28dp</dimen>
+
+    <!-- Touch targets -->
+    <dimen name="touch_target_min">48dp</dimen>
+    <dimen name="button_pill_height">52dp</dimen>
+    <dimen name="fab_size">56dp</dimen>
+    <dimen name="icon_tile_size">44dp</dimen>
+    <dimen name="icon_default">24dp</dimen>
+    <dimen name="icon_bottom_nav">22dp</dimen>
+
+    <!-- Row / card internal -->
+    <dimen name="card_padding">16dp</dimen>
+    <dimen name="card_padding_lg">20dp</dimen>
+    <dimen name="row_min_height">56dp</dimen>
+    <dimen name="row_padding_h">16dp</dimen>
+    <dimen name="row_padding_v">12dp</dimen>
+    <dimen name="stroke_hairline">1dp</dimen>
+
+    <!-- Bottom-nav & FAB -->
+    <dimen name="bottom_nav_height">64dp</dimen>
+    <dimen name="fab_margin_bottom">88dp</dimen>
+    <dimen name="fab_margin_end">16dp</dimen>
+</resources>

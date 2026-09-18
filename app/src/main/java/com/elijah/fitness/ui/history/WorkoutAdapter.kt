@@ -79,23 +79,20 @@ class DistanceWorkoutViewHolder(
 
     override fun bind(item: DistanceWorkout) {
         val ctx = binding.root.context
-        val (iconRes, accentRes, typeLabel) = when (item) {
-            is RunningWorkout -> Triple(
-                R.drawable.ic_run_24,
-                R.color.accent_running,
+        // Single-accent design: all activity icons render in text_primary on
+        // a surface-container-low tile (see Kinetic Glow spec). Per-type
+        // colour tints were dropped in phase 2.
+        val (iconRes, typeLabel) = when (item) {
+            is RunningWorkout -> R.drawable.ic_run_24 to
                 ctx.getString(R.string.activity_type_running)
-            )
-            is CyclingWorkout -> Triple(
-                R.drawable.ic_bike_24,
-                R.color.accent_cycling,
+            is CyclingWorkout -> R.drawable.ic_bike_24 to
                 ctx.getString(R.string.activity_type_cycling)
-            )
             else -> error("Unhandled DistanceWorkout subtype: ${item::class.simpleName}")
         }
 
         binding.activityIcon.setImageResource(iconRes)
         binding.activityIcon.imageTintList =
-            ContextCompat.getColorStateList(ctx, accentRes)
+            ContextCompat.getColorStateList(ctx, R.color.text_primary)
 
         binding.typeAndDate.text = ctx.getString(
             R.string.history_row_type_and_date,
@@ -143,10 +140,3 @@ class StrengthWorkoutViewHolder(
     }
 }
 
-/** Helper for the future icon-tint work in Step 8. */
-@Suppress("unused")
-internal fun ActivityType.accentColorRes(): Int = when (this) {
-    ActivityType.RUNNING -> R.color.accent_running
-    ActivityType.CYCLING -> R.color.accent_cycling
-    ActivityType.WEIGHTLIFTING -> R.color.accent_weightlifting
-}

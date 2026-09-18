@@ -253,3 +253,41 @@ Short notes for each step: what was built, the key design decision, one rejected
 **Assignment task supported**
 - **Task 4 (development)** — closes the last piece of the phase-1 UI: history + logging + dashboard are all live and share a single source of truth.
 - **Task 3b (design)** — dashboard is the concrete example of "ViewModel → repository → shared Flow → several screens".
+
+---
+
+# Phase 2
+
+## Step 1 — Kinetic Glow design system
+**Built**
+- Rewrote `res/values/colors.xml` around the Kinetic Glow palette: semantic tokens for `background_warm`, `surface_white`, `surface_container_low/high/highest`, `surface_dark`, `surface_charcoal`, `inverse_surface`, `text_primary`, `text_secondary`, `text_on_lime`, `text_on_dark`, `divider`, `outline`, `lime_accent`, `lime_deep`, `error_material`, `error_red`.
+- Rewrote `res/values/themes.xml` — `Theme.Material3.Light.NoActionBar` with M3 roles mapped to the new palette. `colorPrimary` = deep lime (`#536600`); `colorPrimaryContainer` = electric lime (`#D4F26A`) — that's the role every CTA reads from. `colorSurfaceInverse` = `#2E312F` for the History momentum card.
+- Deleted `values-night/themes.xml` and `values-night/colors.xml`; `FitnessApp.onCreate()` now calls `AppCompatDelegate.setDefaultNightMode(MODE_NIGHT_NO)` so we don't need a night variant.
+- Added `res/font/plus_jakarta_sans*.xml` (5 weights: 400 / 500 / 600 / 700 / 800) as **Downloadable Fonts** via the Google Fonts provider. `res/values/font_certs.xml` seeds the provider certs; `preloaded_fonts.xml` triggers install-time download so a cold start isn't waiting on the network.
+- Added `res/values/type.xml` — 8 `TextAppearance.Fitness.*` styles matching DESIGN.md's type scale.
+- Added `res/values/dimens.xml` — 8dp scale, 20dp screen margin, 24dp section gap, radii table.
+- Added `res/values/styles.xml` — 12 component styles: `Widget.Fitness.Button.Primary` (lime pill), `.Outlined`, `.Text`, `.Card`, `.Card.Dark`, `.Card.Inverse`, `.Chip.Filter`, `.TextField`, `.IconTile`, `.FAB`, `.BottomNav` (+ its `ActiveIndicator`). Also 5 `ShapeAppearance.Fitness.*` variants and 5 selector color state lists (`chip_bg`, `chip_stroke`, `chip_text`, `text_field_stroke`, `bottom_nav_item`).
+- Added 15 vector drawables in Material Symbols style: `ic_home`, `ic_trending_up`, `ic_add`, `ic_search`, `ic_calendar`, `ic_notifications`, `ic_location_pin`, `ic_arrow_forward`, `ic_check`, `ic_play_arrow`, `ic_visibility`, `ic_visibility_off`, `ic_mail`, `ic_lock`, `ic_scale`. Phase-1 icons kept unchanged (they're already Material outlined at 24dp).
+- Imported the two full-bleed onboarding backgrounds as **WebP** at 768×1376 quality 80 via Pillow: `img_onboarding_cycling.webp` (43 KB, from `atmospheric_cinematic_.../screen.png`) and `img_onboarding_progress.webp` (27 KB, from `moody_dark_abstract_.../screen.png`). Source PNGs were 1.3 MB + 1.2 MB — a ~30× reduction.
+- Cleaned up stale phase-1 references: `accent_running/cycling/weightlifting` removed from `WorkoutAdapter.kt`, `fragment_dashboard.xml`, `item_distance_workout.xml`, `item_strength_workout.xml`, `bottom_sheet_choose_activity.xml`. All icon tints now resolve to `text_primary` (single-accent design).
+- Full token table added to `CLAUDE.md`.
+
+**Key design decision**
+- **Light-only theme; no `values-night/`.** DESIGN.md is fundamentally a light design that puts *dark cards on light surfaces*, not a design that inverts. A fake dark theme would fight the palette. We opt out cleanly by forcing `MODE_NIGHT_NO` at `Application` startup rather than shipping duplicated night resources.
+
+**Rejected alternative**
+- Following DESIGN.md's prose colours where they disagreed with the frontmatter and HTML export. Prose said `#6B7066` for secondary text, `#F5F6F2` for canvas, `#E4E6E0` as the divider. Machine-readable sources said `#5D5F5B`, `#F9FAF6`, and `#E7E9E5` respectively. Followed the machine sources for the M3 roles, kept the prose-only tokens (`text_on_lime = #111410`, `error_red = #D64545`) as separate names because they encode rules the prose calls out explicitly.
+
+**Kotlin/Android concepts (for my notes)**
+- *Downloadable Fonts* — a font family declared in `res/font/` that names an on-device provider (`com.google.android.gms.fonts`) instead of a local TTF. Play Services fetches the font on first use and caches it. Trade-off: zero APK weight, brief system-font fallback on cold start.
+- *Selector color state lists* (`res/color/*.xml`) — an XML resource that returns different colours based on view state (`state_checked`, `state_focused`, etc.). Assigned to widgets via `android:color`, `boxStrokeColor`, `itemIconTint`, and so on — no Kotlin code needed to swap colours per state.
+- *`AppCompatDelegate.setDefaultNightMode(...)`* — flips the whole process's night-mode preference before any activity inflates. `MODE_NIGHT_NO` = always light regardless of system setting.
+- *M3 `colorSurfaceInverse`* — the Material 3 role for surfaces that intentionally invert the theme. Used here for the History "Weekly momentum" dark card (colour `#2E312F`).
+
+**Verified**
+- `./gradlew assembleDebug` — BUILD SUCCESSFUL.
+- `./gradlew testDebugUnitTest` — **48 tests, 0 failures**.
+
+**Assignment task supported**
+- **Task 4 (development)** — every subsequent phase-2 screen composes against this token set instead of hardcoded values.
+- **Task 3b (design)** — the token table + component style catalogue is exactly the "design system" section the report needs.

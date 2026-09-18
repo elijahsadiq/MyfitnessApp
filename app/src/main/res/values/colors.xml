@@ -1,33 +1,49 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  Kinetic Glow Fitness palette.
+  Single accent (electric lime). Warm off-white canvas, pure-white cards,
+  dark hero surfaces for telemetry. Sources: docs/design/kinetic_glow_fitness/DESIGN.md
+  frontmatter, cross-checked against the Tailwind config in the exported
+  home_dashboard/history_screen HTML.
+-->
 <resources>
-    <!-- Neutral -->
+    <!-- Neutrals -->
     <color name="white">#FFFFFFFF</color>
     <color name="black">#FF000000</color>
 
-    <!-- Brand palette (light) — energetic teal + warm orange. -->
-    <color name="brand_primary">#0F766E</color>
-    <color name="brand_on_primary">#FFFFFF</color>
-    <color name="brand_primary_container">#B8E6DF</color>
-    <color name="brand_on_primary_container">#002019</color>
+    <!-- Semantic surface palette -->
+    <color name="background_warm">#F9FAF6</color>          <!-- canvas -->
+    <color name="surface_white">#FFFFFF</color>            <!-- resting cards, inputs -->
+    <color name="surface_container_low">#F3F4F0</color>    <!-- row icon tiles -->
+    <color name="surface_container">#EDEEEA</color>        <!-- soft chip bg -->
+    <color name="surface_container_high">#E7E9E5</color>   <!-- section bg, pills -->
+    <color name="surface_container_highest">#E2E3DF</color><!-- deepest tonal container -->
+    <color name="surface_dark">#121411</color>             <!-- Home hero, week-strip active pill -->
+    <color name="surface_charcoal">#1C1F1A</color>         <!-- alt dark surface (DESIGN.md prose) -->
+    <color name="inverse_surface">#2E312F</color>          <!-- History "Weekly momentum" card -->
 
-    <color name="brand_secondary">#EA580C</color>
-    <color name="brand_on_secondary">#FFFFFF</color>
-    <color name="brand_secondary_container">#FFDCC7</color>
-    <color name="brand_on_secondary_container">#341100</color>
+    <!-- Semantic text palette -->
+    <color name="text_primary">#1A1C1A</color>             <!-- on light -->
+    <color name="text_secondary">#5D5F5B</color>           <!-- muted/meta -->
+    <color name="text_on_lime">#111410</color>             <!-- strict: text on #D4F26A only -->
+    <color name="text_on_dark">#FFFFFF</color>             <!-- on charcoal/dark hero -->
+    <color name="text_on_dark_muted">#E2E3DF</color>       <!-- units on dark hero -->
 
-    <color name="brand_tertiary">#0891B2</color>
-    <color name="brand_on_tertiary">#FFFFFF</color>
+    <!-- Semantic structural palette -->
+    <color name="divider">#E4E6E0</color>                  <!-- hairline card border -->
+    <color name="outline">#767965</color>                  <!-- M3 outline role -->
+    <color name="outline_variant">#C6C8B2</color>          <!-- M3 outline-variant role -->
 
-    <color name="brand_surface">#FFFBFE</color>
-    <color name="brand_on_surface">#1C1B1F</color>
-    <color name="brand_surface_variant">#EEEDF0</color>
-    <color name="brand_on_surface_variant">#49454F</color>
-    <color name="brand_outline">#79747E</color>
-    <color name="brand_background">#FFFBFE</color>
-    <color name="brand_on_background">#1C1B1F</color>
+    <!-- Accent (single) -->
+    <color name="lime_accent">#D4F26A</color>              <!-- primary CTA, FAB, active pill -->
+    <color name="lime_dim">#B6D24E</color>                 <!-- pressed state / dim -->
+    <color name="lime_deep">#536600</color>                <!-- M3 colorPrimary role -->
+    <color name="on_lime_deep">#5A6E00</color>             <!-- on-primary-container M3 role -->
 
-    <!-- Per-activity accents used on chips, list icons, and detail highlights. -->
-    <color name="accent_running">#F97316</color>
-    <color name="accent_cycling">#0891B2</color>
-    <color name="accent_weightlifting">#7C3AED</color>
+    <!-- Functional validation -->
+    <color name="error_red">#D64545</color>                <!-- form validation per DESIGN.md prose -->
+    <color name="error_material">#BA1A1A</color>           <!-- M3 colorError role -->
+    <color name="on_error">#FFFFFF</color>
+    <color name="error_container">#FFDAD6</color>
+    <color name="on_error_container">#93000A</color>
 </resources>

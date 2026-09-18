@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  TextAppearances derived from the Kinetic Glow type scale.
+  See docs/design/kinetic_glow_fitness/DESIGN.md ("Typography").
+-->
+<resources>
+
+    <!-- Big telemetry number (44sp ExtraBold), e.g. dashboard hero metrics. -->
+    <style name="TextAppearance.Fitness.DisplayMetric" parent="TextAppearance.Material3.DisplayMedium">
+        <item name="android:fontFamily">@font/plus_jakarta_sans_extrabold</item>
+        <item name="fontFamily">@font/plus_jakarta_sans_extrabold</item>
+        <item name="android:textSize">44sp</item>
+        <item name="android:letterSpacing">-0.03</item>
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:lineSpacingExtra">4sp</item>
+    </style>
+
+    <!-- Screen title (28sp Bold), e.g. "Your week", "History". -->
+    <style name="TextAppearance.Fitness.HeadlineLg" parent="TextAppearance.Material3.HeadlineMedium">
+        <item name="android:fontFamily">@font/plus_jakarta_sans_bold</item>
+        <item name="fontFamily">@font/plus_jakarta_sans_bold</item>
+        <item name="android:textSize">28sp</item>
+        <item name="android:letterSpacing">-0.02</item>
+        <item name="android:textColor">@color/text_primary</item>
+    </style>
+
+    <!-- Section heading (18sp SemiBold), e.g. row titles, "Goals", "Recent". -->
+    <style name="TextAppearance.Fitness.HeadlineSm" parent="TextAppearance.Material3.TitleMedium">
+        <item name="android:fontFamily">@font/plus_jakarta_sans_semibold</item>
+        <item name="fontFamily">@font/plus_jakarta_sans_semibold</item>
+        <item name="android:textSize">18sp</item>
+        <item name="android:letterSpacing">-0.01</item>
+        <item name="android:textColor">@color/text_primary</item>
+    </style>
+
+    <!-- Body paragraphs (15sp Regular). -->
+    <style name="TextAppearance.Fitness.BodyLg" parent="TextAppearance.Material3.BodyLarge">
+        <item name="android:fontFamily">@font/plus_jakarta_sans</item>
+        <item name="fontFamily">@font/plus_jakarta_sans</item>
+        <item name="android:textSize">15sp</item>
+        <item name="android:textColor">@color/text_primary</item>
+    </style>
+
+    <!-- Compact body (14sp Regular). -->
+    <style name="TextAppearance.Fitness.BodyMd" parent="TextAppearance.Material3.BodyMedium">
+        <item name="android:fontFamily">@font/plus_jakarta_sans</item>
+        <item name="fontFamily">@font/plus_jakarta_sans</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:textColor">@color/text_primary</item>
+    </style>
+
+    <!-- Micro label (13sp Medium), metadata / timestamps. -->
+    <style name="TextAppearance.Fitness.LabelMd" parent="TextAppearance.Material3.LabelMedium">
+        <item name="android:fontFamily">@font/plus_jakarta_sans_medium</item>
+        <item name="fontFamily">@font/plus_jakarta_sans_medium</item>
+        <item name="android:textSize">13sp</item>
+        <item name="android:letterSpacing">0.01</item>
+        <item name="android:textColor">@color/text_secondary</item>
+    </style>
+
+    <!-- Uppercase eyebrow (11sp SemiBold), for captions above metric numbers. -->
+    <style name="TextAppearance.Fitness.LabelSm" parent="TextAppearance.Material3.LabelSmall">
+        <item name="android:fontFamily">@font/plus_jakarta_sans_semibold</item>
+        <item name="fontFamily">@font/plus_jakarta_sans_semibold</item>
+        <item name="android:textSize">11sp</item>
+        <item name="android:letterSpacing">0.04</item>
+        <item name="android:textAllCaps">true</item>
+        <item name="android:textColor">@color/text_secondary</item>
+    </style>
+
+    <!-- Button label used inside Fitness pill buttons. -->
+    <style name="TextAppearance.Fitness.Button" parent="TextAppearance.Material3.LabelLarge">
+        <item name="android:fontFamily">@font/plus_jakarta_sans_semibold</item>
+        <item name="fontFamily">@font/plus_jakarta_sans_semibold</item>
+        <item name="android:textSize">16sp</item>
+        <item name="android:letterSpacing">0.0</item>
+        <item name="android:textAllCaps">false</item>
+    </style>
+</resources>

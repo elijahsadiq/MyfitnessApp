@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Fonts referenced by @preloaded_fonts are downloaded at app install time
+  (or at first launch on older devices), so the type scale is ready when
+  the first screen inflates instead of falling back to system sans-serif.
+-->
+<resources>
+    <array name="preloaded_fonts" translatable="false">
+        <item>@font/plus_jakarta_sans</item>
+        <item>@font/plus_jakarta_sans_medium</item>
+        <item>@font/plus_jakarta_sans_semibold</item>
+        <item>@font/plus_jakarta_sans_bold</item>
+        <item>@font/plus_jakarta_sans_extrabold</item>
+    </array>
+</resources>

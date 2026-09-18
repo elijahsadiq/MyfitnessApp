@@ -217,7 +217,7 @@
                         android:layout_height="32dp"
                         android:contentDescription="@string/activity_type_running"
                         android:src="@drawable/ic_run_24"
-                        app:tint="@color/accent_running" />
+                        app:tint="@color/text_primary" />
 
                     <TextView
                         style="?attr/textAppearanceBodyLarge"
@@ -263,7 +263,7 @@
                         android:layout_height="32dp"
                         android:contentDescription="@string/activity_type_cycling"
                         android:src="@drawable/ic_bike_24"
-                        app:tint="@color/accent_cycling" />
+                        app:tint="@color/text_primary" />
 
                     <TextView
                         style="?attr/textAppearanceBodyLarge"
@@ -309,7 +309,7 @@
                         android:layout_height="32dp"
                         android:contentDescription="@string/activity_type_weightlifting"
                         android:src="@drawable/ic_dumbbell_24"
-                        app:tint="@color/accent_weightlifting" />
+                        app:tint="@color/text_primary" />
 
                     <TextView
                         style="?attr/textAppearanceBodyLarge"

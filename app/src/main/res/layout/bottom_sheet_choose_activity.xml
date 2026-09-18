@@ -32,7 +32,7 @@
         android:minHeight="48dp"
         android:text="@string/activity_type_running"
         app:icon="@drawable/ic_run_24"
-        app:iconTint="@color/accent_running" />
+        app:iconTint="@color/text_primary" />
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/optionCycling"
@@ -43,7 +43,7 @@
         android:minHeight="48dp"
         android:text="@string/activity_type_cycling"
         app:icon="@drawable/ic_bike_24"
-        app:iconTint="@color/accent_cycling" />
+        app:iconTint="@color/text_primary" />
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/optionWeightlifting"
@@ -54,5 +54,5 @@
         android:minHeight="48dp"
         android:text="@string/activity_type_weightlifting"
         app:icon="@drawable/ic_dumbbell_24"
-        app:iconTint="@color/accent_weightlifting" />
+        app:iconTint="@color/text_primary" />
 </LinearLayout>

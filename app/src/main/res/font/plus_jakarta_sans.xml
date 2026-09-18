@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Downloadable font: Plus Jakarta Sans (Google Fonts provider).
+
+  Zero bytes in the APK — the font is downloaded on first use through Play
+  Services and cached. Falls back to system sans-serif while resolving.
+
+  The `query` string is Google's font URI: family + all weights the design
+  uses (regular, medium, semibold, bold, extrabold), with best-effort
+  matching so a missing weight resolves to the nearest available.
+-->
+<font-family xmlns:app="http://schemas.android.com/apk/res-auto"
+    app:fontProviderAuthority="com.google.android.gms.fonts"
+    app:fontProviderPackage="com.google.android.gms"
+    app:fontProviderQuery="name=Plus Jakarta Sans&amp;weight=400&amp;besteffort=true"
+    app:fontProviderCerts="@array/com_google_android_gms_fonts_certs" />
