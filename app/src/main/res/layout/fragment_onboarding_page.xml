@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/surface_dark">
+
+    <!--
+      Hero image occupies the top ~62%. It's declared with a percent
+      constraint so the layout works on any device height, and it's
+      important="no" for a11y because the tag pulls copy from title.
+    -->
+    <ImageView
+        android:id="@+id/heroImage"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:importantForAccessibility="no"
+        android:scaleType="centerCrop"
+        app:layout_constraintDimensionRatio="H,3:4"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHeight_percent="0.62"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:src="@drawable/img_onboarding_cycling" />
+
+    <!-- Fade-to-surface_dark gradient at the bottom of the hero so the
+         copy below sits on a solid, readable colour. -->
+    <View
+        android:layout_width="0dp"
+        android:layout_height="120dp"
+        android:background="@drawable/gradient_onboarding_hero"
+        app:layout_constraintBottom_toBottomOf="@id/heroImage"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <TextView
+        android:id="@+id/pageTitle"
+        style="@style/TextAppearance.Fitness.HeadlineLg"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/space_xl"
+        android:paddingHorizontal="@dimen/screen_margin"
+        android:textColor="@color/text_on_dark"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/heroImage"
+        tools:text="Train smarter.\nTrack every step." />
+
+    <TextView
+        android:id="@+id/pageBody"
+        style="@style/TextAppearance.Fitness.BodyLg"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/space_md"
+        android:paddingHorizontal="@dimen/screen_margin"
+        android:textColor="@color/onboarding_text_muted"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/pageTitle"
+        tools:text="Log runs, rides and lifts, and watch your progress grow." />
+</androidx.constraintlayout.widget.ConstraintLayout>

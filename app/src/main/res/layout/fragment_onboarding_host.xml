@@ -5,39 +5,90 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="?attr/colorSurface"
-    android:padding="@dimen/screen_margin"
+    android:background="@color/surface_dark"
     tools:context=".ui.auth.onboarding.OnboardingHostFragment">
 
-    <TextView
-        android:id="@+id/onboardingTitle"
-        style="@style/TextAppearance.Fitness.HeadlineLg"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:text="@string/auth_onboarding_placeholder_title"
+    <androidx.viewpager2.widget.ViewPager2
+        android:id="@+id/onboardingPager"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        app:layout_constraintBottom_toTopOf="@id/actionsBarrier"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <TextView
-        style="@style/TextAppearance.Fitness.BodyLg"
-        android:layout_width="0dp"
+    <!-- Skip lives in the host: it's only shown on pages 1-2 and always
+         sits above the pager in the same absolute position. -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/skipButton"
+        style="@style/Widget.Fitness.Button.Text"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="@dimen/space_sm"
-        android:text="@string/auth_onboarding_placeholder_body"
-        android:textColor="@color/text_secondary"
+        android:layout_marginEnd="@dimen/space_md"
+        android:text="@string/auth_onboarding_skip"
+        android:textColor="@color/onboarding_text_muted"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <!-- Page-1/2 action row: indicator + circular arrow. -->
+    <com.elijah.fitness.ui.auth.onboarding.PageIndicatorView
+        android:id="@+id/pageIndicator"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="@dimen/screen_margin"
+        android:layout_marginBottom="@dimen/space_xl"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <ImageButton
+        android:id="@+id/nextButton"
+        android:layout_width="@dimen/onboarding_arrow_size"
+        android:layout_height="@dimen/onboarding_arrow_size"
+        android:layout_marginEnd="@dimen/screen_margin"
+        android:layout_marginBottom="@dimen/space_lg"
+        android:background="@drawable/bg_onboarding_arrow"
+        android:contentDescription="@string/auth_onboarding_next_content_description"
+        android:src="@drawable/ic_arrow_forward_24"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:tint="@color/text_on_lime" />
+
+    <!-- Page-3 action row: full-width primary CTA + text link. -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/getStartedButton"
+        style="@style/Widget.Fitness.Button.Primary"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="@dimen/screen_margin"
+        android:layout_marginBottom="@dimen/space_md"
+        android:text="@string/auth_onboarding_get_started"
+        android:visibility="gone"
+        app:layout_constraintBottom_toTopOf="@id/haveAccountButton"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/onboardingTitle" />
+        tools:visibility="visible" />
 
     <com.google.android.material.button.MaterialButton
-        android:id="@+id/onboardingContinue"
-        style="@style/Widget.Fitness.Button.Primary"
-        android:layout_width="match_parent"
+        android:id="@+id/haveAccountButton"
+        style="@style/Widget.Fitness.Button.Text"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="@dimen/section_gap"
-        android:text="@string/auth_onboarding_continue"
+        android:layout_marginBottom="@dimen/space_lg"
+        android:text="@string/auth_onboarding_have_account"
+        android:textColor="@color/text_on_dark"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/onboardingTitle" />
+        tools:visibility="visible" />
+
+    <!-- Barrier just above whichever action group is currently visible;
+         gives the ViewPager2 a clean bottom bound. -->
+    <androidx.constraintlayout.widget.Barrier
+        android:id="@+id/actionsBarrier"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:barrierDirection="top"
+        app:constraint_referenced_ids="pageIndicator,nextButton,getStartedButton" />
 </androidx.constraintlayout.widget.ConstraintLayout>

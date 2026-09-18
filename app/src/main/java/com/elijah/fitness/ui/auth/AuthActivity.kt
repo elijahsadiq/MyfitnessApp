@@ -1,18 +1,29 @@
 package com.elijah.fitness.ui.auth
 
 import android.content.Intent
+import android.graphics.Color
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.updatePadding
 import androidx.navigation.fragment.NavHostFragment
 import com.elijah.fitness.R
 import com.elijah.fitness.databinding.ActivityAuthBinding
 import com.elijah.fitness.ui.main.MainActivity
 
 /**
- * Hosts the auth-side nav graph (onboarding + login + register). The
- * start destination is picked from an intent extra so the launcher can
- * decide whether the current run is a "first ever" launch (onboarding
- * first) or a returning-user launch (straight to login).
+ * Hosts the auth-side nav graph (onboarding + location priming + login
+ * + register). The start destination is picked from an intent extra so
+ * the launcher can decide whether the current run is a "first ever"
+ * launch (onboarding first) or a returning-user launch (straight to
+ * login).
+ *
+ * Runs edge-to-edge: onboarding pages draw a hero image up under the
+ * status bar. Individual dark-surface fragments call
+ * `WindowInsetsControllerCompat.isAppearanceLightStatusBars = false`
+ * while attached so system icons stay legible on the dark background.
  *
  * On a successful sign-in the child fragments call [goToMain] which
  * clears this activity out of the task stack.
@@ -23,8 +34,21 @@ class AuthActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+        window.statusBarColor = Color.TRANSPARENT
+        window.navigationBarColor = Color.TRANSPARENT
+
         binding = ActivityAuthBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+        // Push bottom-anchored content up above the gesture-nav pill so
+        // buttons aren't trapped under it. Onboarding pages that need to
+        // reach the top edge (hero image) opt out via android:fitsSystemWindows.
+        ViewCompat.setOnApplyWindowInsetsListener(binding.authNavHost) { v, insets ->
+            val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            v.updatePadding(bottom = bars.bottom)
+            insets
+        }
 
         val navHost = supportFragmentManager
             .findFragmentById(binding.authNavHost.id) as NavHostFragment

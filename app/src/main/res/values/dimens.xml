@@ -43,4 +43,12 @@
     <dimen name="bottom_nav_height">64dp</dimen>
     <dimen name="fab_margin_bottom">88dp</dimen>
     <dimen name="fab_margin_end">16dp</dimen>
+
+    <!-- Onboarding page indicator -->
+    <dimen name="page_indicator_dot_size">6dp</dimen>
+    <dimen name="page_indicator_active_width">24dp</dimen>
+    <dimen name="page_indicator_gap">8dp</dimen>
+
+    <!-- Onboarding chrome -->
+    <dimen name="onboarding_arrow_size">56dp</dimen>
 </resources>

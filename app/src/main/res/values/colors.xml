@@ -46,4 +46,8 @@
     <color name="on_error">#FFFFFF</color>
     <color name="error_container">#FFDAD6</color>
     <color name="on_error_container">#93000A</color>
+
+    <!-- Onboarding-specific (dark-screen chrome only) -->
+    <color name="onboarding_dot_inactive">#2A2E27</color>  <!-- inactive page-indicator dots on surface_dark -->
+    <color name="onboarding_text_muted">#8E9489</color>    <!-- body copy on hero-tinted dark surfaces -->
 </resources>

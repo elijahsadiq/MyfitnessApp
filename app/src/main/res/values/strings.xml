@@ -6,8 +6,29 @@
 
     <!-- Auth screens (Step 5 placeholders; Steps 6-7 replace the bodies) -->
     <string name="auth_onboarding_title">Welcome</string>
+    <string name="auth_onboarding_skip">Skip</string>
+    <string name="auth_onboarding_next_content_description">Next page</string>
+    <string name="auth_onboarding_get_started">Get started</string>
+    <string name="auth_onboarding_have_account">I already have an account</string>
+    <string name="auth_onboarding_page1_title">Train smarter.\nTrack every step.</string>
+    <string name="auth_onboarding_page1_body">Log runs, rides and lifts, and watch your progress grow.</string>
+    <string name="auth_onboarding_page2_title">Every route,\nmapped.</string>
+    <string name="auth_onboarding_page2_body">GPS tracks your runs and rides, so distance, pace and calories are captured for you.</string>
+    <string name="auth_onboarding_page3_title">Set goals.\nSee progress.</string>
+    <string name="auth_onboarding_page3_body">Track personal records and weekly trends, and watch every session add up.</string>
+
+    <!-- Location permission priming (no runtime request in phase 2) -->
+    <string name="auth_location_title">Track your runs</string>
+    <string name="auth_location_body">My Fitness App uses your location while a workout is active to map your route and measure distance and pace.</string>
+    <string name="auth_location_bullet_1">Only while a workout is running</string>
+    <string name="auth_location_bullet_2">Your route stays on your device until you save it</string>
+    <string name="auth_location_bullet_3">You can turn this off any time in Profile</string>
+    <string name="auth_location_allow">Allow location</string>
+    <string name="auth_location_not_now">Not now</string>
+
+    <!-- Kept temporarily to satisfy other code paths still referencing them (Step 5 stub). -->
     <string name="auth_onboarding_placeholder_title">Welcome to Fitness</string>
-    <string name="auth_onboarding_placeholder_body">The full three-page onboarding lands in the next step. Tap Continue to skip to sign-in.</string>
+    <string name="auth_onboarding_placeholder_body">Welcome copy.</string>
     <string name="auth_onboarding_continue">Continue</string>
     <string name="auth_login_title">Log in</string>
     <string name="auth_login_placeholder_body">The real login form lands in Step 7. In the meantime, use the button below to sign in as the seeded test user.</string>

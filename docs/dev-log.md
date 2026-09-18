@@ -443,3 +443,40 @@ Short notes for each step: what was built, the key design decision, one rejected
 **Assignment task supported**
 - **Task 4 (development)** — the login/register/logout auth flow is fully wired; Steps 6/7 replace the placeholder UI with the real forms.
 - **Task 5c (security)** — token handling, 401 handling, and the boundary between "logged out locally" vs "logged out on the server" are all covered by tests.
+
+## Step 6 — Onboarding + location priming
+**Built**
+- **Design tokens** — `colors.xml` adds `onboarding_dot_inactive = #2A2E27` and `onboarding_text_muted = #8E9489`; `dimens.xml` adds `page_indicator_dot_size` (6dp), `page_indicator_active_width` (24dp), `page_indicator_gap` (8dp), `onboarding_arrow_size` (56dp).
+- **`PageIndicatorView`** (`ui/auth/onboarding/`) — custom `View` that draws a short lime pill for the active page and small dark dots for the others. Sizing pulled entirely from `dimens.xml`; no hex or literal sp/dp in Kotlin.
+- **Hero-gradient + circular-arrow drawables** — `gradient_onboarding_hero.xml` (transparent → `surface_dark` fade at the bottom of the hero image) and `bg_onboarding_arrow.xml` (solid lime oval for the next-page button; icon tint is `text_on_lime` per the DESIGN.md strict rule).
+- **`OnboardingHostFragment` (rewrite)** — `ViewPager2` with a `FragmentStateAdapter` + `PageIndicatorView` in the host. Skip button (top-right) and page-1/2 arrow both live in the host; page-3 swaps to a full-width "Get started" pill + "I already have an account" text link. Wiring:
+  - Skip → mark onboarding complete + `action_onboarding_to_login`
+  - Next arrow on final page → mark complete + `action_onboarding_to_location_permission`
+  - Get started → mark complete + `action_onboarding_to_location_permission`
+  - I already have an account → mark complete + `action_onboarding_to_login`
+- **`OnboardingPagerAdapter` + `OnboardingPageFragment`** — one page fragment reused with `(imageRes, titleRes, bodyRes)` arguments; the adapter holds a small `PAGES` table so adding a fourth page is a single row. Page fragments extend `BaseFragment` (matches the required inheritance #2 hierarchy).
+- **`LocationPermissionFragment`** — dark full-screen priming screen with the pin icon, title, body, and three bulleted lines (via a reusable `item_location_bullet.xml` include layout). Both "Allow location" and "Not now" call the same `continueToRegister()` and leave a `TODO(phase 3)` for the real permission call. **No runtime permission request in phase 2.**
+- **`auth_nav_graph.xml`** — added `locationPermissionFragment` destination and three new actions (`action_onboarding_to_location_permission`, `action_location_to_register`).
+- **`AuthActivity` edge-to-edge** — `WindowCompat.setDecorFitsSystemWindows(window, false)`, transparent status/navigation bar colours, an `OnApplyWindowInsetsListener` that pushes the nav-host bottom padding above the gesture-nav pill. Onboarding pages draw the hero up under the status bar; buttons never sit under the pill.
+- **Light-icon status bar on dark screens** — both `OnboardingHostFragment` and `LocationPermissionFragment` flip `WindowInsetsControllerCompat.isAppearanceLightStatusBars` to `false` in `onResume` and back to `true` in `onPause`, so the phase-7 light-bg login/register screens still get dark icons.
+
+**Key design decision**
+- **All chrome lives in the host, only content lives in the pages.** Skip + page indicator + primary CTA(s) are all `OnboardingHostFragment`'s responsibility; each `OnboardingPageFragment` is nothing but a hero image + title + body. That keeps the page fragments identical and makes "what changes on the last page" a single visibility toggle instead of three per-page copies.
+
+**Rejected alternative**
+- Three separate page classes (`OnboardingPage1Fragment`, `Page2Fragment`, `Page3Fragment`) with per-class content baked in. Rejected because adding a page becomes three-file work, and the pages have identical layouts — the only variable is content. Arguments + one class + one PAGES table is smaller and less error-prone.
+
+**Kotlin/Android concepts (for my notes)**
+- *`FragmentStateAdapter`* — the ViewPager2 adapter that hosts fragments (not views). Manages fragment lifecycle, saves state on rotation for free.
+- *Edge-to-edge windows* — `WindowCompat.setDecorFitsSystemWindows(window, false)` + transparent bar colours + `OnApplyWindowInsetsListener` on the root. Content extends behind status/gesture bars; you decide per-view whether to pad or draw underneath.
+- *`WindowInsetsControllerCompat.isAppearanceLightStatusBars`* — flips status-bar icons to light (`false`) on dark backgrounds or dark (`true`) on light. Setting it per-fragment in `onResume`/`onPause` keeps each screen contrast-correct.
+- *`Barrier` in ConstraintLayout* — a virtual guideline that snaps to the topmost/bottommost/etc. of a set of referenced views. Used in the onboarding host so `ViewPager2`'s bottom bound moves cleanly between the page-1/2 controls and the page-3 controls without hard-coding a height.
+
+**Verified**
+- `./gradlew assembleLocalDebug` — BUILD SUCCESSFUL.
+- `./gradlew testLocalDebugUnitTest` — **55 tests, 0 failures** (no new tests this step).
+- On-device UI verification requires running the app on an emulator; not exercised in this session.
+
+**Assignment task supported**
+- **Task 4 (development)** — the real onboarding + location priming screens replace the Step 5 placeholders; Step 7 replaces the login/register placeholders next.
+- **Task 5b (inheritance)** — every new fragment (`OnboardingHostFragment`, `OnboardingPageFragment`, `LocationPermissionFragment`) extends the required `BaseFragment`.

@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/surface_dark"
+    android:padding="@dimen/screen_margin"
+    tools:context=".ui.auth.onboarding.LocationPermissionFragment">
+
+    <ImageView
+        android:id="@+id/locationIcon"
+        android:layout_width="64dp"
+        android:layout_height="64dp"
+        android:layout_marginTop="@dimen/space_2xl"
+        android:background="@drawable/bg_icon_tile"
+        android:contentDescription="@null"
+        android:padding="16dp"
+        android:src="@drawable/ic_location_pin_24"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:tint="@color/lime_accent" />
+
+    <TextView
+        android:id="@+id/locationTitle"
+        style="@style/TextAppearance.Fitness.HeadlineLg"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/space_xl"
+        android:text="@string/auth_location_title"
+        android:textColor="@color/text_on_dark"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/locationIcon" />
+
+    <TextView
+        android:id="@+id/locationBody"
+        style="@style/TextAppearance.Fitness.BodyLg"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/space_sm"
+        android:text="@string/auth_location_body"
+        android:textColor="@color/onboarding_text_muted"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/locationTitle" />
+
+    <LinearLayout
+        android:id="@+id/bulletList"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/space_xl"
+        android:orientation="vertical"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/locationBody">
+
+        <include layout="@layout/item_location_bullet" android:id="@+id/bullet1" />
+        <include layout="@layout/item_location_bullet" android:id="@+id/bullet2" />
+        <include layout="@layout/item_location_bullet" android:id="@+id/bullet3" />
+    </LinearLayout>
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/allowLocationButton"
+        style="@style/Widget.Fitness.Button.Primary"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="@dimen/space_md"
+        android:text="@string/auth_location_allow"
+        app:layout_constraintBottom_toTopOf="@id/notNowButton"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/notNowButton"
+        style="@style/Widget.Fitness.Button.Text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="@dimen/space_lg"
+        android:text="@string/auth_location_not_now"
+        android:textColor="@color/text_on_dark"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+</androidx.constraintlayout.widget.ConstraintLayout>

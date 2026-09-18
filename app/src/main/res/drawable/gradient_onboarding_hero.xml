@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Vertical fade from transparent (top) to solid surface_dark (bottom).
+  Placed above the hero image inside the ViewPager2 page so the copy
+  underneath sits on a solid, readable colour instead of clashing with
+  the photograph.
+-->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <gradient
+        android:angle="270"
+        android:startColor="#00121411"
+        android:centerColor="#4D121411"
+        android:endColor="@color/surface_dark"
+        android:type="linear" />
+</shape>
