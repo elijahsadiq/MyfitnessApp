@@ -598,3 +598,51 @@ Short notes for each step: what was built, the key design decision, one rejected
 - **Task 4 (development)** — the app matches the Kinetic Glow design across Home + History + Profile + bottom nav.
 - **Task 3b (design)** — the pattern "top-level destinations draw their own headers; log destinations use the shared toolbar" is a design decision worth writing up.
 - **Task 5b (inheritance)** — every fragment still extends `BaseFragment`; the three RecyclerView view holders still extend `BaseViewHolder<T>`.
+
+---
+
+# Dev log — Phase 7 (Goals)
+
+## Step 0 — Inspection (read-only)
+- Confirmed phases 3–6 are **not** implemented: no GPS live tracking, no Room, no WorkManager, no notifications, no analytics beyond the Progress placeholder. Last commit before phase 7 is Step 9 of phase 2 (Kinetic Glow restyle).
+- Confirmed the `goals` table exists in `backend/sql/01_schema.sql` but is **missing** four columns needed by this phase: `title`, `period` enum (`WEEK`/`MONTH`), `updated_at`, and `completed_notified` (for Step 7). A migration is required in Step 2 — the exact SQL will be proposed before it's run.
+- Confirmed no `/goals` endpoints, no `GoalController.php`, no client-side Goal model / DTO / repo / API. The Goals fragment is a placeholder and Home's Goals card is hardcoded (per Step 9's TODO).
+- Defect list carried forward (not fixed this phase): two-NIC emulator quirk (worked around with `adb reverse`), `GoalsFragment` still uses pre-Kinetic-Glow attr tokens (rewritten wholesale in Step 4).
+- Supports: **Task 3b (design)** — establishes the baseline before adding a fourth inheritance hierarchy.
+
+## Step 1 — Goal domain model (fourth inheritance example)
+**Built**
+- **`GoalPeriod`** enum (`THIS_WEEK`, `THIS_MONTH`) — the only two periods this phase ships.
+- **`GoalPeriodResolver`** (pure Kotlin, `java.time` only). `currentWeek(zone, clock)` returns Monday 00:00 → next Monday 00:00 in the device's zone; `currentMonth(zone, clock)` returns 1st-of-month 00:00 → 1st-of-next-month 00:00. Both take an injectable `Clock` + `ZoneId` (defaults from the system) so tests can pin "today" without touching real time. `Bounds(start, endExclusive)` is deliberately half-open so a workout at exactly the boundary belongs to the next period and is never counted twice.
+- **`Goal`** (abstract, pure Kotlin, no Android imports) with:
+  - `id, title, activityType (nullable = any), targetValue, period, periodStart, periodEnd (exclusive), createdAt`
+  - `abstract val unitLabel: String` — "km" / "workouts" / "min" / "kg"
+  - `protected abstract fun measure(workouts: List<Workout>): Double`
+  - `currentValue(workouts)` / `progressFraction(workouts)` (clamped `[0.0, 1.0]`, guards divide-by-zero) / `isComplete(workouts)`
+  - `protected fun relevantWorkouts(workouts)` — the shared filter for period + activity type. **This lives once, on the base class**, exactly as the phase-7 brief mandates.
+- **Four concrete subclasses:** `DistanceGoal` (sums `DistanceWorkout.distanceKm()`), `WorkoutCountGoal` (counts), `DurationGoal` (sums `duration.toMinutes()`), `StrengthVolumeGoal` (sums `StrengthWorkout.totalVolumeKg()`). Each `measure()` narrows the incoming list with `filterIsInstance` — never an unchecked cast — so a mixed list is handled safely by the type system.
+- **Precondition checks** in `init`: `DistanceGoal` rejects `WEIGHTLIFTING`, `StrengthVolumeGoal` rejects `RUNNING`/`CYCLING`. `require { }` throws `IllegalArgumentException` at construction. Server-side validation in Step 2 will mirror these rules.
+- **Tests (23 new, 113 total, 0 failures)**:
+  - `GoalTest` (16): each subclass's `currentValue` against a mixed workout list, "any activity" behaviour, activity-scope narrowing, period exclusion including the exact-boundary case, `progressFraction` clamping at 150%, `progressFraction` = 0 when target ≤ 0, precondition throws, unit-label assertions.
+  - `GoalPeriodResolverTest` (7): mid-week / Monday / Sunday all resolve to the same Mon-Sun window; month rollover into a shorter month (Jan 31 → Dec 31 → Jan 31); year rollover (Dec → Nov 30 → Dec 31); `bounds(period)` dispatches correctly. Zone is fixed to `Africa/Nairobi` (UTC+3, no DST) so the offset arithmetic is obvious.
+
+**Key design decision — filter on the base, measure in the leaf**
+Every one of the four subclasses answers the same *filtering* question ("which workouts count for this window and activity scope?") the same way, but a different *measurement* question ("count them? sum km? sum minutes? sum kg?"). Putting the filter on the base class and only the measurement in the leaves makes the fourth inheritance write-up (Task 5b) directly parallel the `Workout` hierarchy: intermediate/base classes own shared state and shared logic; leaves supply one variable behaviour.
+
+**Rejected alternative**
+- Sealed `enum class GoalType` with a `fun compute(workouts): Double` that switches on the enum. Rejected because it collapses the fourth hierarchy the assignment brief expects into one file with a `when`, and every future goal type becomes an edit inside a growing switch. Preconditions (volume ⇒ weightlifting) also become runtime `require` in one method rather than per-subclass `init { }`. The class hierarchy pays a couple of extra `class Foo : Goal(...)` lines to buy the report material and open/closed extensibility.
+
+**Kotlin/Android concepts (for my notes)**
+- *`require { }` in `init`* — throws `IllegalArgumentException` at construction if the invariant fails. Same feel as an early `assert` but running in production, and Kotlin's contract makes the compiler treat the check as narrowing.
+- *`filterIsInstance<T>()`* — smart-cast filter that returns `List<T>`, no explicit cast at each element. Exactly the "safe type check" the phase-7 brief asks for over `map { it as T }`.
+- *`TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)`* — the idiomatic `java.time` helper for "walk back to the start of the ISO week"; combined with a fixed `Clock` it makes week-boundary tests deterministic.
+- *`Clock.fixed(instant, zone)`* — freezes "now" for a test. The whole `java.time` API takes an implicit `Clock`, so tests never mock `System.currentTimeMillis()`.
+
+**Verified**
+- `./gradlew assembleLocalDebug` — BUILD SUCCESSFUL.
+- `./gradlew testLocalDebugUnitTest` — **113 tests, 0 failures** (23 new: 16 `GoalTest`, 7 `GoalPeriodResolverTest`).
+- No on-device work in this step — Step 1 is pure Kotlin.
+
+**Assignment task supported**
+- **Task 5b (inheritance)** — the *fourth* hierarchy the report will describe. `Goal → DistanceGoal / WorkoutCountGoal / DurationGoal / StrengthVolumeGoal`. Base owns filtering + progress math; leaves own only measurement.
+- **Task 5c (validation)** — the `init { require(...) }` invariants for activity-scope × goal-type start the client/server validation story that Step 2 mirrors on the backend.
