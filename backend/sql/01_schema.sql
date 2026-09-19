@@ -83,19 +83,31 @@ CREATE TABLE IF NOT EXISTS strength_sets (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ---------------------------------------------------------------------
--- goals
---   Placeholder for phase 5. activity_type is nullable so a goal can apply
---   to the whole user (e.g. weekly workout count) or to one activity.
+-- goals (phase 7)
+--   Phase 7 owns four goal_type values: 'distance', 'count', 'duration',
+--   'volume'. activity_type is nullable so a goal can apply to the whole
+--   user ("any activity") or to one activity. period is either 'WEEK'
+--   or 'MONTH' (kept as an enum so the API never has to infer it from
+--   the date pair). period_start/period_end are DATEs interpreted as
+--   midnight in the device's zone — progress is calculated client-side
+--   from workouts the app has already loaded, so the server never needs
+--   to reason about time zones. completed_notified is flipped once so
+--   the client only celebrates a completion the first time.
 -- ---------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS goals (
-    id             BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    user_id        BIGINT UNSIGNED NOT NULL,
-    activity_type  ENUM('RUNNING', 'CYCLING', 'WEIGHTLIFTING') NULL,
-    goal_type      VARCHAR(40) NOT NULL,
-    target_value   DECIMAL(10,2) NOT NULL,
-    period_start   DATE NOT NULL,
-    period_end     DATE NOT NULL,
-    created_at     TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    id                 BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    user_id            BIGINT UNSIGNED NOT NULL,
+    title              VARCHAR(120) NOT NULL DEFAULT '',
+    activity_type      ENUM('RUNNING', 'CYCLING', 'WEIGHTLIFTING') NULL,
+    goal_type          VARCHAR(40) NOT NULL,
+    period             ENUM('WEEK', 'MONTH') NOT NULL DEFAULT 'WEEK',
+    target_value       DECIMAL(10,2) NOT NULL,
+    period_start       DATE NOT NULL,
+    period_end         DATE NOT NULL,
+    completed_notified TINYINT(1) NOT NULL DEFAULT 0,
+    created_at         TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at         TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+                                            ON UPDATE CURRENT_TIMESTAMP,
     CONSTRAINT fk_goals_user
         FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
     KEY idx_goals_user_period (user_id, period_start, period_end)

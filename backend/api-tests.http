@@ -148,3 +148,97 @@ Authorization: Bearer {{token}}
   "durationSeconds": 0,
   "distanceMeters": -5
 }
+
+### ------------------------------------------------------------------
+### Goals (phase 7)
+### ------------------------------------------------------------------
+
+### 19. List goals (empty on a fresh DB)
+GET {{baseUrl}}/goals
+Authorization: Bearer {{token}}
+
+### 20. Create a weekly distance goal (running)
+# Period dates are DATE strings — midnight in the device's local zone.
+# On success, response includes `id`; copy it into `@goalId` below.
+# @name createGoal
+POST {{baseUrl}}/goals
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "title": "Run 20 km this week",
+  "activityType": "RUNNING",
+  "goalType": "distance",
+  "period": "WEEK",
+  "targetValue": 20,
+  "periodStart": "2026-09-14",
+  "periodEnd": "2026-09-21"
+}
+
+### 21. Create a monthly weightlifting volume goal
+POST {{baseUrl}}/goals
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "title": "Lift 5000 kg total in September",
+  "activityType": "WEIGHTLIFTING",
+  "goalType": "volume",
+  "period": "MONTH",
+  "targetValue": 5000,
+  "periodStart": "2026-09-01",
+  "periodEnd": "2026-10-01"
+}
+
+### 22. Create an "any activity" workout-count goal
+POST {{baseUrl}}/goals
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "title": "Move 4 times this week",
+  "activityType": null,
+  "goalType": "count",
+  "period": "WEEK",
+  "targetValue": 4,
+  "periodStart": "2026-09-14",
+  "periodEnd": "2026-09-21"
+}
+
+### 23. Save the goal id by hand
+# Copy the `id` from response 20 above.
+@goalId = 1
+
+### 24. Update a goal (change title + target — period is immutable)
+PUT {{baseUrl}}/goals/{{goalId}}
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "title": "Run 25 km this week",
+  "targetValue": 25
+}
+
+### 25. Delete a goal
+DELETE {{baseUrl}}/goals/{{goalId}}
+Authorization: Bearer {{token}}
+
+### 26. Delete a goal that doesn't belong to this user (expect 404)
+DELETE {{baseUrl}}/goals/999999
+Authorization: Bearer {{token}}
+
+### 27. Create an invalid goal — distance goal scoped to WEIGHTLIFTING
+###     (expect 422 with fields.activityType)
+POST {{baseUrl}}/goals
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "title": "This shouldn't work",
+  "activityType": "WEIGHTLIFTING",
+  "goalType": "distance",
+  "period": "WEEK",
+  "targetValue": 10,
+  "periodStart": "2026-09-14",
+  "periodEnd": "2026-09-21"
+}

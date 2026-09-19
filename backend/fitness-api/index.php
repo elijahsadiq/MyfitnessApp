@@ -73,6 +73,12 @@ try {
     $router->add('GET',    '/workouts/{id}',    [WorkoutController::class, 'show']);
     $router->add('DELETE', '/workouts/{id}',    [WorkoutController::class, 'destroy']);
 
+    // Goals (phase 7) — definitions only; progress is client-side.
+    $router->add('GET',    '/goals',            [GoalController::class, 'index']);
+    $router->add('POST',   '/goals',            [GoalController::class, 'create']);
+    $router->add('PUT',    '/goals/{id}',       [GoalController::class, 'update']);
+    $router->add('DELETE', '/goals/{id}',       [GoalController::class, 'destroy']);
+
     $router->dispatch($method, $path, $body);
 } catch (Throwable $e) {
     // Everything unrecognised is a 500. Log the trace to Apache's error log

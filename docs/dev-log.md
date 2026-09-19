@@ -646,3 +646,50 @@ Every one of the four subclasses answers the same *filtering* question ("which w
 **Assignment task supported**
 - **Task 5b (inheritance)** — the *fourth* hierarchy the report will describe. `Goal → DistanceGoal / WorkoutCountGoal / DurationGoal / StrengthVolumeGoal`. Base owns filtering + progress math; leaves own only measurement.
 - **Task 5c (validation)** — the `init { require(...) }` invariants for activity-scope × goal-type start the client/server validation story that Step 2 mirrors on the backend.
+
+## Step 2 — Backend /goals endpoints + schema migration
+**Built**
+- **Migration `backend/sql/03_migration_goals_phase7.sql`** — additive-only, idempotent via a temporary `add_col_if_absent(table, column, ddl)` stored procedure that consults `INFORMATION_SCHEMA.COLUMNS` before each `ALTER TABLE ADD COLUMN`. `ADD COLUMN IF NOT EXISTS` is MariaDB-only; MySQL 8.4 rejects it (verified — the first draft errored with a 1064 syntax error), so this proc-based form is the portable route. Applied to the running MySQL container after user approval.
+- **Four new columns** on `goals`: `title VARCHAR(120) NOT NULL DEFAULT ''`, `period ENUM('WEEK','MONTH') NOT NULL DEFAULT 'WEEK'`, `completed_notified TINYINT(1) NOT NULL DEFAULT 0`, `updated_at TIMESTAMP … ON UPDATE CURRENT_TIMESTAMP`. `01_schema.sql` also updated so a fresh `docker compose down -v && up` starts with the phase-7 columns already present — the two files stay in sync.
+- **`models/Goal.php`** — PDO data mapper mirroring `Workout.php`: `listFor(userId)` (newest first), `findById(id, userId)`, `create(...)`, `update(id, userId, title, activityType, targetValue)`, `markCompletedNotified(id, userId)`, `deleteFor(id, userId)`, and `toDto(row)` producing the camelCase JSON the Kotlin mappers will consume in Step 3. Class constants `GOAL_TYPES`, `PERIODS`, `ACTIVITY_TYPES` are the single source of truth for the enum literals.
+- **`controllers/GoalController.php`** — four endpoints:
+  - `GET /goals` → list newest first.
+  - `POST /goals` → create with full validation. Returns 201.
+  - `PUT /goals/{id}` → update *title / activityType / targetValue only*; period + dates are immutable, so historical client-side progress remains meaningful.
+  - `DELETE /goals/{id}` → destroy, 200 on success.
+- **Validation mirrors the Kotlin `init` invariants from Step 1**:
+  - `title` required, ≤ 120 chars.
+  - `goalType` ∈ `{distance, count, duration, volume}`; `period` ∈ `{WEEK, MONTH}`.
+  - `targetValue` > 0 with per-type upper bounds (1000 km, 1000 workouts, 100 000 min, 500 000 kg).
+  - `periodEnd > periodStart`.
+  - `distance` never `WEIGHTLIFTING`; `volume` never `RUNNING`/`CYCLING`.
+- **Per-user scoping + info-hiding**: every SQL query joins on `user_id = Auth::requireUser()`. Modifying or reading another user's row returns **404 "Goal not found"** — not 403 — so the endpoints never reveal whether an id exists in someone else's account.
+- **`index.php`** — four routes wired: `GET/POST /goals` and `PUT/DELETE /goals/{id}`.
+- **`backend/api-tests.http`** — nine new requests (19–27): list, three creates (single-activity distance, single-activity volume, any-activity count), update, delete, delete-someone-else's (404), and one 422 failing-validation case (`distance` + `WEIGHTLIFTING`).
+
+**Smoke-tested end-to-end against the running Docker stack**:
+- `GET /goals` returns `[]` on a fresh DB.
+- `POST /goals` for each of the three variants → 201 with a full DTO.
+- `PUT /goals/{id}` updates title + target; `updatedAt` timestamp advances as expected.
+- `DELETE /goals/{id}` → 200; a follow-up `GET` shows the goal gone.
+- Invalid inputs: distance-on-weightlifting → 422 with `fields.activityType`; negative target → 422 with `fields.targetValue`.
+- Missing token → 401; other user's id → 404.
+
+**Key design decision — mirror the Kotlin invariants word-for-word**
+Every server-side rule (distance × weightlifting, volume × running, target > 0, per-type upper bounds) has a matching precondition in the Step 1 Kotlin model. Two parallel invariants make the client/server validation write-up (Task 5c) straightforward: server rejections map onto the same field-name keys the Kotlin `ValidationResult` layer already uses, and a rogue client can't sneak past the model constraints.
+
+**Rejected alternative — compute progress on the server**
+The phase-7 brief already ruled this out, but this step's implementation cements the trade-off: `GoalController` never joins `workouts`. Progress lives in the Kotlin `GoalProgressCalculator` (Step 3) so it works offline and reuses the domain hierarchy. The cost is that a server-side leaderboard or push-notification "you're 90% done" is a phase-4+ concern; the win is one calculation, one language, and a smaller API surface.
+
+**Kotlin/Android concepts (for my notes)**
+- *`INFORMATION_SCHEMA.COLUMNS` gated ADD COLUMN* — the MySQL-portable way to make a migration idempotent. Ship the check in a temporary stored procedure and `CALL` it per column; drop the proc at the end. Cleaner than gating each column in a bash wrapper.
+- *`DELIMITER //`* — required inside a `.sql` file whenever a stored routine's body contains semicolons, because otherwise the SQL client would terminate the statement at the first inner `;`. The delimiter change is a client-side directive, not a server statement.
+
+**Verified**
+- `docker exec -i fitness-mysql mysql -uroot -prootpassword fitness_app < backend/sql/03_migration_goals_phase7.sql` — no errors; re-running is a no-op.
+- Smoke-tested every endpoint (details above).
+- `docs/design/goals_screen/` untouched (Step 4 territory).
+
+**Assignment task supported**
+- **Task 4 (development)** — the API side of the goals feature; the Kotlin data layer in Step 3 will consume these endpoints.
+- **Task 5c (validation)** — the server-side field-error map is the second half of the client/server validation story started in Step 1.
