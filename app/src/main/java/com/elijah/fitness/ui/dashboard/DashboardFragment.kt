@@ -50,10 +50,7 @@ class DashboardFragment : BaseFragment<FragmentDashboardBinding>() {
             findNavController().navigate(R.id.action_home_to_profile)
         }
         binding.startWorkoutButton.setOnClickListener {
-            // Reuse the History FAB flow: navigate to workout history so the
-            // choose-activity bottom sheet is one tap away. (Phase 3 will
-            // wire this to a live-tracking GPS session.)
-            findNavController().navigate(R.id.workoutHistoryFragment)
+            findNavController().navigate(R.id.action_home_to_choose_activity)
         }
 
         collectOnStart(viewModel.summary) { renderSummary(it) }

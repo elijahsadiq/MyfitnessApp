@@ -18,7 +18,7 @@ services:
       MYSQL_USER: fitness_user
       MYSQL_PASSWORD: fitness_pass
     ports:
-      - "3306:3306"
+      - "3307:3306"
     volumes:
       - mysql_data:/var/lib/mysql
       # Anything in /docker-entrypoint-initdb.d is executed on first launch,

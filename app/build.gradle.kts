@@ -35,7 +35,7 @@ android {
             buildConfigField(
                 "String",
                 "BASE_URL",
-                "\"http://10.0.2.2:8080/fitness-api/\""
+                "\"http://localhost:8080/\""
             )
         }
         create("cloud") {
