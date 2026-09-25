@@ -693,3 +693,43 @@ The phase-7 brief already ruled this out, but this step's implementation cements
 **Assignment task supported**
 - **Task 4 (development)** — the API side of the goals feature; the Kotlin data layer in Step 3 will consume these endpoints.
 - **Task 5c (validation)** — the server-side field-error map is the second half of the client/server validation story started in Step 1.
+
+## Step 3 — Data layer (Kotlin)
+**Built**
+- **`data/model/GoalType.kt`** — enum `{DISTANCE, COUNT, DURATION, VOLUME}` with `wire()` / `fromWire(String)` for the lowercase server representation. Single source of truth for the type constant across DTO, mapper, calculator, and Step 5's UI chips.
+- **`data/model/GoalWithProgress.kt`** — the snapshot a view holder renders: `goal, currentValue, progressFraction, isComplete, daysRemaining`. The UI reads fields — no recompute in view holders.
+- **`data/model/GoalProgressCalculator.kt`** — combines `goalRepository.observeGoals()` and `workoutRepository.observeWorkouts()` with `combine {}` so *any* upstream change (log a workout, edit a goal target) recomputes progress for every affected goal instantly. Takes an injectable `Clock` for `daysRemaining` so tests are deterministic. Lives in `data/model` because it depends only on the domain and the two repository interfaces — no Android imports, no Retrofit — which enforces the phase-7 scope rule "progress lives on the client" at the type level.
+- **`data/remote/dto/GoalDto.kt`** — `GoalDto` (response), `CreateGoalRequestDto`, `UpdateGoalRequestDto`. Matches the PHP `GoalController::toDto` one-for-one; `activityType` is `String?` so `null` (any activity) round-trips.
+- **`data/remote/mapper/GoalMapper.kt`** — `GoalDto.toDomain(zone)` picks the concrete subclass from `goalType`; period DATE strings become half-open `Instant` boundaries at midnight in [zone]. `buildCreateGoalRequest(...)` / `buildUpdateGoalRequest(...)` build the request DTOs from the raw picker fields. `Goal.goalType()` extension recovers the `GoalType` enum for a domain instance.
+- **`data/remote/api/GoalApi.kt`** — Retrofit interface with `list()`, `create(body)`, `update(id, body)`, `delete(id)`.
+- **`data/repository/GoalRepository.kt`** — interface: `observeGoals(): Flow<List<Goal>>`, `refresh()`, `createGoal(...raw fields)`, `updateGoal(id, title, activityType, targetValue)`, `deleteGoal(id)`. Same shape as `WorkoutRepository`: hot stream + `suspend` mutators returning `ApiResult` so ViewModels never see exceptions.
+- **`data/repository/RemoteGoalRepository.kt`** — Retrofit-backed implementation. `MutableStateFlow<List<Goal>>` holds the last-known list; every mutator patches it optimistically after the server confirms. Sorted newest-first by `createdAt`. Mirrors `RemoteWorkoutRepository` — including the "no offline cache; Room + WorkManager in phase 4" note.
+- **`data/repository/FakeGoalRepository.kt`** — in-memory, monotonic `AtomicLong` id counter, uses `Clock`/`ZoneId` so tests can pin now. Rebuilds the same subclass on `updateGoal` (Goal fields are `val`, so an edit reconstructs the instance — the shape is what makes each subclass load-bearing).
+- **`NetworkModule.buildGoalApi(retrofit)`** added. **`AppContainer`** wires `goalApi`, `goalRepository = RemoteGoalRepository(goalApi)`, and `goalProgressCalculator = GoalProgressCalculator(goalRepo, workoutRepo)`. Same one-line-swap-to-Fake escape hatch as `workoutRepository`.
+- **Tests (22 new, 135 total, 0 failures)**:
+  - `GoalMapperTest` (8): every subclass mapped from `goalType`; null activity maps to "any"; period DATEs become the exact half-open `Instant` boundaries; the mapper preserves subclass invariants (a server-sent distance-on-weightlifting throws at construction — the `init { require(...) }` line is our last line of defence); `GoalType` wire round-trip.
+  - `RemoteGoalRepositoryTest` (6): refresh sorts newest-first; error paths leave the store empty; create/update/delete patch the flow correctly; create-body carries the lowercase `goalType` and uppercase `period` the server expects; delete-error leaves the flow untouched.
+  - `FakeGoalRepositoryTest` (4): create → observe emission; update rebuilds the same subclass; missing-id update returns 404 `ApiResult.Error`; delete then re-delete returns 404.
+  - `GoalProgressCalculatorTest` (4): one snapshot per goal; `combine` re-emits when workouts change (progress goes 0 → 1.0 after logging a matching workout); `combine` re-emits when goals change (adding one produces a new snapshot); `daysRemaining` is negative for expired goals.
+
+**Key design decision — `GoalProgressCalculator` lives in `data/model`**
+The calculator has no Android imports, no `retrofit2`, no `okhttp3`. Placing it next to the domain classes means it's part of the "progress lives on the client" contract by construction: a future contributor who tried to add a `@GET("/goals/{id}/progress")` call would find no seam to put it in without moving the class, and moving the class would fail code review because the dependency graph would grow an `androidx` edge that had never been there.
+
+**Rejected alternative — a `flatMapLatest` on goals**
+Considered writing the calculator as `goalRepository.observeGoals().flatMapLatest { goals -> workoutRepository.observeWorkouts().map { workouts -> combineTo(goals, workouts) } }`. Rejected because a fresh workouts subscription every time the goals list changes wastes upstream work (Retrofit → mapper → sort) and drops any in-flight goal progress render mid-emission. `combine {}` shares one subscription per upstream and re-emits on either — the right primitive for the "both change; recompute" pattern.
+
+**Kotlin/Android concepts (for my notes)**
+- *`Flow.combine {}`* — takes N cold flows, subscribes to each once, and emits a new value every time *any* of them emits. Perfect fit for "N inputs feed one derived observable"; the callback receives the latest value from each source. Used here so a new workout instantly re-renders every goal card.
+- *`ChronoUnit.DAYS.between(instantA, instantB)`* — computes whole-day difference between two `Instant`s using UTC-based arithmetic, so it doesn't skew across DST transitions the way `Duration.toDays()` on `ZonedDateTime` could.
+- *`retrofit2.create()` (extension)* — the reified inline form of `retrofit.create(SomeApi::class.java)`. The API interface is a Kotlin type; the extension avoids the explicit `::class.java` on every wire-up.
+- *`AtomicLong`* — a lock-free counter safe under concurrent `getAndIncrement()` calls. Used in the fake repo so parallel test coroutines can each `createGoal` without stomping on ids.
+
+**Verified**
+- `./gradlew assembleLocalDebug` — BUILD SUCCESSFUL.
+- `./gradlew testLocalDebugUnitTest` — **135 tests, 0 failures** (22 new).
+- No on-device work in this step — the ViewModels wire on top in Step 4.
+
+**Assignment task supported**
+- **Task 3b (design)** — the calculator's placement + the mapper preserving subclass invariants are two more paragraphs for the design chapter.
+- **Task 4 (development)** — every seam Step 4's `GoalsFragment` will need is now in place.
+- **Task 5b (inheritance)** — `Goal.goalType()` (extension) and the `when (goalType)` switch in the mapper make the subclass hierarchy load-bearing across the wire.

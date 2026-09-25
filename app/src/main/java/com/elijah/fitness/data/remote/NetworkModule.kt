@@ -2,6 +2,7 @@ package com.elijah.fitness.data.remote
 
 import com.elijah.fitness.BuildConfig
 import com.elijah.fitness.data.remote.api.AuthApi
+import com.elijah.fitness.data.remote.api.GoalApi
 import com.elijah.fitness.data.remote.api.UserApi
 import com.elijah.fitness.data.remote.api.WorkoutApi
 import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
@@ -57,4 +58,5 @@ object NetworkModule {
     fun buildAuthApi(retrofit: Retrofit): AuthApi = retrofit.create()
     fun buildUserApi(retrofit: Retrofit): UserApi = retrofit.create()
     fun buildWorkoutApi(retrofit: Retrofit): WorkoutApi = retrofit.create()
+    fun buildGoalApi(retrofit: Retrofit): GoalApi = retrofit.create()
 }
