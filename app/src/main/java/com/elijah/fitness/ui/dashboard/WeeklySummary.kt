@@ -1,16 +1,25 @@
 package com.elijah.fitness.ui.dashboard
 
 import com.elijah.fitness.data.model.ActivityType
+import com.elijah.fitness.util.BmiCategory
 
 /**
  * Aggregated numbers for the current calendar week. Raw values only — the
  * fragment does the formatting so this stays trivially testable.
+ *
+ * [bmi] + [bmiCategory] are user-scoped, not workout-scoped, but live
+ * here because the Home hero card renders them alongside the weekly
+ * stats and the fragment already collects `summary` in one place.
+ * Both are `null` when the user hasn't recorded height + weight yet —
+ * the UI shows a "missing" state in that case.
  */
 data class WeeklySummary(
     val workoutCount: Int,
     val activeMinutes: Long,
     val totalDistanceMeters: Double,
     val estimatedCalories: Double,
+    val bmi: Double?,
+    val bmiCategory: BmiCategory?,
     val perActivity: Map<ActivityType, ActivityBreakdown>
 ) {
 
@@ -37,6 +46,8 @@ data class WeeklySummary(
             activeMinutes = 0L,
             totalDistanceMeters = 0.0,
             estimatedCalories = 0.0,
+            bmi = null,
+            bmiCategory = null,
             perActivity = emptyMap()
         )
     }

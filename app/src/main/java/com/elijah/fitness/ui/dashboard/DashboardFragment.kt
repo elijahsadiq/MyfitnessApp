@@ -79,11 +79,7 @@ class DashboardFragment : BaseFragment<FragmentDashboardBinding>() {
             "%.1f",
             summary.totalDistanceMeters / 1000.0,
         )
-        binding.metricEnergy.text = String.format(
-            Locale.getDefault(),
-            "%,.0f",
-            summary.estimatedCalories,
-        )
+        renderBmi(summary)
 
         // Hero subtitle uses the hardcoded weekly target of 4 workouts.
         binding.heroSubtitle.text = ctx.getString(
@@ -120,6 +116,29 @@ class DashboardFragment : BaseFragment<FragmentDashboardBinding>() {
         binding.goalMinutesBar.progress = ((minutes.toFloat() / GOAL_MINUTES) * 100)
             .toInt()
             .coerceIn(0, 100)
+    }
+
+    private fun renderBmi(summary: WeeklySummary) {
+        val ctx = requireContext()
+        val bmi = summary.bmi
+        if (bmi == null) {
+            binding.metricBmi.text = ctx.getString(R.string.home_metric_bmi_no_data)
+            binding.metricBmiCategory.text = ctx.getString(R.string.home_metric_bmi_missing)
+            return
+        }
+        binding.metricBmi.text = String.format(Locale.getDefault(), "%.1f", bmi)
+        val categoryRes = when (summary.bmiCategory) {
+            com.elijah.fitness.util.BmiCategory.UNDERWEIGHT ->
+                R.string.home_metric_bmi_category_underweight
+            com.elijah.fitness.util.BmiCategory.NORMAL ->
+                R.string.home_metric_bmi_category_normal
+            com.elijah.fitness.util.BmiCategory.OVERWEIGHT ->
+                R.string.home_metric_bmi_category_overweight
+            com.elijah.fitness.util.BmiCategory.OBESE ->
+                R.string.home_metric_bmi_category_obese
+            null -> R.string.home_metric_bmi_missing
+        }
+        binding.metricBmiCategory.text = ctx.getString(categoryRes)
     }
 
     private fun renderHomeChrome(ui: DashboardViewModel.HomeUi) {

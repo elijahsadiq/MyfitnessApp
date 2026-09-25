@@ -81,5 +81,6 @@ class AppContainer(applicationContext: Context) {
         authApi = authApi,
         tokenStore = tokenStore,
         onboardingStore = onboardingStore,
+        userSettings = userSettings,
     )
 }

@@ -25,6 +25,7 @@ class RemoteAuthRepository(
     private val authApi: AuthApi,
     private val tokenStore: TokenStore,
     private val onboardingStore: OnboardingStore,
+    private val userSettings: UserSettings,
 ) : AuthRepository {
 
     override val isLoggedIn: Flow<Boolean> =
@@ -42,7 +43,9 @@ class RemoteAuthRepository(
             is ApiResult.Success -> {
                 tokenStore.save(result.data.token)
                 onboardingStore.markCompleted()
-                ApiResult.Success(result.data.user.toDomain())
+                val profile = result.data.user.toDomain()
+                userSettings.hydrateFrom(profile.weightKg, profile.heightCm)
+                ApiResult.Success(profile)
             }
             is ApiResult.Error -> result
             ApiResult.NetworkError -> ApiResult.NetworkError
@@ -55,7 +58,9 @@ class RemoteAuthRepository(
             is ApiResult.Success -> {
                 tokenStore.save(result.data.token)
                 onboardingStore.markCompleted()
-                ApiResult.Success(result.data.user.toDomain())
+                val profile = result.data.user.toDomain()
+                userSettings.hydrateFrom(profile.weightKg, profile.heightCm)
+                ApiResult.Success(profile)
             }
             is ApiResult.Error -> result
             ApiResult.NetworkError -> ApiResult.NetworkError

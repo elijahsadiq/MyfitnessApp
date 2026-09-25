@@ -2,6 +2,8 @@ package com.elijah.fitness.ui.auth
 
 import androidx.annotation.StringRes
 import com.elijah.fitness.R
+import com.elijah.fitness.util.BodyMetrics
+import com.elijah.fitness.util.UnitSystem
 
 /**
  * Pure-Kotlin validators for the auth forms. No Android imports beyond
@@ -15,8 +17,12 @@ object AuthValidators {
     /** Minimum password length. Kept as a constant so tests + UI hint stay aligned. */
     const val PASSWORD_MIN_LENGTH: Int = 8
 
+    // Human plausibility bounds in metric. Imperial ranges are derived
+    // from these — the app stores everything in kg / cm regardless.
     const val MIN_WEIGHT_KG: Double = 20.0
     const val MAX_WEIGHT_KG: Double = 300.0
+    const val MIN_HEIGHT_CM: Double = 90.0
+    const val MAX_HEIGHT_CM: Double = 250.0
 
     sealed interface ValidationResult {
         data object Ok : ValidationResult
@@ -27,7 +33,6 @@ object AuthValidators {
         val trimmed = email?.trim().orEmpty()
         if (trimmed.isEmpty()) return ValidationResult.Invalid(R.string.auth_error_email_required)
         // Deliberately not using android.util.Patterns so this stays JVM-testable.
-        // The pattern covers RFC 5321-style local-part@domain.tld with subdomains.
         val regex = Regex("^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")
         return if (regex.matches(trimmed)) ValidationResult.Ok
         else ValidationResult.Invalid(R.string.auth_error_email_invalid)
@@ -51,16 +56,49 @@ object AuthValidators {
     }
 
     /**
-     * Weight is optional at the API level, so an empty input is `Ok`.
-     * If typed, it must be a number in the plausible human range.
+     * Body weight is now required (BMI depends on it). [unitSystem]
+     * determines both the acceptable numeric range and which error
+     * string is returned. Storage on the server is always in kg, but
+     * the input string is in the user's chosen unit.
      */
-    fun validateWeightKg(raw: String?): ValidationResult {
+    fun validateWeight(raw: String?, unitSystem: UnitSystem): ValidationResult {
         val trimmed = raw?.trim().orEmpty()
-        if (trimmed.isEmpty()) return ValidationResult.Ok
+        if (trimmed.isEmpty()) return ValidationResult.Invalid(R.string.auth_error_weight_required)
         val value = trimmed.toDoubleOrNull()
             ?: return ValidationResult.Invalid(R.string.auth_error_weight_invalid)
-        return if (value in MIN_WEIGHT_KG..MAX_WEIGHT_KG) ValidationResult.Ok
-        else ValidationResult.Invalid(R.string.auth_error_weight_out_of_range)
+        val (min, max, errorRes) = when (unitSystem) {
+            UnitSystem.METRIC -> Triple(MIN_WEIGHT_KG, MAX_WEIGHT_KG,
+                R.string.auth_error_weight_out_of_range_metric)
+            UnitSystem.IMPERIAL -> Triple(
+                BodyMetrics.kilogramsToPounds(MIN_WEIGHT_KG),
+                BodyMetrics.kilogramsToPounds(MAX_WEIGHT_KG),
+                R.string.auth_error_weight_out_of_range_imperial,
+            )
+        }
+        return if (value in min..max) ValidationResult.Ok
+        else ValidationResult.Invalid(errorRes)
+    }
+
+    /**
+     * Height is required (BMI depends on it). Same unit-aware pattern
+     * as [validateWeight] — [unitSystem] picks the range + error string.
+     */
+    fun validateHeight(raw: String?, unitSystem: UnitSystem): ValidationResult {
+        val trimmed = raw?.trim().orEmpty()
+        if (trimmed.isEmpty()) return ValidationResult.Invalid(R.string.auth_error_height_required)
+        val value = trimmed.toDoubleOrNull()
+            ?: return ValidationResult.Invalid(R.string.auth_error_height_invalid)
+        val (min, max, errorRes) = when (unitSystem) {
+            UnitSystem.METRIC -> Triple(MIN_HEIGHT_CM, MAX_HEIGHT_CM,
+                R.string.auth_error_height_out_of_range_metric)
+            UnitSystem.IMPERIAL -> Triple(
+                BodyMetrics.centimetersToInches(MIN_HEIGHT_CM),
+                BodyMetrics.centimetersToInches(MAX_HEIGHT_CM),
+                R.string.auth_error_height_out_of_range_imperial,
+            )
+        }
+        return if (value in min..max) ValidationResult.Ok
+        else ValidationResult.Invalid(errorRes)
     }
 
     fun validateTermsAccepted(accepted: Boolean): ValidationResult =

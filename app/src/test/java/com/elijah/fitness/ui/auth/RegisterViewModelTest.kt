@@ -4,6 +4,7 @@ import com.elijah.fitness.R
 import com.elijah.fitness.data.model.UserProfile
 import com.elijah.fitness.data.remote.ApiResult
 import com.elijah.fitness.data.repository.AuthRepository
+import com.elijah.fitness.util.UnitSystem
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -16,6 +17,7 @@ import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
@@ -39,6 +41,7 @@ class RegisterViewModelTest {
             email = "bad",
             password = "short",
             weightRaw = "500",
+            heightRaw = "",
             termsAccepted = false,
         )
 
@@ -47,7 +50,8 @@ class RegisterViewModelTest {
         assertEquals(FieldError.Res(R.string.auth_error_name_required), state.fullNameError)
         assertEquals(FieldError.Res(R.string.auth_error_email_invalid), state.emailError)
         assertEquals(FieldError.Res(R.string.auth_error_password_too_short), state.passwordError)
-        assertEquals(FieldError.Res(R.string.auth_error_weight_out_of_range), state.weightError)
+        assertEquals(FieldError.Res(R.string.auth_error_weight_out_of_range_metric), state.weightError)
+        assertEquals(FieldError.Res(R.string.auth_error_height_required), state.heightError)
         assertEquals(FieldError.Res(R.string.auth_error_terms_required), state.termsError)
         assertEquals(0, repo.registerCallCount)
     }
@@ -63,6 +67,7 @@ class RegisterViewModelTest {
             email = "alex@example.com",
             password = "hunter2hunter",
             weightRaw = "70.5",
+            heightRaw = "178",
             termsAccepted = true,
         )
         dispatcher.scheduler.advanceUntilIdle()
@@ -75,40 +80,47 @@ class RegisterViewModelTest {
         assertEquals(RegisterViewModel.Event.RegistrationComplete, vm.events.first())
         assertEquals(1, repo.registerCallCount)
         assertEquals(70.5, repo.lastWeight!!, 0.0)
+        assertEquals(178.0, repo.lastHeight!!, 0.0)
     }
 
     @Test
-    fun `empty weight submits as null`() = runTest {
+    fun `imperial input converts to metric before hitting the API`() = runTest {
         val repo = FakeAuthRepository()
         repo.registerResult = ApiResult.Success(sampleUser)
         val vm = RegisterViewModel(repo)
 
+        vm.onUnitSystemChanged(UnitSystem.IMPERIAL)
         vm.submit(
             fullName = "Alex",
             email = "alex@example.com",
             password = "hunter2hunter",
-            weightRaw = "",
+            weightRaw = "155",     // lb
+            heightRaw = "70",      // inches
             termsAccepted = true,
         )
         dispatcher.scheduler.advanceUntilIdle()
 
-        assertNull(repo.lastWeight)
+        assertNotNull(repo.lastWeight)
+        // 155 lb ~= 70.31 kg; 70 in ~= 177.8 cm
+        assertEquals(70.31, repo.lastWeight!!, 0.02)
+        assertEquals(177.8, repo.lastHeight!!, 0.02)
     }
 
     @Test
-    fun `422 field errors map onto the matching fields`() = runTest {
+    fun `422 field errors map onto the matching fields including height`() = runTest {
         val repo = FakeAuthRepository()
         repo.registerResult = ApiResult.Error(
             message = "Validation failed",
             status = 422,
-            fieldErrors = mapOf("email" to "Already registered"),
+            fieldErrors = mapOf("email" to "Already registered", "heightCm" to "Too tall"),
         )
         val vm = RegisterViewModel(repo)
 
-        vm.submit("Alex", "alex@example.com", "hunter2hunter", "70", termsAccepted = true)
+        vm.submit("Alex", "alex@example.com", "hunter2hunter", "70", "178", termsAccepted = true)
         dispatcher.scheduler.advanceUntilIdle()
 
         assertEquals(FieldError.Text("Already registered"), vm.uiState.value.emailError)
+        assertEquals(FieldError.Text("Too tall"), vm.uiState.value.heightError)
     }
 
     @Test
@@ -117,7 +129,7 @@ class RegisterViewModelTest {
         repo.registerResult = ApiResult.NetworkError
         val vm = RegisterViewModel(repo)
 
-        vm.submit("Alex", "alex@example.com", "hunter2hunter", "70", termsAccepted = true)
+        vm.submit("Alex", "alex@example.com", "hunter2hunter", "70", "178", termsAccepted = true)
         dispatcher.scheduler.advanceUntilIdle()
 
         val event = vm.events.first() as RegisterViewModel.Event.ShowNetworkError
@@ -129,7 +141,7 @@ class RegisterViewModelTest {
         email = "alex@example.com",
         fullName = "Alex",
         weightKg = 70.0,
-        heightCm = null,
+        heightCm = 178.0,
         createdAt = Instant.parse("2026-01-01T00:00:00Z"),
     )
 
@@ -139,6 +151,7 @@ class RegisterViewModelTest {
 
         var registerCallCount = 0
         var lastWeight: Double? = null
+        var lastHeight: Double? = null
         var registerResult: ApiResult<UserProfile> = ApiResult.NetworkError
 
         override suspend fun register(
@@ -147,6 +160,7 @@ class RegisterViewModelTest {
         ): ApiResult<UserProfile> {
             registerCallCount++
             lastWeight = weightKg
+            lastHeight = heightCm
             return registerResult
         }
 

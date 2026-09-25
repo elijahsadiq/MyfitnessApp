@@ -109,6 +109,40 @@
                 android:minHeight="@dimen/button_pill_height" />
         </com.google.android.material.textfield.TextInputLayout>
 
+        <!-- Units toggle: Metric (kg/cm) vs Imperial (lb/in). Single-select. -->
+        <TextView
+            style="@style/TextAppearance.Fitness.LabelMd"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_lg"
+            android:text="@string/auth_field_units"
+            android:textColor="@color/text_secondary" />
+
+        <com.google.android.material.button.MaterialButtonToggleGroup
+            android:id="@+id/unitSystemToggle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_xs"
+            app:selectionRequired="true"
+            app:singleSelection="true">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/unitMetric"
+                style="?attr/materialButtonOutlinedStyle"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/auth_unit_metric" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/unitImperial"
+                style="?attr/materialButtonOutlinedStyle"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/auth_unit_imperial" />
+        </com.google.android.material.button.MaterialButtonToggleGroup>
+
         <!-- Body weight -->
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/weightFieldLayout"
@@ -120,10 +154,34 @@
             app:helperText="@string/auth_field_weight_hint"
             app:helperTextTextColor="@color/text_secondary"
             app:startIconDrawable="@drawable/ic_scale_24"
-            app:startIconTint="@color/text_secondary">
+            app:startIconTint="@color/text_secondary"
+            app:suffixText="@string/auth_unit_suffix_kg">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/weightInput"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:imeOptions="actionNext"
+                android:inputType="numberDecimal"
+                android:minHeight="@dimen/button_pill_height" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Height -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/heightFieldLayout"
+            style="@style/Widget.Fitness.TextField"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_md"
+            android:hint="@string/auth_field_height"
+            app:helperText="@string/auth_field_height_hint"
+            app:helperTextTextColor="@color/text_secondary"
+            app:startIconDrawable="@drawable/ic_scale_24"
+            app:startIconTint="@color/text_secondary"
+            app:suffixText="@string/auth_unit_suffix_cm">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/heightInput"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:imeOptions="actionDone"

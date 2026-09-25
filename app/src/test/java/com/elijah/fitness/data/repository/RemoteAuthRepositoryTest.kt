@@ -43,7 +43,7 @@ class RemoteAuthRepositoryTest {
                 )
             )
         )
-        val repo = RemoteAuthRepository(api, tokenStore, onboardingStore)
+        val repo = RemoteAuthRepository(api, tokenStore, onboardingStore, UserSettings())
 
         val result = repo.login("alex@example.com", "Password123")
 
@@ -65,7 +65,7 @@ class RemoteAuthRepositoryTest {
                 )
             )
         )
-        val repo = RemoteAuthRepository(api, tokenStore, onboardingStore)
+        val repo = RemoteAuthRepository(api, tokenStore, onboardingStore, UserSettings())
 
         val result = repo.register(
             email = "alex@example.com",
@@ -91,7 +91,7 @@ class RemoteAuthRepositoryTest {
                     .toResponseBody("application/json".toMediaType())
             )
         )
-        val repo = RemoteAuthRepository(api, tokenStore, FakeOnboardingStore())
+        val repo = RemoteAuthRepository(api, tokenStore, FakeOnboardingStore(), UserSettings())
 
         val result = repo.login("alex@example.com", "wrong")
 
@@ -110,7 +110,7 @@ class RemoteAuthRepositoryTest {
                     .toResponseBody("application/json".toMediaType())
             )
         )
-        val repo = RemoteAuthRepository(api, tokenStore, FakeOnboardingStore())
+        val repo = RemoteAuthRepository(api, tokenStore, FakeOnboardingStore(), UserSettings())
 
         val result = repo.register("bad", "shortpw", "Alex")
 
@@ -126,7 +126,7 @@ class RemoteAuthRepositoryTest {
     fun `logout clears the token even when the network call succeeds`() = runTest {
         val tokenStore = FakeTokenStore().apply { save("t") }
         val api = FakeAuthApi(logoutResponse = Response.success(Unit))
-        val repo = RemoteAuthRepository(api, tokenStore, FakeOnboardingStore())
+        val repo = RemoteAuthRepository(api, tokenStore, FakeOnboardingStore(), UserSettings())
 
         val result = repo.logout()
 
@@ -140,7 +140,7 @@ class RemoteAuthRepositoryTest {
         val api = FakeAuthApi(
             logoutResponse = Response.error(500, "".toResponseBody("application/json".toMediaType()))
         )
-        val repo = RemoteAuthRepository(api, tokenStore, FakeOnboardingStore())
+        val repo = RemoteAuthRepository(api, tokenStore, FakeOnboardingStore(), UserSettings())
 
         val result = repo.logout()
 
@@ -155,7 +155,7 @@ class RemoteAuthRepositoryTest {
     @Test
     fun `isLoggedIn tracks the TokenStore`() = runTest {
         val tokenStore = FakeTokenStore()
-        val repo = RemoteAuthRepository(FakeAuthApi(), tokenStore, FakeOnboardingStore())
+        val repo = RemoteAuthRepository(FakeAuthApi(), tokenStore, FakeOnboardingStore(), UserSettings())
 
         assertFalse(repo.isLoggedIn.first())
         tokenStore.save("t")

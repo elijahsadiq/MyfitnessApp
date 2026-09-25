@@ -28,7 +28,8 @@ class WeeklySummaryCalculatorTest {
             workouts = emptyList(),
             now = now,
             zone = zone,
-            bodyWeightKg = bodyWeightKg
+            bodyWeightKg = bodyWeightKg,
+            heightCm = null
         )
         assertEquals(0, summary.workoutCount)
         assertEquals(0L, summary.activeMinutes)
@@ -49,7 +50,8 @@ class WeeklySummaryCalculatorTest {
             workouts = listOf(lastWeekRun),
             now = now,
             zone = zone,
-            bodyWeightKg = bodyWeightKg
+            bodyWeightKg = bodyWeightKg,
+            heightCm = null
         )
         assertEquals(0, summary.workoutCount)
         assertEquals(0.0, summary.totalDistanceMeters, 0.0)
@@ -77,7 +79,7 @@ class WeeklySummaryCalculatorTest {
                 sets = listOf(StrengthSet("Bench", 5, 60.0))
             )
         )
-        val summary = WeeklySummaryCalculator.compute(workouts, now, zone, bodyWeightKg)
+        val summary = WeeklySummaryCalculator.compute(workouts, now, zone, bodyWeightKg, heightCm = null)
         assertEquals(3, summary.workoutCount)
         assertEquals(30 + 60 + 45L, summary.activeMinutes)
     }
@@ -104,7 +106,7 @@ class WeeklySummaryCalculatorTest {
                 sets = listOf(StrengthSet("Bench", 5, 60.0))
             )
         )
-        val summary = WeeklySummaryCalculator.compute(workouts, now, zone, bodyWeightKg)
+        val summary = WeeklySummaryCalculator.compute(workouts, now, zone, bodyWeightKg, heightCm = null)
         assertEquals(5_200.0 + 22_400.0, summary.totalDistanceMeters, 1e-6)
     }
 
@@ -132,7 +134,7 @@ class WeeklySummaryCalculatorTest {
                 )
             )
         )
-        val summary = WeeklySummaryCalculator.compute(workouts, now, zone, bodyWeightKg)
+        val summary = WeeklySummaryCalculator.compute(workouts, now, zone, bodyWeightKg, heightCm = null)
 
         val running = summary.perActivity[ActivityType.RUNNING]!!
         assertEquals(2, running.count)
@@ -156,8 +158,8 @@ class WeeklySummaryCalculatorTest {
             // 20 km/h → 8.0 MET band
             distanceMeters = 20_000.0
         )
-        val at70 = WeeklySummaryCalculator.compute(listOf(cycling), now, zone, 70.0)
-        val at100 = WeeklySummaryCalculator.compute(listOf(cycling), now, zone, 100.0)
+        val at70 = WeeklySummaryCalculator.compute(listOf(cycling), now, zone, 70.0, heightCm = null)
+        val at100 = WeeklySummaryCalculator.compute(listOf(cycling), now, zone, 100.0, heightCm = null)
         // 8 MET * 70 kg * 1h = 560; 8 MET * 100 kg * 1h = 800
         assertEquals(560.0, at70.estimatedCalories, 1e-6)
         assertEquals(800.0, at100.estimatedCalories, 1e-6)

@@ -56,8 +56,17 @@
     <string name="auth_field_password">Password</string>
     <string name="auth_field_password_hint">At least 8 characters.</string>
     <string name="auth_field_full_name">Full name</string>
-    <string name="auth_field_weight">Body weight (kg)</string>
-    <string name="auth_field_weight_hint">Used to estimate calories burned.</string>
+    <string name="auth_field_weight">Body weight</string>
+    <string name="auth_field_weight_hint">Used to calculate your BMI.</string>
+    <string name="auth_field_height">Height</string>
+    <string name="auth_field_height_hint">Used to calculate your BMI.</string>
+    <string name="auth_field_units">Units</string>
+    <string name="auth_unit_metric">Metric</string>
+    <string name="auth_unit_imperial">Imperial</string>
+    <string name="auth_unit_suffix_kg">kg</string>
+    <string name="auth_unit_suffix_lb">lb</string>
+    <string name="auth_unit_suffix_cm">cm</string>
+    <string name="auth_unit_suffix_in">in</string>
 
     <!-- Validation error messages (client-side) -->
     <string name="auth_error_email_required">Email is required.</string>
@@ -66,8 +75,14 @@
     <string name="auth_error_password_too_short">Must be at least 8 characters.</string>
     <string name="auth_error_name_required">Full name is required.</string>
     <string name="auth_error_name_too_long">Name is too long.</string>
-    <string name="auth_error_weight_invalid">Enter a number in kilograms.</string>
-    <string name="auth_error_weight_out_of_range">Weight should be between 20 and 300 kg.</string>
+    <string name="auth_error_weight_required">Body weight is required.</string>
+    <string name="auth_error_weight_invalid">Enter a valid number.</string>
+    <string name="auth_error_weight_out_of_range_metric">Weight should be between 20 and 300 kg.</string>
+    <string name="auth_error_weight_out_of_range_imperial">Weight should be between 44 and 661 lb.</string>
+    <string name="auth_error_height_required">Height is required.</string>
+    <string name="auth_error_height_invalid">Enter a valid number.</string>
+    <string name="auth_error_height_out_of_range_metric">Height should be between 90 and 250 cm.</string>
+    <string name="auth_error_height_out_of_range_imperial">Height should be between 35 and 98 in.</string>
     <string name="auth_error_terms_required">Please accept the terms to continue.</string>
 
     <!-- Snackbar-friendly network / generic errors -->
@@ -107,8 +122,13 @@
     <string name="home_metric_minutes_unit">min</string>
     <string name="home_metric_distance">DISTANCE</string>
     <string name="home_metric_distance_unit">km</string>
-    <string name="home_metric_energy">ENERGY</string>
-    <string name="home_metric_energy_unit">kcal</string>
+    <string name="home_metric_bmi">BMI</string>
+    <string name="home_metric_bmi_no_data">—</string>
+    <string name="home_metric_bmi_category_underweight">Underweight</string>
+    <string name="home_metric_bmi_category_normal">Normal</string>
+    <string name="home_metric_bmi_category_overweight">Overweight</string>
+    <string name="home_metric_bmi_category_obese">Obese</string>
+    <string name="home_metric_bmi_missing">Add height in profile</string>
     <string name="home_start_workout">Start workout</string>
     <string name="home_insight_body">Keep logging workouts to unlock personalised insights.</string>
     <string name="home_goals_title">Goals</string>

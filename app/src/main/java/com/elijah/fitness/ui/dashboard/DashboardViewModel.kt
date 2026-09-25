@@ -10,6 +10,8 @@ import com.elijah.fitness.AppContainer
 import com.elijah.fitness.R
 import com.elijah.fitness.data.model.Workout
 import com.elijah.fitness.data.remote.ApiResult
+import com.elijah.fitness.data.remote.api.UserApi
+import com.elijah.fitness.data.remote.apiCall
 import com.elijah.fitness.data.repository.UserSettings
 import com.elijah.fitness.data.repository.WorkoutRepository
 import kotlinx.coroutines.channels.Channel
@@ -41,7 +43,8 @@ import java.time.temporal.TemporalAdjusters
  */
 class DashboardViewModel(
     private val repository: WorkoutRepository,
-    userSettings: UserSettings,
+    private val userSettings: UserSettings,
+    private val userApi: UserApi,
     private val clock: Clock = Clock.systemDefaultZone(),
     private val zone: ZoneId = ZoneId.systemDefault(),
 ) : ViewModel() {
@@ -49,12 +52,14 @@ class DashboardViewModel(
     val summary: StateFlow<WeeklySummary> = combine(
         repository.observeWorkouts(),
         userSettings.bodyWeightKg,
-    ) { workouts, weight ->
+        userSettings.heightCm,
+    ) { workouts, weight, height ->
         WeeklySummaryCalculator.compute(
             workouts = workouts,
             now = clock.instant(),
             zone = zone,
             bodyWeightKg = weight,
+            heightCm = height,
         )
     }.stateIn(
         scope = viewModelScope,
@@ -76,7 +81,10 @@ class DashboardViewModel(
     private val _errorEvents = Channel<ErrorEvent>(Channel.BUFFERED)
     val errorEvents: Flow<ErrorEvent> = _errorEvents.receiveAsFlow()
 
-    init { refresh() }
+    init {
+        refresh()
+        refreshProfile()
+    }
 
     fun refresh() {
         viewModelScope.launch {
@@ -89,6 +97,25 @@ class DashboardViewModel(
                     _errorEvents.send(ErrorEvent.Generic(R.string.workouts_error_load_failed))
             }
             _isLoading.value = false
+        }
+    }
+
+    /**
+     * Hydrate the local body-metrics cache from `/me` on every dashboard
+     * open. New sessions already got these on login/register; this covers
+     * the case of an existing token that pre-dates the BMI feature and
+     * so has an empty height in [UserSettings]. Silent on failure — the
+     * BMI tile just stays in its "missing" state.
+     */
+    private fun refreshProfile() {
+        viewModelScope.launch {
+            val result = apiCall { userApi.me() }
+            if (result is ApiResult.Success) {
+                userSettings.hydrateFrom(
+                    weightKg = result.data.weightKg,
+                    heightCm = result.data.heightCm,
+                )
+            }
         }
     }
 
@@ -134,6 +161,7 @@ class DashboardViewModel(
                 DashboardViewModel(
                     repository = container.workoutRepository,
                     userSettings = container.userSettings,
+                    userApi = container.userApi,
                     clock = clock,
                     zone = zone,
                 )

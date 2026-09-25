@@ -329,7 +329,7 @@
                                 style="@style/TextAppearance.Fitness.LabelSm"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="@string/home_metric_energy"
+                                android:text="@string/home_metric_bmi"
                                 android:textColor="@color/text_on_dark_muted" />
 
                             <LinearLayout
@@ -341,22 +341,22 @@
                                 android:orientation="horizontal">
 
                                 <TextView
-                                    android:id="@+id/metricEnergy"
+                                    android:id="@+id/metricBmi"
                                     style="@style/TextAppearance.Fitness.DisplayMetric"
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
                                     android:textColor="@color/text_on_dark"
-                                    tools:text="1,860" />
-
-                                <TextView
-                                    style="@style/TextAppearance.Fitness.LabelMd"
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:layout_marginStart="6dp"
-                                    android:layout_marginBottom="6dp"
-                                    android:text="@string/home_metric_energy_unit"
-                                    android:textColor="@color/text_on_dark_muted" />
+                                    tools:text="22.4" />
                             </LinearLayout>
+
+                            <TextView
+                                android:id="@+id/metricBmiCategory"
+                                style="@style/TextAppearance.Fitness.LabelMd"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="2dp"
+                                android:textColor="@color/text_on_dark_muted"
+                                tools:text="Normal" />
                         </LinearLayout>
                     </LinearLayout>
 

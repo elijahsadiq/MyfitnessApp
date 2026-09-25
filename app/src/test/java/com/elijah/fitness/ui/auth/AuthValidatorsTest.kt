@@ -76,35 +76,96 @@ class AuthValidatorsTest {
         )
     }
 
-    // ---------- weight ----------
+    // ---------- weight (metric) ----------
 
-    @Test fun `weight empty is valid (optional)`() {
-        assertEquals(ValidationResult.Ok, AuthValidators.validateWeightKg(""))
+    @Test fun `weight empty is now required`() {
+        assertEquals(
+            ValidationResult.Invalid(R.string.auth_error_weight_required),
+            AuthValidators.validateWeight("", com.elijah.fitness.util.UnitSystem.METRIC),
+        )
     }
 
     @Test fun `weight non-numeric is invalid`() {
         assertEquals(
             ValidationResult.Invalid(R.string.auth_error_weight_invalid),
-            AuthValidators.validateWeightKg("light"),
+            AuthValidators.validateWeight("light", com.elijah.fitness.util.UnitSystem.METRIC),
         )
     }
 
-    @Test fun `weight below range is invalid`() {
+    @Test fun `weight below metric range is invalid`() {
         assertEquals(
-            ValidationResult.Invalid(R.string.auth_error_weight_out_of_range),
-            AuthValidators.validateWeightKg("10"),
+            ValidationResult.Invalid(R.string.auth_error_weight_out_of_range_metric),
+            AuthValidators.validateWeight("10", com.elijah.fitness.util.UnitSystem.METRIC),
         )
     }
 
-    @Test fun `weight above range is invalid`() {
+    @Test fun `weight above metric range is invalid`() {
         assertEquals(
-            ValidationResult.Invalid(R.string.auth_error_weight_out_of_range),
-            AuthValidators.validateWeightKg("500"),
+            ValidationResult.Invalid(R.string.auth_error_weight_out_of_range_metric),
+            AuthValidators.validateWeight("500", com.elijah.fitness.util.UnitSystem.METRIC),
         )
     }
 
-    @Test fun `weight in range is valid`() {
-        assertEquals(ValidationResult.Ok, AuthValidators.validateWeightKg("70.5"))
+    @Test fun `weight in metric range is valid`() {
+        assertEquals(
+            ValidationResult.Ok,
+            AuthValidators.validateWeight("70.5", com.elijah.fitness.util.UnitSystem.METRIC),
+        )
+    }
+
+    // ---------- weight (imperial) ----------
+
+    @Test fun `weight in imperial range is valid`() {
+        // 155 lb ~= 70 kg — inside range.
+        assertEquals(
+            ValidationResult.Ok,
+            AuthValidators.validateWeight("155", com.elijah.fitness.util.UnitSystem.IMPERIAL),
+        )
+    }
+
+    @Test fun `weight below imperial range uses imperial error string`() {
+        assertEquals(
+            ValidationResult.Invalid(R.string.auth_error_weight_out_of_range_imperial),
+            AuthValidators.validateWeight("10", com.elijah.fitness.util.UnitSystem.IMPERIAL),
+        )
+    }
+
+    // ---------- height ----------
+
+    @Test fun `height empty is required`() {
+        assertEquals(
+            ValidationResult.Invalid(R.string.auth_error_height_required),
+            AuthValidators.validateHeight("", com.elijah.fitness.util.UnitSystem.METRIC),
+        )
+    }
+
+    @Test fun `height metric in range is valid`() {
+        assertEquals(
+            ValidationResult.Ok,
+            AuthValidators.validateHeight("178", com.elijah.fitness.util.UnitSystem.METRIC),
+        )
+    }
+
+    @Test fun `height metric below range is invalid`() {
+        assertEquals(
+            ValidationResult.Invalid(R.string.auth_error_height_out_of_range_metric),
+            AuthValidators.validateHeight("50", com.elijah.fitness.util.UnitSystem.METRIC),
+        )
+    }
+
+    @Test fun `height imperial in range is valid`() {
+        // 70 in ~= 178 cm.
+        assertEquals(
+            ValidationResult.Ok,
+            AuthValidators.validateHeight("70", com.elijah.fitness.util.UnitSystem.IMPERIAL),
+        )
+    }
+
+    @Test fun `height imperial above range uses imperial error string`() {
+        assertEquals(
+            ValidationResult.Invalid(R.string.auth_error_height_out_of_range_imperial),
+            AuthValidators.validateHeight("200", com.elijah.fitness.util.UnitSystem.IMPERIAL),
+        )
     }
 
     // ---------- terms ----------

@@ -12,12 +12,15 @@ import com.elijah.fitness.FitnessApp
 import com.elijah.fitness.R
 import com.elijah.fitness.databinding.FragmentRegisterBinding
 import com.elijah.fitness.ui.base.BaseFragment
+import com.elijah.fitness.util.UnitSystem
 import com.google.android.material.snackbar.Snackbar
 
 /**
- * Register screen. Same state-machine shape as [LoginFragment] with an
- * extra full-name, weight, and terms-checkbox row. Successful
- * registration bounces to Main via [AuthActivity.goToMain].
+ * Register screen. Same state-machine shape as [LoginFragment] with a
+ * full-name field, a metric/imperial unit toggle, required body-weight
+ * and height fields (both feed BMI on the Home screen), and a
+ * terms-checkbox row. Successful registration bounces to Main via
+ * [AuthActivity.goToMain].
  */
 class RegisterFragment : BaseFragment<FragmentRegisterBinding>() {
 
@@ -34,14 +37,24 @@ class RegisterFragment : BaseFragment<FragmentRegisterBinding>() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        // Default toggle position matches the initial ViewModel state.
+        binding.unitSystemToggle.check(R.id.unitMetric)
+
         binding.fullNameInput.doAfterTextChanged { viewModel.onFullNameChanged() }
         binding.emailInput.doAfterTextChanged { viewModel.onEmailChanged() }
         binding.passwordInput.doAfterTextChanged { viewModel.onPasswordChanged() }
         binding.weightInput.doAfterTextChanged { viewModel.onWeightChanged() }
+        binding.heightInput.doAfterTextChanged { viewModel.onHeightChanged() }
         binding.termsCheckbox.setOnCheckedChangeListener { _, _ -> viewModel.onTermsToggled() }
 
+        binding.unitSystemToggle.addOnButtonCheckedListener { _, checkedId, isChecked ->
+            if (!isChecked) return@addOnButtonCheckedListener
+            val next = if (checkedId == R.id.unitImperial) UnitSystem.IMPERIAL else UnitSystem.METRIC
+            viewModel.onUnitSystemChanged(next)
+        }
+
         binding.registerButton.setOnClickListener { submit() }
-        binding.weightInput.setOnEditorActionListener { _, _, _ ->
+        binding.heightInput.setOnEditorActionListener { _, _, _ ->
             submit(); true
         }
 
@@ -67,6 +80,7 @@ class RegisterFragment : BaseFragment<FragmentRegisterBinding>() {
             email = binding.emailInput.text?.toString().orEmpty(),
             password = binding.passwordInput.text?.toString().orEmpty(),
             weightRaw = binding.weightInput.text?.toString().orEmpty(),
+            heightRaw = binding.heightInput.text?.toString().orEmpty(),
             termsAccepted = binding.termsCheckbox.isChecked,
         )
     }
@@ -78,7 +92,8 @@ class RegisterFragment : BaseFragment<FragmentRegisterBinding>() {
             if (state.submitting) "" else getString(R.string.auth_register_submit)
         listOf(
             binding.fullNameInput, binding.emailInput, binding.passwordInput,
-            binding.weightInput, binding.termsCheckbox,
+            binding.weightInput, binding.heightInput, binding.termsCheckbox,
+            binding.unitMetric, binding.unitImperial,
             binding.backButton, binding.goToLogin,
         ).forEach { it.isEnabled = !state.submitting }
 
@@ -86,6 +101,17 @@ class RegisterFragment : BaseFragment<FragmentRegisterBinding>() {
         binding.emailFieldLayout.error = errorText(state.emailError)
         binding.passwordFieldLayout.error = errorText(state.passwordError)
         binding.weightFieldLayout.error = errorText(state.weightError)
+        binding.heightFieldLayout.error = errorText(state.heightError)
+
+        // Suffix labels track the current unit system.
+        val weightSuffix = if (state.unitSystem == UnitSystem.IMPERIAL) {
+            R.string.auth_unit_suffix_lb
+        } else R.string.auth_unit_suffix_kg
+        val heightSuffix = if (state.unitSystem == UnitSystem.IMPERIAL) {
+            R.string.auth_unit_suffix_in
+        } else R.string.auth_unit_suffix_cm
+        binding.weightFieldLayout.suffixText = getString(weightSuffix)
+        binding.heightFieldLayout.suffixText = getString(heightSuffix)
 
         val termsMessage = errorText(state.termsError)
         binding.termsError.text = termsMessage
