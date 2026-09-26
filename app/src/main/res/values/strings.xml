@@ -217,6 +217,10 @@
     <string name="home_start_workout">Start workout</string>
     <string name="home_insight_body">Keep logging workouts to unlock personalised insights.</string>
     <string name="home_goals_title">Goals</string>
+    <string name="home_goals_see_all">See all</string>
+    <string name="home_goals_empty_title">No goals yet</string>
+    <string name="home_goals_empty_cta">Tap to set one</string>
+    <!-- Legacy strings, kept in case other layouts still reference them. -->
     <string name="home_goal_distance">Weekly distance</string>
     <string name="home_goal_distance_value">%1$d / %2$d km</string>
     <string name="home_goal_active_time">Active time</string>

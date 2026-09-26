@@ -817,3 +817,37 @@ Considered dropping the `titleUserEdited` bit and just always regenerating the t
 - **Task 4 (development)** — the create/edit half of the goals feature loop is live end-to-end.
 - **Task 5c (validation)** — the server-side field errors from Step 2 now flow into the client and land on the exact right row. Client-side + server-side rules stay identical, so a rogue client can't slip a bad payload past the domain model.
 - **Task 3b (design)** — the "one sheet, two modes" pattern is a design decision worth writing up.
+
+## Step 6 — Home Goals section from real data
+**Built**
+- **`fragment_dashboard.xml`** — the hardcoded 50 km / 180 min goal bars are gone. Replaced with:
+  - A **"See all"** text button in the section header, right-aligned.
+  - **Two `<include>`-based goal slots** (`homeGoalSlot1`, `homeGoalSlot2`) that reuse a new compact `item_home_goal_row.xml` — title, `X/Y unit` value, thin lime `LinearProgressIndicator`. Each slot is toggled visible when the corresponding data is present.
+  - A **divider** between slots, shown only when slot 2 is visible.
+  - An **empty prompt** row (`homeGoalEmpty`) — lime icon tile + "No goals yet / Tap to set one" — shown only when the user has no active goals. Tapping it opens `NewGoalBottomSheet.forCreate()`.
+- **`DashboardViewModel.homeGoals: StateFlow<List<GoalWithProgress>>`** — derived from `goalProgressCalculator.observe()`. Filters to incomplete goals only, sorts by (`daysRemaining`, `progressFraction desc`, `createdAt`), takes the top `HOME_GOAL_SLOTS = 2`. Because both Home and Goals subscribe to the same calculator, logging a workout instantly updates every card on both screens.
+- **`DashboardViewModel` now takes `goalRepository` + `goalProgressCalculator`** in its constructor (wired through the factory) and calls `goalRepository.refresh()` in `init { }` so a cold app-open reloads goals for Home alongside workouts.
+- **`DashboardFragment`**:
+  - `goalsSeeAll.setOnClickListener { navigate(R.id.goalsFragment) }` — the bottom-nav's `NavigationUI` handles the tab highlight change automatically.
+  - `homeGoalEmpty.setOnClickListener { NewGoalBottomSheet.forCreate().show(...) }` — same sheet the Goals tab uses.
+  - `renderHomeGoals(goals)` — toggles slot / empty visibility and calls `bindHomeGoalRow(slot, gwp)` for each. Value formatting matches the Goals tab (`X / Y km`); the goal-row `setOnClickListener` also navigates to the Goals tab so the user can see the featured card + edit.
+- **Strings**: `home_goals_see_all`, `home_goals_empty_title`, `home_goals_empty_cta`. Old `home_goal_distance*` / `home_goal_active_time` strings kept as legacy in case another layout still references them (no cost, prevents accidental breakage).
+
+**Key design decision — `<include>` two static slots instead of a nested RecyclerView**
+Home only ever shows two goal rows, and the phase-7 brief explicitly caps it at two. Nesting a small `RecyclerView` inside the `NestedScrollView` would cost a `ConcatAdapter`, a `LayoutManager`, DiffUtil, a full-file adapter class, and force-measurement of the nested list — for two rows. Two `<include>`s + visibility toggles is one XML change, three lines of Kotlin, zero adapters, and inherits the same `ItemHomeGoalRowBinding` type so binding stays type-safe.
+
+**Rejected alternative — a third StateFlow for "empty vs. rows"**
+Considered exposing a sealed `HomeGoalsState { Empty, Rows(list) }` from the ViewModel. Rejected because `List<GoalWithProgress>` already answers both questions (`isEmpty()` for the empty state; `getOrNull(0/1)` for the slots) and the fragment renders both branches from the same `renderHomeGoals(...)` call. Adding a sealed type would double the mapping without any state saved.
+
+**Kotlin/Android concepts (for my notes)**
+- *`<include android:id="@+id/foo" layout="@layout/bar"/>` with ViewBinding* — ViewBinding generates a field on the parent binding whose type is the *included* layout's binding class (`ItemHomeGoalRowBinding` here). You access included IDs as `parentBinding.foo.titleTextView` — no `ItemHomeGoalRowBinding.bind(...)` call needed.
+- *Reusing a `GoalWithProgress` sort key across two screens* — the "most urgent first, tie-break by higher fraction then earlier createdAt" comparator lives in both `GoalsViewModel` and `DashboardViewModel`. Duplicating it (four lines) beats extracting a helper that would sit in `data/model` and drag both screens' ordering choices into the domain — the ordering is a UI decision, not a model invariant.
+
+**Verified**
+- `./gradlew assembleLocalDebug` — BUILD SUCCESSFUL.
+- `./gradlew testLocalDebugUnitTest` — **165 tests, 0 failures** (no new tests; the underlying calculator + repo are already covered by Step 3's `GoalProgressCalculatorTest` + `RemoteGoalRepositoryTest`).
+- On-device: with no goals, Home now shows the "No goals yet / Tap to set one" row; tapping it opens the New Goal sheet; on save, the goal appears immediately in the top slot. Logging a matching workout advances the bar in real time.
+
+**Assignment task supported**
+- **Task 4 (development)** — the goals feature loop is now visible from Home too; the top-2 urgent goals surface without the user having to switch tabs.
+- **Task 3b (design)** — the "same calculator feeds two screens" plumbing is exactly what phase 7's client-side-progress trade-off buys us; worth calling out in the design chapter.

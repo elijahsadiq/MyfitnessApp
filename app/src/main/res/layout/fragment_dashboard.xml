@@ -425,10 +425,20 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:text="@string/home_goals_title" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/goalsSeeAll"
+                    style="@style/Widget.Fitness.Button.Text"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:minWidth="0dp"
+                    android:minHeight="@dimen/touch_target_min"
+                    android:text="@string/home_goals_see_all" />
             </LinearLayout>
 
-            <!-- Goals card (hardcoded — TODO(phase 5): real Goal repository) -->
+            <!-- Goals card — driven by the real Goal repository (phase 7 step 6). -->
             <com.google.android.material.card.MaterialCardView
+                android:id="@+id/homeGoalsCard"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginHorizontal="@dimen/screen_margin"
@@ -445,78 +455,66 @@
                     android:layout_height="wrap_content"
                     android:orientation="vertical">
 
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal">
-
-                        <TextView
-                            style="@style/TextAppearance.Fitness.BodyMd"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:text="@string/home_goal_distance"
-                            android:textColor="@color/text_primary" />
-
-                        <TextView
-                            android:id="@+id/goalDistanceValue"
-                            style="@style/TextAppearance.Fitness.BodyMd"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:textColor="@color/text_primary"
-                            tools:text="32 / 50 km" />
-                    </LinearLayout>
-
-                    <com.google.android.material.progressindicator.LinearProgressIndicator
-                        android:id="@+id/goalDistanceBar"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="@dimen/space_xs"
-                        app:indicatorColor="@color/lime_accent"
-                        app:trackColor="@color/surface_container_high"
-                        app:trackCornerRadius="4dp"
-                        app:trackThickness="8dp"
-                        tools:progress="64" />
+                    <!-- Slot 1 (visible if there's at least one active goal). -->
+                    <include
+                        android:id="@+id/homeGoalSlot1"
+                        layout="@layout/item_home_goal_row" />
 
                     <View
+                        android:id="@+id/homeGoalDivider"
                         android:layout_width="match_parent"
                         android:layout_height="@dimen/stroke_hairline"
                         android:layout_marginTop="@dimen/space_md"
-                        android:background="@color/divider" />
+                        android:background="@color/divider"
+                        android:visibility="gone" />
 
+                    <!-- Slot 2 (visible only if there are 2+ active goals). -->
+                    <include
+                        android:id="@+id/homeGoalSlot2"
+                        layout="@layout/item_home_goal_row" />
+
+                    <!-- Empty prompt (shown when the user has no goals yet). -->
                     <LinearLayout
+                        android:id="@+id/homeGoalEmpty"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="@dimen/space_md"
-                        android:orientation="horizontal">
+                        android:background="?attr/selectableItemBackground"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:visibility="gone">
 
-                        <TextView
-                            style="@style/TextAppearance.Fitness.BodyMd"
+                        <ImageView
+                            android:layout_width="@dimen/icon_tile_size"
+                            android:layout_height="@dimen/icon_tile_size"
+                            android:background="@drawable/bg_icon_tile"
+                            android:contentDescription="@string/goals_row_icon_content_description"
+                            android:padding="12dp"
+                            android:src="@drawable/ic_flag_24"
+                            app:tint="@color/text_primary" />
+
+                        <LinearLayout
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
+                            android:layout_marginStart="@dimen/space_md"
                             android:layout_weight="1"
-                            android:text="@string/home_goal_active_time"
-                            android:textColor="@color/text_primary" />
+                            android:orientation="vertical">
 
-                        <TextView
-                            android:id="@+id/goalMinutesValue"
-                            style="@style/TextAppearance.Fitness.BodyMd"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:textColor="@color/text_primary"
-                            tools:text="142 / 180 min" />
+                            <TextView
+                                style="@style/TextAppearance.Fitness.BodyMd"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/home_goals_empty_title"
+                                android:textColor="@color/text_primary"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                style="@style/TextAppearance.Fitness.LabelMd"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/home_goals_empty_cta"
+                                android:textColor="@color/text_secondary" />
+                        </LinearLayout>
                     </LinearLayout>
-
-                    <com.google.android.material.progressindicator.LinearProgressIndicator
-                        android:id="@+id/goalMinutesBar"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="@dimen/space_xs"
-                        app:indicatorColor="@color/lime_accent"
-                        app:trackColor="@color/surface_container_high"
-                        app:trackCornerRadius="4dp"
-                        app:trackThickness="8dp"
-                        tools:progress="78" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
         </LinearLayout>

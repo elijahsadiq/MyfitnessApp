@@ -8,10 +8,13 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.elijah.fitness.AppContainer
 import com.elijah.fitness.R
+import com.elijah.fitness.data.model.GoalProgressCalculator
+import com.elijah.fitness.data.model.GoalWithProgress
 import com.elijah.fitness.data.model.Workout
 import com.elijah.fitness.data.remote.ApiResult
 import com.elijah.fitness.data.remote.api.UserApi
 import com.elijah.fitness.data.remote.apiCall
+import com.elijah.fitness.data.repository.GoalRepository
 import com.elijah.fitness.data.repository.UserSettings
 import com.elijah.fitness.data.repository.WorkoutRepository
 import kotlinx.coroutines.channels.Channel
@@ -43,6 +46,8 @@ import java.time.temporal.TemporalAdjusters
  */
 class DashboardViewModel(
     private val repository: WorkoutRepository,
+    private val goalRepository: GoalRepository,
+    private val goalProgressCalculator: GoalProgressCalculator,
     private val userSettings: UserSettings,
     private val userApi: UserApi,
     private val clock: Clock = Clock.systemDefaultZone(),
@@ -75,6 +80,29 @@ class DashboardViewModel(
             initialValue = HomeUi.EMPTY,
         )
 
+    /**
+     * Top-2 most-urgent active goals for the Home Goals card. Pulled
+     * from the same [GoalProgressCalculator] the Goals tab uses, so
+     * logging a workout updates both screens on the next combine cycle.
+     */
+    val homeGoals: StateFlow<List<GoalWithProgress>> = goalProgressCalculator.observe()
+        .map { snapshots ->
+            snapshots.asSequence()
+                .filter { !it.isComplete }
+                .sortedWith(
+                    compareBy<GoalWithProgress> { it.daysRemaining }
+                        .thenByDescending { it.progressFraction }
+                        .thenBy { it.goal.createdAt }
+                )
+                .take(HOME_GOAL_SLOTS)
+                .toList()
+        }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS),
+            initialValue = emptyList(),
+        )
+
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
@@ -84,6 +112,7 @@ class DashboardViewModel(
     init {
         refresh()
         refreshProfile()
+        viewModelScope.launch { goalRepository.refresh() }
     }
 
     fun refresh() {
@@ -151,6 +180,7 @@ class DashboardViewModel(
 
     companion object {
         private const val STOP_TIMEOUT_MS = 5_000L
+        const val HOME_GOAL_SLOTS = 2
 
         fun factory(
             container: AppContainer,
@@ -160,6 +190,8 @@ class DashboardViewModel(
             initializer {
                 DashboardViewModel(
                     repository = container.workoutRepository,
+                    goalRepository = container.goalRepository,
+                    goalProgressCalculator = container.goalProgressCalculator,
                     userSettings = container.userSettings,
                     userApi = container.userApi,
                     clock = clock,

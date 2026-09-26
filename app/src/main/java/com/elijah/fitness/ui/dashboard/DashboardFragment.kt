@@ -9,8 +9,13 @@ import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
 import com.elijah.fitness.FitnessApp
 import com.elijah.fitness.R
+import com.elijah.fitness.data.model.GoalType
+import com.elijah.fitness.data.model.GoalWithProgress
+import com.elijah.fitness.data.remote.mapper.goalType
 import com.elijah.fitness.databinding.FragmentDashboardBinding
+import com.elijah.fitness.databinding.ItemHomeGoalRowBinding
 import com.elijah.fitness.ui.base.BaseFragment
+import com.elijah.fitness.ui.goals.NewGoalBottomSheet
 import com.elijah.fitness.util.Formatters
 import com.google.android.material.snackbar.Snackbar
 import java.util.Locale
@@ -52,9 +57,16 @@ class DashboardFragment : BaseFragment<FragmentDashboardBinding>() {
         binding.startWorkoutButton.setOnClickListener {
             findNavController().navigate(R.id.action_home_to_choose_activity)
         }
+        binding.goalsSeeAll.setOnClickListener {
+            findNavController().navigate(R.id.goalsFragment)
+        }
+        binding.homeGoalEmpty.setOnClickListener {
+            NewGoalBottomSheet.forCreate().show(parentFragmentManager, "new_goal_from_home")
+        }
 
         collectOnStart(viewModel.summary) { renderSummary(it) }
         collectOnStart(viewModel.homeUi) { renderHomeChrome(it) }
+        collectOnStart(viewModel.homeGoals) { renderHomeGoals(it) }
         collectOnStart(viewModel.isLoading) { loading ->
             binding.loadingBar.isVisible = loading
         }
@@ -95,27 +107,53 @@ class DashboardFragment : BaseFragment<FragmentDashboardBinding>() {
             (ringProgress * 100).toInt(),
         )
 
-        // Goals bars (hardcoded targets for phase 2 — TODO(phase 5): drive
-        // from a real Goal repository).
-        val distanceKm = (summary.totalDistanceMeters / 1000.0).toInt()
-        binding.goalDistanceValue.text = ctx.getString(
-            R.string.home_goal_distance_value,
-            distanceKm,
-            GOAL_DISTANCE_KM,
-        )
-        binding.goalDistanceBar.progress = ((distanceKm.toFloat() / GOAL_DISTANCE_KM) * 100)
-            .toInt()
-            .coerceIn(0, 100)
+    }
 
-        val minutes = summary.activeMinutes.toInt()
-        binding.goalMinutesValue.text = ctx.getString(
-            R.string.home_goal_minutes_value,
-            minutes,
-            GOAL_MINUTES,
+    /**
+     * Bind up to two goal rows into the Home Goals card, or show the
+     * empty prompt. Progress recomputes automatically because
+     * `viewModel.homeGoals` is derived from `GoalProgressCalculator`.
+     */
+    private fun renderHomeGoals(goals: List<GoalWithProgress>) {
+        binding.homeGoalEmpty.isVisible = goals.isEmpty()
+        binding.homeGoalSlot1.root.isVisible = goals.isNotEmpty()
+        binding.homeGoalSlot2.root.isVisible = goals.size >= 2
+        binding.homeGoalDivider.isVisible = goals.size >= 2
+
+        goals.getOrNull(0)?.let { bindHomeGoalRow(binding.homeGoalSlot1, it) }
+        goals.getOrNull(1)?.let { bindHomeGoalRow(binding.homeGoalSlot2, it) }
+    }
+
+    private fun bindHomeGoalRow(row: ItemHomeGoalRowBinding, gwp: GoalWithProgress) {
+        val ctx = requireContext()
+        val goal = gwp.goal
+        row.homeGoalTitle.text = goal.title
+        row.homeGoalValue.text = ctx.getString(
+            R.string.goal_value_over_target_decimal,
+            formatGoalValue(gwp.currentValue, goal.goalType()),
+            formatGoalValue(goal.targetValue, goal.goalType()),
+            ctx.getString(unitLabelRes(goal.goalType())),
         )
-        binding.goalMinutesBar.progress = ((minutes.toFloat() / GOAL_MINUTES) * 100)
-            .toInt()
-            .coerceIn(0, 100)
+        row.homeGoalBar.progress = (gwp.progressFraction * 100).toInt().coerceIn(0, 100)
+        // The whole row is tappable — jumps to the Goals tab so the user
+        // sees the full featured card + can edit.
+        row.homeGoalRow.setOnClickListener {
+            findNavController().navigate(R.id.goalsFragment)
+        }
+    }
+
+    private fun formatGoalValue(value: Double, type: GoalType): String = when (type) {
+        GoalType.COUNT, GoalType.DURATION -> value.toLong().toString()
+        GoalType.DISTANCE, GoalType.VOLUME ->
+            if (value == value.toLong().toDouble()) value.toLong().toString()
+            else String.format(Locale.getDefault(), "%.1f", value)
+    }
+
+    private fun unitLabelRes(type: GoalType): Int = when (type) {
+        GoalType.DISTANCE -> R.string.goal_unit_km
+        GoalType.COUNT -> R.string.goal_unit_workouts
+        GoalType.DURATION -> R.string.goal_unit_min
+        GoalType.VOLUME -> R.string.goal_unit_kg
     }
 
     private fun renderBmi(summary: WeeklySummary) {
@@ -151,10 +189,10 @@ class DashboardFragment : BaseFragment<FragmentDashboardBinding>() {
     }
 
     private companion object {
-        // Weekly targets — hardcoded in phase 2 per the brief.
-        // TODO(phase 5): drive from a real Goal repository.
+        // Hero ring still tracks a hardcoded "4 workouts this week" target
+        // in phase 7 — future goals could drive this too, but the ring is
+        // the "week momentum" signal and stays visually consistent when
+        // the user has no goals.
         const val HERO_WEEKLY_TARGET = 4
-        const val GOAL_DISTANCE_KM = 50
-        const val GOAL_MINUTES = 180
     }
 }
