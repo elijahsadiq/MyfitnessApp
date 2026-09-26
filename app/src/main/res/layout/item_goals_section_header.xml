@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginHorizontal="@dimen/screen_margin"
+    android:layout_marginTop="@dimen/section_gap"
+    android:layout_marginBottom="@dimen/space_sm"
+    android:gravity="center_vertical"
+    android:orientation="horizontal">
+
+    <TextView
+        android:id="@+id/goalsSectionTitle"
+        style="@style/TextAppearance.Fitness.LabelSm"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:textColor="@color/text_secondary"
+        tools:text="ACTIVE GOALS" />
+
+    <TextView
+        android:id="@+id/goalsSectionCountPill"
+        style="@style/TextAppearance.Fitness.LabelSm"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:background="@drawable/bg_section_summary_pill"
+        android:paddingHorizontal="10dp"
+        android:paddingVertical="4dp"
+        android:textAllCaps="false"
+        android:textColor="@color/text_secondary"
+        android:visibility="gone"
+        tools:text="3 in progress"
+        tools:visibility="visible" />
+</LinearLayout>

@@ -733,3 +733,45 @@ Considered writing the calculator as `goalRepository.observeGoals().flatMapLates
 - **Task 3b (design)** — the calculator's placement + the mapper preserving subclass invariants are two more paragraphs for the design chapter.
 - **Task 4 (development)** — every seam Step 4's `GoalsFragment` will need is now in place.
 - **Task 5b (inheritance)** — `Goal.goalType()` (extension) and the `when (goalType)` switch in the mapper make the subclass hierarchy load-bearing across the wire.
+
+## Step 4 — Goals screen UI
+**Built**
+- **`fragment_goals.xml`** rewritten from the phase-1 placeholder to the Stitch design: pinned header with the "Your Goals" H1 + a lime "+ New goal" pill, a full-height RecyclerView, and an overlaid empty state ("No goals yet. Set one to stay on track."). The `+ New goal` button stays visible in the empty state per the phase-7 brief.
+- **`ui/goals/GoalListItem.kt`** — sealed hierarchy of four row types: `Featured` (dark hero card with a lime progress ring), `SectionHeader` (with optional count pill), `Active` (icon-tile + title + thin lime bar), `Completed` (lime check badge). Each variant is diff-friendly via a shared adapter.
+- **`ui/goals/GoalsAdapter.kt`** — `ListAdapter<GoalListItem, RecyclerView.ViewHolder>` with four view holders. **Every view holder extends the existing `BaseViewHolder<T>`** (same hierarchy the History screen already established for Task 5b, inheritance #3). Formatting helpers (`formatValue`, `unitLabel`, `iconRes`, `formatTimeRemaining`) live in a private object next to the adapter so the render code stays in one file.
+- **Layouts** — four item XMLs:
+  - `item_goal_featured.xml` — `surface_dark` MaterialCardView, eyebrow ("Weekly / Monthly target"), title, DisplayMetric value + suffix, days-remaining label, and a `ProgressRingView` (the custom view already used on Home) with a % label overlay.
+  - `item_goal_active.xml` — white 20 dp card with a 1dp `divider` border, icon tile, title, "58 / 100 km" pill on the right, a `LinearProgressIndicator` with `lime_accent`, and time-remaining label.
+  - `item_goal_completed.xml` — same white row shape with a lime circle (`bg_goal_check_badge.xml`) holding `ic_check_24` and a "Completed" caption.
+  - `item_goals_section_header.xml` — LabelSm title + right-aligned count pill.
+- **`ui/goals/GoalsViewModel.kt`**
+  - `items: StateFlow<List<GoalListItem>>` is derived from `GoalProgressCalculator.observe()`. Progress recomputes automatically whenever goals or workouts change (phase 7 step 3 payoff — the calculator is the whole point).
+  - Splits the incoming `List<GoalWithProgress>` into (a) the most-urgent incomplete goal → `Featured`, (b) the remaining incompletes → `Active` under a section header with an `"N in progress"` count pill, and (c) completed goals → `Completed` under a `COMPLETED` header. "Most urgent" = smallest `daysRemaining`, tied by higher `progressFraction` then earlier `createdAt`.
+  - `refresh()` fires on init; loading + error state exposed for the fragment.
+  - `deleteWithUndo(goal)` calls `goalRepository.deleteGoal`, captures a `GoalSnapshot` for Undo, and emits a `DeletedWithUndo(snapshot)` event. `undoDelete(snapshot)` recreates the goal via `createGoal` (server assigns a new id — that's fine, from the user's perspective it's the same row).
+- **`ui/goals/GoalActionsBottomSheet.kt`** — small `BottomSheetDialogFragment` with Edit + Delete rows. Delete pops an AlertDialog confirmation before firing. Communicates back to the fragment via `setFragmentResult` — the parent listens on a single result key and reads `action` + `goal_id` extras. This keeps the sheet decoupled from `GoalsFragment` internals.
+- **`ui/goals/GoalsFragment.kt`** — collects `items`, `isLoading`, `errorEvents`; hosts the RecyclerView + empty state; opens the actions sheet on row tap; shows Undo Snackbar on delete; shows retry Snackbar on refresh errors. `newGoalButton` and the `edit` action wire to placeholder Snackbars until Step 5 arrives.
+- **Strings** — full `goals_*` set: title, unit labels (km / workouts / min / kg), value formatters, time-remaining ("12 days left" / "1 day left" / "Last day" / "Ended Nd ago"), empty state, error, actions sheet, delete-confirm dialog, Undo. The phase-1 placeholder strings (`goals_empty_title` = "Goals coming soon", `goals_empty_body`, `goals_icon_content_description`) were removed to prevent a duplicate-key merge error.
+- **Tests (5 new, 154 total, 0 failures)** — `GoalsViewModelTest` covers: empty list → empty items; one incomplete → Featured only; three incompletes → Featured + section header ("2 in progress") + two Active rows; Featured picks the smallest `daysRemaining`; a completed goal ends up under the Completed section with no Featured.
+
+**Key design decision — one adapter, four row types, sealed item hierarchy**
+The Goals list has structurally different rows (dark hero card vs. thin white row vs. section header vs. check-badge completed row) that share one vertical scroll. The alternatives were (a) `ConcatAdapter` with per-section adapters, or (b) separate RecyclerViews inside a NestedScrollView. Both cost more in bind/measure and split the diff logic across N callbacks. A single sealed `GoalListItem` + `ListAdapter` keeps DiffUtil animations across every visual state change (goal completes → row switches sections without a jarring rebind), and re-using the phase-1 `BaseViewHolder<T>` hierarchy makes the inheritance write-up straightforward — three concrete view holders already extend it; we added a fourth (`FeaturedGoalViewHolder`), a fifth (`ActiveGoalViewHolder`), a sixth (`CompletedGoalViewHolder`), and a seventh (`GoalsSectionHeaderViewHolder`), so `BaseViewHolder` now anchors seven leaves.
+
+**Rejected alternative — a "Delete" that just removes locally + calls the API**
+The naïve delete would `_goals.filterNot { it.id == id }` locally and fire the API in the background. Rejected because when the user hits Undo, we'd have no captured payload to recreate the goal — we'd need to keep pre-delete state in the ViewModel *and* handle the case where the server delete succeeded but re-create fails. Capturing a `GoalSnapshot` up front and delegating the whole flow through the repository is straightforward, keeps the flow-observing UI eventually-consistent, and pays a single extra request only if the user actually hits Undo.
+
+**Kotlin/Android concepts (for my notes)**
+- *`setFragmentResult(...)` + `setFragmentResultListener(...)`* — the AndroidX way to send a `Bundle` back from a `BottomSheetDialogFragment` (or any dependent fragment) to its parent without exposing a callback interface. The listener is auto-scoped to `viewLifecycleOwner`, so re-registering on rotation is safe.
+- *`stateIn(WhileSubscribed(N))` in unit tests* — the upstream doesn't run until a subscriber attaches. `.first()` subscribes + unsubscribes too quickly, so tests need a live collector job (see `GoalsViewModelTest.collectItems`).
+- *Ties in `compareBy { }.thenBy { }`* — Kotlin's fluent `Comparator` composition. Used for "most urgent" ordering so identical `daysRemaining` breaks predictably instead of relying on iteration order.
+- *`Snackbar.setAction("Undo") { ... }`* — the built-in "reversible action" pattern. LENGTH_LONG gives ~2.75s to hit Undo before the action commits — enough for a mis-tap recovery, short enough not to feel like a modal.
+
+**Verified**
+- `./gradlew assembleLocalDebug` — BUILD SUCCESSFUL.
+- `./gradlew testLocalDebugUnitTest` — **154 tests, 0 failures** (5 new).
+- On-device UI verification requires goals in the DB — with none, the Goals tab now shows the real "No goals yet" empty state instead of the phase-1 placeholder. Creating a goal via `POST /goals` (or step 5's sheet) will populate the featured card + active list.
+
+**Assignment task supported**
+- **Task 4 (development)** — the Goals tab now renders real data end-to-end (RemoteGoalRepository → GoalProgressCalculator → GoalsViewModel → GoalsAdapter → row XMLs).
+- **Task 5b (inheritance)** — four new view holders now extend `BaseViewHolder<T>`; `GoalsFragment` extends `BaseFragment<VB>` alongside every other screen.
+- **Task 3b (design)** — the "featured urgent + section-headered list" layout is a design decision worth writing up; the `GoalListItem` sealed hierarchy is the concrete pattern.

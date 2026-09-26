@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingHorizontal="@dimen/screen_margin"
+    android:paddingTop="@dimen/space_lg"
+    android:paddingBottom="@dimen/space_md">
+
+    <TextView
+        android:id="@+id/actionsTitle"
+        style="@style/TextAppearance.Fitness.HeadlineSm"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/goals_actions_title" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/actionEdit"
+        style="@style/Widget.Material3.Button.TonalButton.Icon"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/space_lg"
+        android:minHeight="@dimen/touch_target_min"
+        android:text="@string/goals_action_edit"
+        app:icon="@drawable/ic_add_24"
+        app:iconTint="@color/text_primary" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/actionDelete"
+        style="@style/Widget.Material3.Button.TonalButton.Icon"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/space_sm"
+        android:minHeight="@dimen/touch_target_min"
+        android:text="@string/goals_action_delete"
+        app:icon="@drawable/ic_flag_24"
+        app:iconTint="@color/error_red"
+        android:textColor="@color/error_red" />
+</LinearLayout>

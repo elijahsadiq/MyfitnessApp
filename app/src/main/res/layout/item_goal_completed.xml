@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- One completed goal row: lime check badge + title + "Completed" caption. -->
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/completedCard"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginHorizontal="@dimen/screen_margin"
+    android:layout_marginBottom="@dimen/space_sm"
+    android:background="?attr/selectableItemBackground"
+    app:cardBackgroundColor="@color/surface_white"
+    app:cardCornerRadius="@dimen/radius_row"
+    app:cardElevation="0dp"
+    app:contentPadding="@dimen/card_padding"
+    app:strokeColor="@color/divider"
+    app:strokeWidth="@dimen/stroke_hairline">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <FrameLayout
+            android:layout_width="@dimen/icon_tile_size"
+            android:layout_height="@dimen/icon_tile_size"
+            android:background="@drawable/bg_goal_check_badge">
+
+            <ImageView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_gravity="center"
+                android:contentDescription="@string/goals_completed_title"
+                android:src="@drawable/ic_check_24"
+                app:tint="@color/text_on_lime" />
+        </FrameLayout>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/space_md"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/completedTitle"
+                style="@style/TextAppearance.Fitness.BodyLg"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:textColor="@color/text_primary"
+                android:textStyle="bold"
+                tools:text="Weekly workouts done" />
+
+            <TextView
+                android:id="@+id/completedCaption"
+                style="@style/TextAppearance.Fitness.LabelMd"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_xs"
+                android:textColor="@color/text_secondary"
+                tools:text="Completed" />
+        </LinearLayout>
+    </LinearLayout>
+</com.google.android.material.card.MaterialCardView>
