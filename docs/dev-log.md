@@ -775,3 +775,45 @@ The naïve delete would `_goals.filterNot { it.id == id }` locally and fire the 
 - **Task 4 (development)** — the Goals tab now renders real data end-to-end (RemoteGoalRepository → GoalProgressCalculator → GoalsViewModel → GoalsAdapter → row XMLs).
 - **Task 5b (inheritance)** — four new view holders now extend `BaseViewHolder<T>`; `GoalsFragment` extends `BaseFragment<VB>` alongside every other screen.
 - **Task 3b (design)** — the "featured urgent + section-headered list" layout is a design decision worth writing up; the `GoalListItem` sealed hierarchy is the concrete pattern.
+
+## Step 5 — New Goal bottom sheet
+**Built**
+- **`bottom_sheet_new_goal.xml`** — pinned title, three `ChipGroup`s (Activity / Type / Period), a target `TextInputLayout` with a dynamic suffix, a title field, a preview line, and a full-width Create / Save button with an inline `CircularProgressIndicator`. Every chip uses the existing `Widget.Fitness.Chip.Filter` style so the visual language matches the History filters.
+- **`ui/goals/NewGoalViewModel.kt`**
+  - Full form state: `activityType, activityChosen, goalType, period, targetRaw, title, titleUserEdited` plus per-field `FieldError`s, submitting flag, and `editingGoalId`.
+  - **Chip filtering by activity**: `UiState.availableGoalTypes` returns `{Distance, Count, Duration}` for RUNNING/CYCLING, `{Count, Duration, Volume}` for WEIGHTLIFTING, and all four for Any — mirroring the server's `distance never on WEIGHTLIFTING`, `volume never on RUNNING/CYCLING` rules from Step 2. The fragment hides the chips that aren't in the set.
+  - **Auto-title** that regenerates on every choice change **until the user types their own** — then a `titleUserEdited` flag pins the manual value. Templates: `Run 50 km this week`, `Ride 100 km this month`, `Lift 5000 kg this month`, `3 workouts this week`, `150 active minutes this week`, `Cover 20 km this week` (for Any + distance).
+  - **Validation** mirrors the server's per-type upper bounds (1000 km / 1000 workouts / 100 000 min / 500 000 kg) and reuses the same `FieldError` type as the auth forms. `isValid` gates the submit button: everything filled + no errors + target parses to a positive number ≤ max.
+  - **Server 422 field errors** map onto the matching UI field (`title`, `targetValue`, `activityType`, `periodEnd`) so a message like `{"targetValue": "Must be greater than 0"}` shows under the target row.
+  - **Edit mode** (`editingGoalId != null`) — `init { }` reads the goal from `repository.observeGoals().first()`, seeds every field, and switches the submit button to "Save changes". Submit calls `updateGoal` instead of `createGoal`.
+- **`ui/goals/NewGoalBottomSheet.kt`** — the fragment. `BottomSheetDialogFragment` (can't extend `BaseFragment`, so `collectOnStart` is inlined). Chip listeners map view IDs to enum values; `doAfterTextChanged` on target + title only pushes back when the string actually changed to prevent feedback loops with `render()`. On `Event.Saved` it sends a fragment result and dismisses.
+- **`GoalsFragment.kt`** — the placeholder Snackbars for "+ New goal" and Edit are gone. `+ New goal` opens `NewGoalBottomSheet.forCreate()`; Edit opens `NewGoalBottomSheet.forEdit(goalId)`. A second `setFragmentResultListener` on the sheet's result key shows a "Goal saved" Snackbar on success — the underlying goals list updates automatically because `GoalProgressCalculator` is observing the repository stream.
+- **Preview line** — computed inside the fragment from `GoalPeriodResolver.bounds(...)` and formatted as `"<title> between <start> and <endInclusive>."`, hidden until the form is valid.
+- **Tests (11 new, 165 total, 0 failures)** — `NewGoalViewModelTest`:
+  - `availableGoalTypes` filter for each activity (weightlifting hides distance; running/cycling hide volume; any shows all four).
+  - Auto-title generated from choices; auto-title stops updating once user types.
+  - Validation: submit before choosing activity surfaces the activity error; target above max rejected.
+  - Create flow: `submit()` emits `Saved` and calls `createGoal` exactly once.
+  - Edit flow: init pre-fills every field from the seeded goal; `submit()` calls `updateGoal` (not `createGoal`) with the new target.
+  - Server 422 with a `title` field error lands on `titleError`.
+
+**Key design decision — one sheet for create + edit**
+The phase-7 brief explicitly asks for this. The alternative (a second `EditGoalBottomSheet` sharing 90% of the code) would double the maintenance surface. The one-sheet approach costs a single `editingGoalId: String?` argument and one `init { }` branch that seeds from `repository.observeGoals().first()`. Every input, chip, validator, and preview line then works identically in both modes; the submit branch just picks `createGoal` vs. `updateGoal`.
+
+**Rejected alternative — auto-title always overwrites what the user typed**
+Considered dropping the `titleUserEdited` bit and just always regenerating the title from the current chip choices. Rejected because it fights the user: as soon as they customise "Run 20 km this week" to "Morning long run", tapping any chip erases their edit. The single boolean flag makes the auto-fill "generous default, sticky manual" — the industry-standard shape for this kind of form.
+
+**Kotlin/Android concepts (for my notes)**
+- *`repeatOnLifecycle(Lifecycle.State.STARTED)` inside a non-BaseFragment* — `BottomSheetDialogFragment` doesn't have the `collectOnStart` helper the app's `BaseFragment` provides, so the sheet inlines the same three-line incantation.
+- *Chip listener feedback loops* — `doAfterTextChanged` fires when we call `setText` inside `render()`. Guard both directions (`if (raw != state.targetRaw)` on the way in, `if (input.text.toString() != state.targetRaw)` on the way out) to keep the state → view → state cycle from oscillating.
+- *`setFragmentResult` + a boolean flag* — cheapest way to signal "sheet closed successfully" without exposing an observable. The parent listens once, reads the boolean, shows the Snackbar, done.
+
+**Verified**
+- `./gradlew assembleLocalDebug` — BUILD SUCCESSFUL.
+- `./gradlew testLocalDebugUnitTest` — **165 tests, 0 failures** (11 new).
+- On-device: the "+ New goal" button on the Goals tab now opens the sheet; picking an activity + goal type + target + optional title, then tapping "Create goal", POSTs to `/goals`, dismisses the sheet, shows the "Goal saved" Snackbar, and the new goal appears in the featured card (or Active list, depending on urgency).
+
+**Assignment task supported**
+- **Task 4 (development)** — the create/edit half of the goals feature loop is live end-to-end.
+- **Task 5c (validation)** — the server-side field errors from Step 2 now flow into the client and land on the exact right row. Client-side + server-side rules stay identical, so a rogue client can't slip a bad payload past the domain model.
+- **Task 3b (design)** — the "one sheet, two modes" pattern is a design decision worth writing up.

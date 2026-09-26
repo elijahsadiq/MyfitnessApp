@@ -46,9 +46,7 @@ class GoalsFragment : BaseFragment<FragmentGoalsBinding>() {
         binding.goalsList.adapter = adapter
 
         binding.newGoalButton.setOnClickListener {
-            // Step 5 will replace this with a navigation to the New Goal sheet.
-            Snackbar.make(binding.root, R.string.goals_new_goal_todo_snackbar,
-                Snackbar.LENGTH_SHORT).show()
+            NewGoalBottomSheet.forCreate().show(parentFragmentManager, "new_goal")
         }
 
         parentFragmentManager.setFragmentResultListener(
@@ -58,8 +56,17 @@ class GoalsFragment : BaseFragment<FragmentGoalsBinding>() {
             val goalId = result.getString(GoalActionsBottomSheet.GOAL_ID_KEY)
                 ?: return@setFragmentResultListener
             when (action) {
-                GoalActionsBottomSheet.ACTION_EDIT -> onEditRequested()
+                GoalActionsBottomSheet.ACTION_EDIT -> onEditRequested(goalId)
                 GoalActionsBottomSheet.ACTION_DELETE -> onDeleteConfirmed(goalId)
+            }
+        }
+
+        parentFragmentManager.setFragmentResultListener(
+            NewGoalBottomSheet.FRAGMENT_RESULT_KEY, viewLifecycleOwner,
+        ) { _, result ->
+            if (result.getBoolean(NewGoalBottomSheet.RESULT_SAVED_KEY, false)) {
+                Snackbar.make(binding.root, R.string.new_goal_saved_snackbar,
+                    Snackbar.LENGTH_SHORT).show()
             }
         }
 
@@ -88,11 +95,8 @@ class GoalsFragment : BaseFragment<FragmentGoalsBinding>() {
             .show(parentFragmentManager, "goal_actions")
     }
 
-    private fun onEditRequested() {
-        // Step 5 will replace this with a navigation to the edit variant of
-        // the New Goal bottom sheet.
-        Snackbar.make(binding.root, R.string.goals_edit_todo_snackbar,
-            Snackbar.LENGTH_SHORT).show()
+    private fun onEditRequested(goalId: String) {
+        NewGoalBottomSheet.forEdit(goalId).show(parentFragmentManager, "edit_goal")
     }
 
     private fun onDeleteConfirmed(goalId: String) {

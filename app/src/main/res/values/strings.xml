@@ -132,6 +132,46 @@
     <string name="goals_delete_confirm_cancel">Cancel</string>
     <string name="goals_deleted_snackbar">Goal deleted</string>
     <string name="goals_deleted_undo">Undo</string>
+    <!-- New Goal bottom sheet (phase 7 step 5) -->
+    <string name="new_goal_title_create">New goal</string>
+    <string name="new_goal_title_edit">Edit goal</string>
+    <string name="new_goal_section_activity">Activity</string>
+    <string name="new_goal_section_type">Type</string>
+    <string name="new_goal_section_period">Period</string>
+    <string name="new_goal_activity_running">Running</string>
+    <string name="new_goal_activity_cycling">Cycling</string>
+    <string name="new_goal_activity_weightlifting">Weightlifting</string>
+    <string name="new_goal_activity_any">Any</string>
+    <string name="new_goal_type_distance">Distance</string>
+    <string name="new_goal_type_count">Workouts</string>
+    <string name="new_goal_type_duration">Duration</string>
+    <string name="new_goal_type_volume">Volume</string>
+    <string name="new_goal_period_week">This week</string>
+    <string name="new_goal_period_month">This month</string>
+    <string name="new_goal_target_hint">Target</string>
+    <string name="new_goal_title_hint">Title</string>
+    <string name="new_goal_submit_create">Create goal</string>
+    <string name="new_goal_submit_edit">Save changes</string>
+    <string name="new_goal_error_activity_required">Choose an activity.</string>
+    <string name="new_goal_error_type_required">Choose a goal type.</string>
+    <string name="new_goal_error_target_required">Enter a target.</string>
+    <string name="new_goal_error_target_invalid">Enter a valid number.</string>
+    <string name="new_goal_error_target_out_of_range_distance">Distance target must be between 1 and 1000 km.</string>
+    <string name="new_goal_error_target_out_of_range_count">Workout target must be between 1 and 1000.</string>
+    <string name="new_goal_error_target_out_of_range_duration">Duration target must be between 1 and 100000 min.</string>
+    <string name="new_goal_error_target_out_of_range_volume">Volume target must be between 1 and 500000 kg.</string>
+    <string name="new_goal_error_title_required">Add a title.</string>
+    <!-- Auto-title templates. Placeholders: %1$s target, %2$s unit, %3$s period -->
+    <string name="new_goal_auto_title_run">Run %1$s %2$s %3$s</string>
+    <string name="new_goal_auto_title_ride">Ride %1$s %2$s %3$s</string>
+    <string name="new_goal_auto_title_lift">Lift %1$s %2$s %3$s</string>
+    <string name="new_goal_auto_title_count">%1$s workouts %3$s</string>
+    <string name="new_goal_auto_title_duration">%1$s active minutes %3$s</string>
+    <string name="new_goal_auto_title_distance_any">Cover %1$s %2$s %3$s</string>
+    <string name="new_goal_auto_period_this_week">this week</string>
+    <string name="new_goal_auto_period_this_month">this month</string>
+    <string name="new_goal_preview">%1$s between %2$s and %3$s.</string>
+    <string name="new_goal_saved_snackbar">Goal saved</string>
     <string name="goals_edit_todo_snackbar">Editing arrives in the next update.</string>
     <string name="goals_new_goal_todo_snackbar">The New Goal sheet arrives in the next update.</string>
 
