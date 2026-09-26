@@ -131,6 +131,28 @@ class RemoteGoalRepositoryTest {
     }
 
     @Test
+    fun `markCompletedNotified patches the flow with the returned flag`() = runTest {
+        val api = FakeGoalApi()
+        api.listResponse = Response.success(
+            ApiEnvelope(success = true, data = listOf(dtoWithId(id = 5L)))
+        )
+        val repo = RemoteGoalRepository(api)
+        repo.refresh()
+
+        val notifiedDto = dtoWithId(id = 5L).copy(completedNotified = true)
+        api.markNotifiedResponse = Response.success(
+            ApiEnvelope(success = true, data = notifiedDto)
+        )
+
+        val result = repo.markCompletedNotified("5")
+        assertTrue(result is ApiResult.Success)
+        assertEquals(1, api.markNotifiedCallCount)
+        val goal = repo.observeGoals().first().first()
+        assertTrue("expected the flag flipped to true on the local goal",
+            goal.completedNotified)
+    }
+
+    @Test
     fun `deleteGoal error leaves the flow untouched`() = runTest {
         val api = FakeGoalApi()
         api.listResponse = Response.success(
@@ -176,6 +198,10 @@ class RemoteGoalRepositoryTest {
             ApiEnvelope(success = true, data = null)
         )
         var deleteResponse: Response<Unit> = Response.success(Unit)
+        var markNotifiedResponse: Response<ApiEnvelope<GoalDto>> = Response.success(
+            ApiEnvelope(success = true, data = null)
+        )
+        var markNotifiedCallCount = 0
 
         var lastCreateBody: CreateGoalRequestDto? = null
         var lastUpdateBody: UpdateGoalRequestDto? = null
@@ -188,5 +214,8 @@ class RemoteGoalRepositoryTest {
             lastUpdateBody = body; return updateResponse
         }
         override suspend fun delete(id: Long): Response<Unit> = deleteResponse
+        override suspend fun markNotified(id: Long): Response<ApiEnvelope<GoalDto>> {
+            markNotifiedCallCount++; return markNotifiedResponse
+        }
     }
 }

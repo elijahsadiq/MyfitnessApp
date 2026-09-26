@@ -154,9 +154,122 @@ class GoalsViewModelTest {
         return GoalsViewModel(goalRepo, calc)
     }
 
+    private fun buildWith(
+        goals: MutableStateFlow<List<Goal>>,
+        workouts: MutableStateFlow<List<Workout>>,
+        repo: FakeGoalRepo = FakeGoalRepo(goals),
+    ): GoalsViewModel {
+        val workoutRepo = FakeWorkoutRepo(workouts)
+        val calc = GoalProgressCalculator(repo, workoutRepo, clock)
+        return GoalsViewModel(repo, calc)
+    }
+
+    // ---- completion Snackbar ----
+
+    @Test
+    fun `no celebration when the seed pass finds a goal already notified`() = runTest {
+        // Goal is complete AND its completedNotified flag is already true —
+        // that's history, don't fire again.
+        val g = WorkoutCountGoal(
+            id = "done", title = "done", activityType = null,
+            targetValue = 1.0, period = GoalPeriod.THIS_WEEK,
+            periodStart = periodStart, periodEnd = periodEnd, createdAt = periodStart,
+            completedNotified = true,
+        )
+        val w = com.elijah.fitness.data.model.RunningWorkout(
+            id = "w1", startTime = Instant.parse("2026-09-15T10:00:00Z"),
+            duration = Duration.ofMinutes(30), distanceMeters = 5_000.0,
+        )
+        val goalsFlow = MutableStateFlow<List<Goal>>(listOf(g))
+        val workoutsFlow = MutableStateFlow<List<Workout>>(listOf(w))
+        val repo = FakeGoalRepo(goalsFlow)
+        val vm = buildWith(goalsFlow, workoutsFlow, repo)
+        val events = collectEvents(vm)
+
+        assertTrue(events.none { it is GoalsViewModel.ErrorEvent.GoalCompleted })
+        assertEquals(0, repo.markNotifiedCallCount)
+    }
+
+    @Test
+    fun `celebrate on seed pass when the goal is complete but not yet notified`() = runTest {
+        // A past session completed this goal but never had the chance to
+        // fire — the app was closed before the Snackbar. Now it should fire.
+        val g = WorkoutCountGoal(
+            id = "pending", title = "pending", activityType = null,
+            targetValue = 1.0, period = GoalPeriod.THIS_WEEK,
+            periodStart = periodStart, periodEnd = periodEnd, createdAt = periodStart,
+            completedNotified = false,
+        )
+        val w = com.elijah.fitness.data.model.RunningWorkout(
+            id = "w1", startTime = Instant.parse("2026-09-15T10:00:00Z"),
+            duration = Duration.ofMinutes(30), distanceMeters = 5_000.0,
+        )
+        val goalsFlow = MutableStateFlow<List<Goal>>(listOf(g))
+        val workoutsFlow = MutableStateFlow<List<Workout>>(listOf(w))
+        val repo = FakeGoalRepo(goalsFlow)
+        val vm = buildWith(goalsFlow, workoutsFlow, repo)
+        val events = collectEvents(vm)
+
+        val completions = events.filterIsInstance<GoalsViewModel.ErrorEvent.GoalCompleted>()
+        assertEquals(1, completions.size)
+        assertEquals("pending", completions[0].title)
+        assertEquals(1, repo.markNotifiedCallCount)
+    }
+
+    @Test
+    fun `celebrate on transition from incomplete to complete during the session`() = runTest {
+        val g = WorkoutCountGoal(
+            id = "grow", title = "grow", activityType = null,
+            targetValue = 1.0, period = GoalPeriod.THIS_WEEK,
+            periodStart = periodStart, periodEnd = periodEnd, createdAt = periodStart,
+            completedNotified = false,
+        )
+        val goalsFlow = MutableStateFlow<List<Goal>>(listOf(g))
+        val workoutsFlow = MutableStateFlow<List<Workout>>(emptyList())
+        val repo = FakeGoalRepo(goalsFlow)
+        val vm = buildWith(goalsFlow, workoutsFlow, repo)
+
+        // Persistent collector — kept alive across both state changes.
+        val events = mutableListOf<GoalsViewModel.ErrorEvent>()
+        val job = kotlinx.coroutines.CoroutineScope(dispatcher).launch {
+            vm.errorEvents.collect { events.add(it) }
+        }
+        dispatcher.scheduler.advanceUntilIdle()
+
+        // Seed pass: goal is incomplete (no workouts) — no celebration yet.
+        assertTrue(events.filterIsInstance<GoalsViewModel.ErrorEvent.GoalCompleted>().isEmpty())
+
+        // Log a workout → count goal ticks over its target.
+        workoutsFlow.value = listOf(
+            com.elijah.fitness.data.model.RunningWorkout(
+                id = "w1", startTime = Instant.parse("2026-09-15T10:00:00Z"),
+                duration = Duration.ofMinutes(30), distanceMeters = 5_000.0,
+            )
+        )
+        dispatcher.scheduler.advanceUntilIdle()
+        job.cancel()
+
+        val completions = events.filterIsInstance<GoalsViewModel.ErrorEvent.GoalCompleted>()
+        assertEquals(1, completions.size)
+        assertEquals("grow", completions[0].title)
+        assertEquals(1, repo.markNotifiedCallCount)
+    }
+
+    /** Collect every event emitted so far into a list. */
+    private suspend fun collectEvents(vm: GoalsViewModel): MutableList<GoalsViewModel.ErrorEvent> {
+        val bag = mutableListOf<GoalsViewModel.ErrorEvent>()
+        val job = kotlinx.coroutines.CoroutineScope(dispatcher).launch {
+            vm.errorEvents.collect { bag.add(it) }
+        }
+        dispatcher.scheduler.advanceUntilIdle()
+        job.cancel()
+        return bag
+    }
+
     private class FakeGoalRepo(
         private val flow: MutableStateFlow<List<Goal>>,
     ) : GoalRepository {
+        var markNotifiedCallCount = 0
         override fun observeGoals(): Flow<List<Goal>> = flow.asStateFlow()
         override suspend fun refresh(): ApiResult<Unit> = ApiResult.Success(Unit)
         override suspend fun createGoal(
@@ -169,6 +282,10 @@ class GoalsViewModelTest {
             id: String, title: String, activityType: ActivityType?, targetValue: Double,
         ): ApiResult<Unit> = ApiResult.Success(Unit)
         override suspend fun deleteGoal(id: String): ApiResult<Unit> = ApiResult.Success(Unit)
+        override suspend fun markCompletedNotified(id: String): ApiResult<Unit> {
+            markNotifiedCallCount++
+            return ApiResult.Success(Unit)
+        }
     }
 
     private class FakeWorkoutRepo(

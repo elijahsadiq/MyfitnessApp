@@ -39,21 +39,25 @@ fun GoalDto.toDomain(zone: ZoneId = ZoneId.systemDefault()): Goal {
             id = id.toString(), title = title, activityType = activity,
             targetValue = targetValue, period = period,
             periodStart = start, periodEnd = end, createdAt = created,
+            completedNotified = completedNotified,
         )
         GoalType.COUNT -> WorkoutCountGoal(
             id = id.toString(), title = title, activityType = activity,
             targetValue = targetValue, period = period,
             periodStart = start, periodEnd = end, createdAt = created,
+            completedNotified = completedNotified,
         )
         GoalType.DURATION -> DurationGoal(
             id = id.toString(), title = title, activityType = activity,
             targetValue = targetValue, period = period,
             periodStart = start, periodEnd = end, createdAt = created,
+            completedNotified = completedNotified,
         )
         GoalType.VOLUME -> StrengthVolumeGoal(
             id = id.toString(), title = title, activityType = activity,
             targetValue = targetValue, period = period,
             periodStart = start, periodEnd = end, createdAt = created,
+            completedNotified = completedNotified,
         )
     }
 }

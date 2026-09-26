@@ -86,6 +86,7 @@ class GoalsFragment : BaseFragment<FragmentGoalsBinding>() {
                 is GoalsViewModel.ErrorEvent.Network -> showRetrySnackbar(event.messageRes)
                 is GoalsViewModel.ErrorEvent.Generic -> showRetrySnackbar(event.messageRes)
                 is GoalsViewModel.ErrorEvent.DeletedWithUndo -> showUndoSnackbar(event.snapshot)
+                is GoalsViewModel.ErrorEvent.GoalCompleted -> showCompletionSnackbar(event.title)
             }
         }
     }
@@ -127,5 +128,10 @@ class GoalsFragment : BaseFragment<FragmentGoalsBinding>() {
         Snackbar.make(binding.root, messageRes, Snackbar.LENGTH_LONG)
             .setAction(R.string.goals_retry) { viewModel.refresh() }
             .show()
+    }
+
+    private fun showCompletionSnackbar(title: String) {
+        val text = getString(R.string.goals_completed_snackbar, title)
+        Snackbar.make(binding.root, text, Snackbar.LENGTH_LONG).show()
     }
 }

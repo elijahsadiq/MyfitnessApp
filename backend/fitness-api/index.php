@@ -74,10 +74,11 @@ try {
     $router->add('DELETE', '/workouts/{id}',    [WorkoutController::class, 'destroy']);
 
     // Goals (phase 7) — definitions only; progress is client-side.
-    $router->add('GET',    '/goals',            [GoalController::class, 'index']);
-    $router->add('POST',   '/goals',            [GoalController::class, 'create']);
-    $router->add('PUT',    '/goals/{id}',       [GoalController::class, 'update']);
-    $router->add('DELETE', '/goals/{id}',       [GoalController::class, 'destroy']);
+    $router->add('GET',    '/goals',                [GoalController::class, 'index']);
+    $router->add('POST',   '/goals',                [GoalController::class, 'create']);
+    $router->add('PUT',    '/goals/{id}',           [GoalController::class, 'update']);
+    $router->add('DELETE', '/goals/{id}',           [GoalController::class, 'destroy']);
+    $router->add('POST',   '/goals/{id}/notified',  [GoalController::class, 'markNotified']);
 
     $router->dispatch($method, $path, $body);
 } catch (Throwable $e) {

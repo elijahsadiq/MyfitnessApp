@@ -28,4 +28,11 @@ interface GoalApi {
 
     @DELETE("goals/{id}")
     suspend fun delete(@Path("id") id: Long): Response<Unit>
+
+    /**
+     * Flip the server-side `completed_notified` flag so this goal's
+     * celebration is never shown again on this account.
+     */
+    @POST("goals/{id}/notified")
+    suspend fun markNotified(@Path("id") id: Long): Response<ApiEnvelope<GoalDto>>
 }

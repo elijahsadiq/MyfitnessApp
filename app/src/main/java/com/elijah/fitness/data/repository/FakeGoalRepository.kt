@@ -104,6 +104,32 @@ class FakeGoalRepository(
         return ApiResult.Success(Unit)
     }
 
+    override suspend fun markCompletedNotified(id: String): ApiResult<Unit> {
+        val existing = _goals.value.firstOrNull { it.id == id }
+            ?: return ApiResult.Error(message = "Goal not found", status = 404)
+        val replaced: Goal = when (existing) {
+            is DistanceGoal -> DistanceGoal(
+                existing.id, existing.title, existing.activityType, existing.targetValue,
+                existing.period, existing.periodStart, existing.periodEnd, existing.createdAt,
+                completedNotified = true)
+            is WorkoutCountGoal -> WorkoutCountGoal(
+                existing.id, existing.title, existing.activityType, existing.targetValue,
+                existing.period, existing.periodStart, existing.periodEnd, existing.createdAt,
+                completedNotified = true)
+            is DurationGoal -> DurationGoal(
+                existing.id, existing.title, existing.activityType, existing.targetValue,
+                existing.period, existing.periodStart, existing.periodEnd, existing.createdAt,
+                completedNotified = true)
+            is StrengthVolumeGoal -> StrengthVolumeGoal(
+                existing.id, existing.title, existing.activityType, existing.targetValue,
+                existing.period, existing.periodStart, existing.periodEnd, existing.createdAt,
+                completedNotified = true)
+            else -> error("Unknown Goal subclass in fake repo: ${existing::class.simpleName}")
+        }
+        _goals.update { current -> current.map { if (it.id == id) replaced else it } }
+        return ApiResult.Success(Unit)
+    }
+
     /**
      * Convenience for tests that want to seed a couple of goals aligned
      * with the current week / month without going through [createGoal].

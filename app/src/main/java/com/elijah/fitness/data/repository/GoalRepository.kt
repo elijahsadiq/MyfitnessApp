@@ -54,4 +54,11 @@ interface GoalRepository {
     ): ApiResult<Unit>
 
     suspend fun deleteGoal(id: String): ApiResult<Unit>
+
+    /**
+     * Persist the "we've already celebrated this completion" flag on
+     * the server + patch the local flow so subsequent snapshots have
+     * `completedNotified = true`. Idempotent — calling twice is fine.
+     */
+    suspend fun markCompletedNotified(id: String): ApiResult<Unit>
 }

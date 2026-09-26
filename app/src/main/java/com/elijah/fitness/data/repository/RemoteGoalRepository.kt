@@ -99,4 +99,17 @@ class RemoteGoalRepository(
             is ApiResult.Error -> result
             ApiResult.NetworkError -> ApiResult.NetworkError
         }
+
+    override suspend fun markCompletedNotified(id: String): ApiResult<Unit> =
+        when (val result = apiCall { goalApi.markNotified(id.toLong()) }) {
+            is ApiResult.Success -> {
+                val updated = result.data.toDomain()
+                _goals.value = _goals.value.map {
+                    if (it.id == updated.id) updated else it
+                }
+                ApiResult.Success(Unit)
+            }
+            is ApiResult.Error -> result
+            ApiResult.NetworkError -> ApiResult.NetworkError
+        }
 }

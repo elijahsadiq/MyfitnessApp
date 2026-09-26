@@ -227,6 +227,12 @@ Authorization: Bearer {{token}}
 DELETE {{baseUrl}}/goals/999999
 Authorization: Bearer {{token}}
 
+### 28. Mark a goal as "completion celebrated" (server flag flip)
+###     Used by the client after firing the celebration Snackbar once,
+###     so a subsequent refresh (or a new session) won't re-celebrate.
+POST {{baseUrl}}/goals/{{goalId}}/notified
+Authorization: Bearer {{token}}
+
 ### 27. Create an invalid goal — distance goal scoped to WEIGHTLIFTING
 ###     (expect 422 with fields.activityType)
 POST {{baseUrl}}/goals

@@ -43,7 +43,14 @@ abstract class Goal(
     val period: GoalPeriod,
     val periodStart: Instant,
     val periodEnd: Instant,             // exclusive — see GoalPeriodResolver
-    val createdAt: Instant
+    val createdAt: Instant,
+    /**
+     * True once the client has celebrated this goal's completion. The
+     * server persists it so a completion is only announced the first
+     * time; a fresh fetch of an already-notified goal never fires the
+     * Snackbar again (phase 7 step 7).
+     */
+    val completedNotified: Boolean = false,
 ) {
 
     /** Short unit string shown next to progress ("km", "workouts", "min", "kg"). */
@@ -102,8 +109,10 @@ class DistanceGoal(
     period: GoalPeriod,
     periodStart: Instant,
     periodEnd: Instant,
-    createdAt: Instant
-) : Goal(id, title, activityType, targetValue, period, periodStart, periodEnd, createdAt) {
+    createdAt: Instant,
+    completedNotified: Boolean = false,
+) : Goal(id, title, activityType, targetValue, period, periodStart, periodEnd,
+    createdAt, completedNotified) {
 
     init {
         require(activityType != ActivityType.WEIGHTLIFTING) {
@@ -129,8 +138,10 @@ class WorkoutCountGoal(
     period: GoalPeriod,
     periodStart: Instant,
     periodEnd: Instant,
-    createdAt: Instant
-) : Goal(id, title, activityType, targetValue, period, periodStart, periodEnd, createdAt) {
+    createdAt: Instant,
+    completedNotified: Boolean = false,
+) : Goal(id, title, activityType, targetValue, period, periodStart, periodEnd,
+    createdAt, completedNotified) {
 
     override val unitLabel: String = "workouts"
 
@@ -149,8 +160,10 @@ class DurationGoal(
     period: GoalPeriod,
     periodStart: Instant,
     periodEnd: Instant,
-    createdAt: Instant
-) : Goal(id, title, activityType, targetValue, period, periodStart, periodEnd, createdAt) {
+    createdAt: Instant,
+    completedNotified: Boolean = false,
+) : Goal(id, title, activityType, targetValue, period, periodStart, periodEnd,
+    createdAt, completedNotified) {
 
     override val unitLabel: String = "min"
 
@@ -173,8 +186,10 @@ class StrengthVolumeGoal(
     period: GoalPeriod,
     periodStart: Instant,
     periodEnd: Instant,
-    createdAt: Instant
-) : Goal(id, title, activityType, targetValue, period, periodStart, periodEnd, createdAt) {
+    createdAt: Instant,
+    completedNotified: Boolean = false,
+) : Goal(id, title, activityType, targetValue, period, periodStart, periodEnd,
+    createdAt, completedNotified) {
 
     init {
         require(activityType == null || activityType == ActivityType.WEIGHTLIFTING) {

@@ -152,6 +152,7 @@ class GoalProgressCalculatorTest {
             id: String, title: String, activityType: ActivityType?, targetValue: Double,
         ): ApiResult<Unit> = ApiResult.Success(Unit)
         override suspend fun deleteGoal(id: String): ApiResult<Unit> = ApiResult.Success(Unit)
+        override suspend fun markCompletedNotified(id: String): ApiResult<Unit> = ApiResult.Success(Unit)
     }
 
     private class FakeWorkoutRepo(

@@ -132,6 +132,10 @@
     <string name="goals_delete_confirm_cancel">Cancel</string>
     <string name="goals_deleted_snackbar">Goal deleted</string>
     <string name="goals_deleted_undo">Undo</string>
+    <!-- Completion Snackbar (phase 7 step 7). TODO(future phase): once
+         a notification channel exists, fire an achievement notification
+         instead of an in-app Snackbar. -->
+    <string name="goals_completed_snackbar">Goal complete: %1$s 🎉</string>
     <!-- New Goal bottom sheet (phase 7 step 5) -->
     <string name="new_goal_title_create">New goal</string>
     <string name="new_goal_title_edit">Edit goal</string>

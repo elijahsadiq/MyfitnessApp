@@ -110,6 +110,22 @@ final class GoalController
         Response::success(null, 200);
     }
 
+    /**
+     * Flip the `completed_notified` flag to 1. Called by the client the
+     * first time it celebrates a goal reaching 100%, so a subsequent
+     * refresh (or a new session) doesn't fire the celebration again.
+     */
+    public static function markNotified(array $params, array $_body): void
+    {
+        $userId = Auth::requireUser();
+        $ok = Goal::markCompletedNotified((int) $params['id'], $userId);
+        if (!$ok) {
+            Response::error('Goal not found', 404);
+        }
+        $row = Goal::findById((int) $params['id'], $userId);
+        Response::success(Goal::toDto($row ?? []));
+    }
+
     // ---------------------------------------------------------------------
     // Validation helpers
     // ---------------------------------------------------------------------

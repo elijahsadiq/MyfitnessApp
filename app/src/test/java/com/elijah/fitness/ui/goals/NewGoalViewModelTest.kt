@@ -231,5 +231,6 @@ class NewGoalViewModelTest {
             return updateResult
         }
         override suspend fun deleteGoal(id: String): ApiResult<Unit> = ApiResult.Success(Unit)
+        override suspend fun markCompletedNotified(id: String): ApiResult<Unit> = ApiResult.Success(Unit)
     }
 }

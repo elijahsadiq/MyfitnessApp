@@ -23,7 +23,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -65,7 +67,25 @@ class GoalsViewModel(
     private val _errorEvents = Channel<ErrorEvent>(Channel.BUFFERED)
     val errorEvents: Flow<ErrorEvent> = _errorEvents.receiveAsFlow()
 
-    init { refresh() }
+    /**
+     * Ids of goals whose completion we've already celebrated during
+     * this ViewModel's lifetime. Combined with the server-side
+     * `completedNotified` flag on `Goal`, it prevents the Snackbar from
+     * firing twice — the local set covers the "just now, don't fire
+     * again in this session" case, and the server flag covers cold
+     * starts of a later session.
+     */
+    private val celebratedThisSession: MutableSet<String> = mutableSetOf()
+    /** True once we've processed the very first snapshot. */
+    private var completionsSeeded = false
+
+    init {
+        refresh()
+        // Observe the calculator once to detect new completions.
+        calculator.observe()
+            .onEach { snapshots -> detectCompletions(snapshots) }
+            .launchIn(viewModelScope)
+    }
 
     fun refresh() {
         viewModelScope.launch {
@@ -108,6 +128,43 @@ class GoalsViewModel(
                 is ApiResult.Error ->
                     _errorEvents.send(ErrorEvent.Generic(R.string.goals_error_load_failed))
             }
+        }
+    }
+
+    /**
+     * On every emission from the calculator, detect goals that have
+     * newly reached 100% (were incomplete last time OR this is the
+     * seed pass and their server-side `completedNotified` flag is
+     * still false), emit a celebration event, then persist the flag
+     * on the server so a next-session refresh won't re-fire.
+     */
+    private fun detectCompletions(snapshots: List<GoalWithProgress>) {
+        if (!completionsSeeded) {
+            // First snapshot: goals that are already complete + already
+            // notified are just history. Goals that are complete but not
+            // yet notified belong to a past session that never got to
+            // fire the Snackbar — celebrate them now.
+            snapshots.filter { it.isComplete && !it.goal.completedNotified }
+                .forEach { announceCompletion(it) }
+            // Seed the "already celebrated" set with everything currently
+            // complete, so we don't double-fire on the next emission when
+            // markCompletedNotified() writes back through the flow.
+            snapshots.filter { it.isComplete }.forEach { celebratedThisSession.add(it.goal.id) }
+            completionsSeeded = true
+            return
+        }
+        snapshots.filter {
+            it.isComplete && it.goal.id !in celebratedThisSession
+        }.forEach { announceCompletion(it) }
+    }
+
+    private fun announceCompletion(gwp: GoalWithProgress) {
+        celebratedThisSession.add(gwp.goal.id)
+        viewModelScope.launch {
+            _errorEvents.send(ErrorEvent.GoalCompleted(gwp.goal.title))
+            // Persist the flag; silent on failure — worst case is the
+            // Snackbar fires once more on next cold start, which is fine.
+            goalRepository.markCompletedNotified(gwp.goal.id)
         }
     }
 
@@ -173,6 +230,8 @@ class GoalsViewModel(
         data class Network(@StringRes val messageRes: Int) : ErrorEvent
         data class Generic(@StringRes val messageRes: Int) : ErrorEvent
         data class DeletedWithUndo(val snapshot: GoalSnapshot) : ErrorEvent
+        /** A goal just reached 100% — the fragment shows a celebration Snackbar. */
+        data class GoalCompleted(val title: String) : ErrorEvent
     }
 
     companion object {

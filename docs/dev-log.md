@@ -851,3 +851,57 @@ Considered exposing a sealed `HomeGoalsState { Empty, Rows(list) }` from the Vie
 **Assignment task supported**
 - **Task 4 (development)** — the goals feature loop is now visible from Home too; the top-2 urgent goals surface without the user having to switch tabs.
 - **Task 3b (design)** — the "same calculator feeds two screens" plumbing is exactly what phase 7's client-side-progress trade-off buys us; worth calling out in the design chapter.
+
+## Step 7 — Completion celebration (phase 7 close-out)
+**Built**
+- **`Goal.completedNotified: Boolean = false`** added on the abstract base + threaded through all four subclasses' secondary constructor lists (defaulted so no existing call site broke). The field is round-tripped through `GoalDto` and the mapper, so the domain model now knows whether the celebration has already fired for a given goal.
+- **`GoalRepository.markCompletedNotified(id)`** + **`RemoteGoalRepository`** impl (POSTs `/goals/{id}/notified`, receives the full `GoalDto` back, replaces the local goal in the flow) + **`FakeGoalRepository`** impl (reconstructs the same subclass with `completedNotified = true`).
+- **Backend endpoint** — `POST /goals/{id}/notified` in `GoalController::markNotified`, wired in `index.php`. Uses the existing `Goal::markCompletedNotified(id, userId)` PDO method the phase-1 schema-migration file already provisioned. Per-user scoping; 404 for another user's row. Smoke-tested against the running Docker stack.
+- **Completion detection in `GoalsViewModel`**:
+  - Subscribes to `calculator.observe()` from `init { }` and calls `detectCompletions(snapshots)` on every emission.
+  - **Seed pass** (first emission): goals that are already complete + already notified are just history and are silently added to the in-memory "already celebrated" set. Goals that are complete but *not* yet notified (a past session that never fired the Snackbar because the app was killed mid-celebration) fire now.
+  - **Subsequent passes**: any newly-complete goal that isn't in the session's celebrated set fires a `GoalCompleted(title)` event, is added to the set, and its `completedNotified` flag is persisted on the server so a next cold start doesn't re-celebrate.
+  - Server persistence is fire-and-forget — silent on failure. Worst case: the Snackbar fires one extra time on the next cold start, which is fine.
+- **`GoalsFragment.showCompletionSnackbar(title)`** — LENGTH_LONG "Goal complete: <title> 🎉". No retry action; just an ephemeral toast.
+- **`api-tests.http`** — request #28 for the new endpoint, in the goals block.
+- **Tests (4 new, 169 total, 0 failures)**:
+  - `GoalsViewModelTest`: no celebration for a goal that was complete AND already notified on seed pass; celebrate on seed pass for a goal that was complete but pending notification; celebrate on transition from incomplete → complete during the session (via a workout log that pushes a count goal over the target).
+  - `RemoteGoalRepositoryTest`: `markCompletedNotified` calls the API, patches the local flow with the flag flipped, returns Success.
+
+**Key design decision — track in-session set AND server flag together**
+The in-session set alone would re-celebrate on every app cold start (nothing persists). The server flag alone would re-celebrate whenever the local flow briefly drops the flag (e.g. we call `markCompletedNotified` but the server round-trip is slow; the next combine emission still shows `completedNotified = false` for a moment). Combining both eliminates both cases: the set covers the "session already handled this" case, the server flag covers the "cold-start already handled this" case. Neither is redundant.
+
+**Rejected alternative — celebrate from anywhere in the app**
+Considered making a global `GoalCompletionAnnouncer` in `AppContainer` that observes the calculator app-wide and surfaces celebrations via `MainActivity`. Rejected because a Snackbar has to attach to a specific view root, and the natural place is the Goals tab — that's where the user *sees* the completed goal move into the Completed section. Firing a Snackbar over the Home tab while the user isn't looking at Goals would feel disconnected. Deferred the global-observer idea to the future phase that adds real notifications; the note is in the string comment (`goals_completed_snackbar`).
+
+**Kotlin/Android concepts (for my notes)**
+- *`Flow.launchIn(viewModelScope)`* — the fluent form of `viewModelScope.launch { flow.collect { ... } }`. Combined with `.onEach { }` it's the idiomatic "observe this flow for side effects for the lifetime of the ViewModel" pattern.
+- *"Seed pass" pattern* — a one-time boolean guard (`completionsSeeded`) distinguishes the first Flow emission from later ones. Cleaner than trying to inspect the flow's replay behaviour or wrapping in `.drop(1)`, because we still want to act on the first emission (celebrate pending goals), just differently.
+- *Persistent test collector* — `runTest` with `StandardTestDispatcher` requires that a `.collect { }` job stay alive across state changes if we want to capture events emitted between them. Cancelling the job between the two `advanceUntilIdle` calls silently drops any event emitted in the second one.
+
+**Verified**
+- `./gradlew assembleLocalDebug` — BUILD SUCCESSFUL.
+- `./gradlew testLocalDebugUnitTest` — **169 tests, 0 failures** (4 new).
+- Backend endpoint smoke-tested via curl: create → mark notified → response shows `completedNotified: true` → delete → clean.
+- On-device: open the app, create a goal with target 1 workout, log one workout → the Goals tab shows the "Goal complete: <title> 🎉" Snackbar and the row moves into the Completed section. Restart the app → no re-celebration.
+
+**Assignment task supported**
+- **Task 4 (development)** — closes the goals feature loop end-to-end: create → progress → complete → celebrate → recorded.
+- **Task 3b (design)** — the "seed pass + in-session set + server flag" pattern is a design decision worth writing up as the completion-idempotency story.
+
+---
+
+# Phase 7 — Done
+
+All seven steps landed. Final counts:
+- **Kotlin main sources**: 1 hierarchy (`Goal → Distance/Count/Duration/StrengthVolume`), 1 domain calculator, 1 API interface, 2 repositories (Remote + Fake), 1 DTO layer + mapper, 2 ViewModels (Goals + NewGoal), 1 fragment (rewritten), 2 bottom sheets (Actions + New Goal), 1 adapter with 4 view holders, and Home Goals section rewired.
+- **Backend**: 1 controller (4 write endpoints + 1 flag endpoint), 1 model, 1 idempotent migration; 9 new requests in `api-tests.http`.
+- **Tests**: 169 total, 0 failures. 34 new phase-7 tests spanning domain, period resolver, mapper, remote repo, fake repo, calculator, Goals ViewModel, and NewGoal ViewModel.
+- **Design system**: no hardcoded colours/dimensions/strings in any of the new layouts. All 5 new item layouts and 2 new bottom-sheet layouts route through the existing Kinetic Glow tokens.
+
+The final report (assignment brief) can now describe:
+1. The `Goal` hierarchy as the fourth inheritance write-up (base owns filtering; leaves own measurement).
+2. The client/server validation split (Kotlin `require { }` invariants ↔ PHP field-error map).
+3. The "progress lives on the client" trade-off (calculator + `combine {}`) and why it makes offline-first easy.
+4. The one-sheet-two-modes pattern for New Goal / Edit.
+5. The completion celebration's seed-pass + in-session-set + server-flag idempotency.
