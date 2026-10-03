@@ -19,14 +19,14 @@
         app:trackColor="@color/surface_container_high"
         tools:visibility="visible" />
 
-    <!-- Header: title + New goal pill. Kept outside the list so it stays
+    <!-- Header: title + mini "+" FAB. Kept outside the list so it stays
          pinned while the list scrolls. -->
     <LinearLayout
         android:id="@+id/goalsHeader"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginHorizontal="@dimen/screen_margin"
-        android:layout_marginTop="@dimen/space_xl"
+        android:layout_marginTop="@dimen/space_2xl"
         android:gravity="center_vertical"
         android:orientation="horizontal"
         app:layout_constraintTop_toBottomOf="@id/goalsLoadingBar">
@@ -39,17 +39,14 @@
             android:layout_weight="1"
             android:text="@string/goals_headline" />
 
-        <com.google.android.material.button.MaterialButton
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/newGoalButton"
-            style="@style/Widget.Fitness.Button.Primary"
+            style="@style/Widget.Fitness.FAB"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:minWidth="0dp"
-            android:minHeight="40dp"
-            android:paddingHorizontal="@dimen/space_lg"
-            android:text="@string/goals_new_goal_button"
-            app:icon="@drawable/ic_add_24"
-            app:iconGravity="textStart" />
+            android:contentDescription="@string/goals_new_goal_button"
+            android:src="@drawable/ic_add_24"
+            app:fabSize="mini" />
     </LinearLayout>
 
     <androidx.recyclerview.widget.RecyclerView
@@ -62,12 +59,14 @@
         app:layout_constraintTop_toBottomOf="@id/goalsHeader"
         tools:listitem="@layout/item_goal_active" />
 
-    <!-- Empty state (shown when the list is empty and not loading). -->
+    <!-- Empty state. Centered in the viewport above the bottom nav so the
+         primary CTA sits where the user's thumb naturally rests. -->
     <LinearLayout
         android:id="@+id/goalsEmptyState"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginHorizontal="@dimen/screen_margin"
+        android:layout_marginBottom="@dimen/bottom_nav_height"
         android:gravity="center"
         android:orientation="vertical"
         android:padding="@dimen/space_xl"
@@ -77,11 +76,11 @@
         tools:visibility="visible">
 
         <ImageView
-            android:layout_width="64dp"
-            android:layout_height="64dp"
+            android:layout_width="72dp"
+            android:layout_height="72dp"
             android:background="@drawable/bg_icon_tile"
             android:contentDescription="@string/goals_row_icon_content_description"
-            android:padding="16dp"
+            android:padding="18dp"
             android:src="@drawable/ic_flag_24"
             app:tint="@color/lime_deep" />
 
@@ -100,5 +99,15 @@
             android:gravity="center"
             android:text="@string/goals_empty_body"
             android:textColor="@color/text_secondary" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/newGoalEmptyButton"
+            style="@style/Widget.Fitness.Button.Primary"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_xl"
+            android:text="@string/goals_new_goal_button"
+            app:icon="@drawable/ic_add_24"
+            app:iconGravity="textStart" />
     </LinearLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>

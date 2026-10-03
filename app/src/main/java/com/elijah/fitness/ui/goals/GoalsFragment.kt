@@ -45,9 +45,11 @@ class GoalsFragment : BaseFragment<FragmentGoalsBinding>() {
         binding.goalsList.layoutManager = LinearLayoutManager(requireContext())
         binding.goalsList.adapter = adapter
 
-        binding.newGoalButton.setOnClickListener {
+        val openNewGoalSheet: (View) -> Unit = {
             NewGoalBottomSheet.forCreate().show(parentFragmentManager, "new_goal")
         }
+        binding.newGoalButton.setOnClickListener(openNewGoalSheet)
+        binding.newGoalEmptyButton.setOnClickListener(openNewGoalSheet)
 
         parentFragmentManager.setFragmentResultListener(
             GoalActionsBottomSheet.FRAGMENT_RESULT_KEY, viewLifecycleOwner,
