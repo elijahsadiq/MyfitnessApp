@@ -6,6 +6,7 @@ import com.elijah.fitness.data.remote.api.WorkoutApi
 import com.elijah.fitness.data.remote.apiCall
 import com.elijah.fitness.data.remote.mapper.toDomain
 import com.elijah.fitness.data.remote.mapper.toRequestDto
+import com.elijah.fitness.tracking.TrackPoint
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -45,8 +46,11 @@ class RemoteWorkoutRepository(
             ApiResult.NetworkError -> ApiResult.NetworkError
         }
 
-    override suspend fun addWorkout(workout: Workout): ApiResult<Unit> =
-        when (val result = apiCall { workoutApi.create(workout.toRequestDto()) }) {
+    override suspend fun addWorkout(
+        workout: Workout,
+        routePoints: List<TrackPoint>,
+    ): ApiResult<Unit> =
+        when (val result = apiCall { workoutApi.create(workout.toRequestDto(routePoints)) }) {
             is ApiResult.Success -> {
                 val added = result.data.toDomain()
                 // POST is upsert on the server side (on client_uuid); apply

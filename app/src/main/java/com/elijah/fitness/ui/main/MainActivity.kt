@@ -60,9 +60,12 @@ class MainActivity : AppCompatActivity() {
 
         navController.addOnDestinationChangedListener { _, destination, _ ->
             val isTopLevel = destination.id in TOP_LEVEL_DESTINATIONS
-            binding.bottomNavigation.isVisible = isTopLevel
-            // Toolbar only for the log flow + standalone Profile.
-            binding.appBarLayout.isVisible = destination.id in CHROME_DESTINATIONS
+            val isImmersive = destination.id == R.id.liveTrackingFragment
+            binding.bottomNavigation.isVisible = isTopLevel && !isImmersive
+            // Toolbar only for the log flow + standalone Profile; the live
+            // tracking screen draws its own close affordance.
+            binding.appBarLayout.isVisible =
+                destination.id in CHROME_DESTINATIONS && !isImmersive
         }
 
         observeAuthEvents()

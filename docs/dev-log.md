@@ -1049,3 +1049,48 @@ Would survive a process kill, but phase 8a has no Room / disk model to lean on. 
 **Assignment task supported**
 - **Task 4 (development)** — closes the "tracking continues with the screen off" and "foreground service with location type" requirements of the brief.
 - **Task 1b (design)** — the "no background permission, foreground-only" paragraph has its implementation to point at.
+
+## Step 5 — Live tracking screen + chooser rework
+**Built**
+- **`ChooseActivityBottomSheet`** rewritten as a two-step chooser. Step 1 picks activity; Running/Cycling land on Step 2 ("Track with GPS" vs "Enter manually") with a Back control; Weightlifting bypasses step 2 and routes straight to manual strength logging. One sheet, two visible `LinearLayout`s swapped by `isVisible`, no second navigation destination — simplest possible way to add the GPS option without doubling the surface area.
+- **`LiveTrackingFragment`** + layout + VM (`ui/tracking/`):
+  - Dark immersive, `fitsSystemWindows=true`, `MainActivity` hides the bottom nav + toolbar for `R.id.liveTrackingFragment`.
+  - Top row: GPS-quality pill (`Searching` / `Strong` / `Weak`) + close icon.
+  - `org.osmdroid.views.MapView` fills ~40 % of the screen with Mapnik tiles. First fix centres the map; every subsequent fix extends a lime-coloured `Polyline` of the full accepted route and animates to the latest point. osmdroid gets configured from `onViewCreated` (SharedPreferences cache + user-agent set to the package name — required by their tile usage policy).
+  - Readouts: elapsed time (`DisplayMetric`), distance, pace *or* speed depending on activity, calories (reuses the existing `Workout.caloriesBurned` MET model so the figure matches what the saved workout will show on History).
+  - Controls while tracking: pause/resume (large lime pill, label toggles with status) + stop (outlined). Stop opens a `MaterialAlertDialogBuilder` confirmation; confirmed stop fires `LocationTrackingService.stopIntent` and the UI switches to save mode.
+  - Save mode: notes field (`TextInputLayout`) + Save + Discard. Save routes through `LiveTrackingViewModel.save(notes)` → `workoutRepository.addWorkout(workout, routePoints)`; failure surfaces as a Snackbar and the data stays on screen. Discard clears the session via `TrackingSession.reset()` and pops back.
+  - "Save with no route" guard: if the user stops before any point passed the filters, confirm the save-without-route first so a one-tap error can't accidentally commit a zero-length workout.
+  - `WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON` added in `onViewCreated`, cleared in `onDestroyView` — the screen stays awake *only* while this fragment is visible.
+  - `requestNotificationPermissionIfNeeded()` kicks off the API-33+ `POST_NOTIFICATIONS` request on first entry so the ongoing notification shows up for new users.
+- **`LiveTrackingViewModel`** — minimal: holds `isSaving` and emits `Saved` / `SaveFailed` / `Discarded` events through a `Channel.BUFFERED`. The *state* comes straight from `TrackingSession.state` (held on `AppContainer`) so a rotation / configuration change doesn't rebuild anything — the service is still writing to the same flow.
+- **Repository + DTO plumbing**:
+  - `WorkoutRequestDto` gains `routePoints: List<RoutePointRequestDto>` (defaulted empty — manual logs stay backwards compatible).
+  - `WorkoutDto` gains `routePoints: List<RoutePointDto>` populated by `GET /workouts/{id}` only.
+  - New `TrackPoint ↔ RoutePointDto` mappers in `WorkoutMapper.kt`.
+  - `WorkoutRepository.addWorkout(workout, routePoints = emptyList())` — new optional parameter; `RemoteWorkoutRepository` passes it through to the request DTO; `FakeWorkoutRepository` accepts and ignores it (in-memory has no route to store).
+  - Five test fakes updated for the new signature; **231 tests, 0 failures** (no new tests this step — the behaviour additions are UI composition + optional-param plumbing).
+- **Nav graph** — new `action_choose_to_live_tracking` on the bottom-sheet dialog + a new `liveTrackingFragment` destination with the `activityType` string argument (defaults to `RUNNING`).
+- **Strings** — ~20 new entries covering GPS states, pause/resume/stop/save/discard copy, confirmation dialog titles + bodies, and the save/no-route warning. All phase-friendly, no mention of future updates.
+
+**Key design decision — one fragment, two modes, no separate "save step" fragment**
+The brief says "goes to a save step where the user can add notes". A dedicated save fragment would duplicate the readouts and complicate the retry-on-failure path (the fragment would already have popped). Switching modes within the same fragment keeps all tracked data in one place, makes retry trivial, and is one `isVisible` toggle in the layout.
+
+**Rejected alternative — a bound-service connection in the fragment**
+Would surface pause/resume as direct method calls on the service binder, avoiding four one-liner `startService(Intent)` helpers. Cost: a `ServiceConnection` lifecycle to manage, binding leaks on rotation to defend against, and no observable benefit. The `startService(Intent)` broadcasts hit the same handler in `onStartCommand` and are simpler.
+
+**Kotlin/Android concepts** *(for my notes)*
+- osmdroid vs Google Maps: `MapView` is a drop-in XML view; `Polyline` is added to `overlays` and redrawn with `setPoints`. No API key, no signing-cert pinning, which is the whole point of this choice.
+- `FLAG_KEEP_SCREEN_ON` is set on the Activity's `window`, so this fragment must undo it in `onDestroyView` — leaving it on would prevent sleep on every other screen the user visited after.
+- `ContextCompat.startForegroundService(...)` — required on API 26+ for a background start of a `foregroundServiceType="location"` service; a plain `startService` throws `BackgroundServiceStartNotAllowedException` on recent Android.
+
+**Verified**
+- `./gradlew assembleLocalDebug` — BUILD SUCCESSFUL.
+- `./gradlew testLocalDebugUnitTest` — **231 tests, 0 failures**.
+
+**Known limitation (dev-log cite)**
+If the OS kills the process mid-workout, the tracked data in `TrackingSession.state` is lost — there's no on-disk journal. Phase 8a scope matches the brief; a future phase would persist to Room on each accepted fix.
+
+**Assignment task supported**
+- **Task 4 (development)** — live tracking, start/pause/resume/stop, route display, save-with-points — the whole user-facing geolocation story is now reachable from the Home "Start workout" button → Running/Cycling → "Track with GPS".
+- **Task 2b (design)** — the map library trade-off has its justification: Google Maps SDK is cert-pinned so a marker's machine couldn't render it; osmdroid works for everyone.

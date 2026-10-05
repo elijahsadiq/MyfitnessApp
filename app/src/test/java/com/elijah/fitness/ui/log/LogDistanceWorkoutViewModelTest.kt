@@ -149,7 +149,7 @@ class LogDistanceWorkoutViewModelTest {
         override suspend fun refresh(): com.elijah.fitness.data.remote.ApiResult<Unit> =
             com.elijah.fitness.data.remote.ApiResult.Success(Unit)
 
-        override suspend fun addWorkout(workout: Workout): com.elijah.fitness.data.remote.ApiResult<Unit> {
+        override suspend fun addWorkout(workout: Workout, routePoints: List<com.elijah.fitness.tracking.TrackPoint>): com.elijah.fitness.data.remote.ApiResult<Unit> {
             val result = nextAddResult
             if (result is com.elijah.fitness.data.remote.ApiResult.Success) {
                 state.value = state.value + workout

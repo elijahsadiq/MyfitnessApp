@@ -15,8 +15,24 @@ data class WorkoutDto(
     val notes: String? = null,
     /** Only populated for `WEIGHTLIFTING`. */
     val sets: List<StrengthSetDto> = emptyList(),
+    /**
+     * Populated by `GET /workouts/{id}` only. The list endpoint omits route
+     * points to keep its payload small — the detail call reads them.
+     */
+    val routePoints: List<RoutePointDto> = emptyList(),
     val createdAt: String,
     val updatedAt: String,
+)
+
+@Serializable
+data class RoutePointDto(
+    val seq: Int,
+    val latitude: Double,
+    val longitude: Double,
+    val elapsedMs: Long,
+    val accuracyM: Double? = null,
+    /** ISO-8601 UTC. */
+    val recordedAt: String,
 )
 
 @Serializable
@@ -36,6 +52,17 @@ data class WorkoutRequestDto(
     val distanceMeters: Double? = null,
     val notes: String? = null,
     val sets: List<StrengthSetRequestDto> = emptyList(),
+    val routePoints: List<RoutePointRequestDto> = emptyList(),
+)
+
+@Serializable
+data class RoutePointRequestDto(
+    val seq: Int,
+    val latitude: Double,
+    val longitude: Double,
+    val elapsedMs: Long,
+    val accuracyM: Double? = null,
+    val recordedAt: String,
 )
 
 @Serializable

@@ -35,7 +35,10 @@ class FakeWorkoutRepository(
     /** In-memory backend has no remote fetch — always succeeds instantly. */
     override suspend fun refresh(): ApiResult<Unit> = ApiResult.Success(Unit)
 
-    override suspend fun addWorkout(workout: Workout): ApiResult<Unit> {
+    override suspend fun addWorkout(
+        workout: Workout,
+        routePoints: List<com.elijah.fitness.tracking.TrackPoint>,
+    ): ApiResult<Unit> {
         _workouts.update { current ->
             (current + workout).sortedByDescending { it.startTime }
         }

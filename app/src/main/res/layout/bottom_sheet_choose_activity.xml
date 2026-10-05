@@ -1,58 +1,128 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:orientation="vertical"
-    android:paddingHorizontal="24dp"
-    android:paddingTop="24dp"
-    android:paddingBottom="16dp">
+    android:layout_height="wrap_content">
 
-    <TextView
-        style="?attr/textAppearanceHeadlineSmall"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/choose_activity_title" />
+    <!--
+      Two-step chooser. Running / Cycling land on step 2 (Track with GPS
+      vs enter manually); Weightlifting bypasses step 2 and routes
+      straight to manual logging.
+    -->
 
-    <TextView
-        style="?attr/textAppearanceBodyMedium"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="4dp"
-        android:text="@string/choose_activity_subtitle"
-        android:textColor="?attr/colorOnSurfaceVariant" />
-
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/optionRunning"
-        style="@style/Widget.Material3.Button.TonalButton.Icon"
+    <!-- Step 1: activity picker. -->
+    <LinearLayout
+        android:id="@+id/stepActivity"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:minHeight="48dp"
-        android:text="@string/activity_type_running"
-        app:icon="@drawable/ic_run_24"
-        app:iconTint="@color/text_primary" />
+        android:orientation="vertical"
+        android:paddingHorizontal="@dimen/space_xl"
+        android:paddingTop="@dimen/space_xl"
+        android:paddingBottom="@dimen/space_lg">
 
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/optionCycling"
-        style="@style/Widget.Material3.Button.TonalButton.Icon"
+        <TextView
+            style="@style/TextAppearance.Fitness.HeadlineSm"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/choose_activity_title" />
+
+        <TextView
+            style="@style/TextAppearance.Fitness.BodyMd"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_xs"
+            android:text="@string/choose_activity_subtitle"
+            android:textColor="@color/text_secondary" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/optionRunning"
+            style="@style/Widget.Material3.Button.TonalButton.Icon"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_lg"
+            android:minHeight="@dimen/touch_target_min"
+            android:text="@string/activity_type_running"
+            app:icon="@drawable/ic_run_24"
+            app:iconTint="@color/text_primary" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/optionCycling"
+            style="@style/Widget.Material3.Button.TonalButton.Icon"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_sm"
+            android:minHeight="@dimen/touch_target_min"
+            android:text="@string/activity_type_cycling"
+            app:icon="@drawable/ic_bike_24"
+            app:iconTint="@color/text_primary" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/optionWeightlifting"
+            style="@style/Widget.Material3.Button.TonalButton.Icon"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_sm"
+            android:minHeight="@dimen/touch_target_min"
+            android:text="@string/activity_type_weightlifting"
+            app:icon="@drawable/ic_dumbbell_24"
+            app:iconTint="@color/text_primary" />
+    </LinearLayout>
+
+    <!-- Step 2: tracking vs manual (only for distance activities). -->
+    <LinearLayout
+        android:id="@+id/stepMode"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:minHeight="48dp"
-        android:text="@string/activity_type_cycling"
-        app:icon="@drawable/ic_bike_24"
-        app:iconTint="@color/text_primary" />
+        android:orientation="vertical"
+        android:paddingHorizontal="@dimen/space_xl"
+        android:paddingTop="@dimen/space_xl"
+        android:paddingBottom="@dimen/space_lg"
+        android:visibility="gone">
 
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/optionWeightlifting"
-        style="@style/Widget.Material3.Button.TonalButton.Icon"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:minHeight="48dp"
-        android:text="@string/activity_type_weightlifting"
-        app:icon="@drawable/ic_dumbbell_24"
-        app:iconTint="@color/text_primary" />
-</LinearLayout>
+        <TextView
+            android:id="@+id/modeTitle"
+            style="@style/TextAppearance.Fitness.HeadlineSm"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/choose_mode_title" />
+
+        <TextView
+            style="@style/TextAppearance.Fitness.BodyMd"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_xs"
+            android:text="@string/choose_mode_subtitle"
+            android:textColor="@color/text_secondary" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/optionTrack"
+            style="@style/Widget.Material3.Button.TonalButton.Icon"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_lg"
+            android:minHeight="@dimen/touch_target_min"
+            android:text="@string/choose_mode_track"
+            app:icon="@drawable/ic_location_pin_24"
+            app:iconTint="@color/text_primary" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/optionManual"
+            style="@style/Widget.Material3.Button.TonalButton.Icon"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_sm"
+            android:minHeight="@dimen/touch_target_min"
+            android:text="@string/choose_mode_manual"
+            app:icon="@drawable/ic_add_24"
+            app:iconTint="@color/text_primary" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/modeBackButton"
+            style="@style/Widget.Fitness.Button.Text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="start"
+            android:layout_marginTop="@dimen/space_sm"
+            android:text="@string/choose_mode_back" />
+    </LinearLayout>
+</FrameLayout>

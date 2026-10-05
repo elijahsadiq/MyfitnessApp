@@ -2,6 +2,7 @@ package com.elijah.fitness.data.repository
 
 import com.elijah.fitness.data.model.Workout
 import com.elijah.fitness.data.remote.ApiResult
+import com.elijah.fitness.tracking.TrackPoint
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -36,8 +37,14 @@ interface WorkoutRepository {
      * Persist a new workout. On success, [observeWorkouts] emits an
      * updated list including it. On failure, the returned [ApiResult]
      * carries the reason so the log form can offer a Retry.
+     *
+     * @param routePoints optional GPS track for distance workouts; empty
+     *   for manual logs and strength workouts.
      */
-    suspend fun addWorkout(workout: Workout): ApiResult<Unit>
+    suspend fun addWorkout(
+        workout: Workout,
+        routePoints: List<TrackPoint> = emptyList(),
+    ): ApiResult<Unit>
 
     /** Look up a workout by its device-generated id; null if none matches. */
     suspend fun getWorkout(id: String): Workout?

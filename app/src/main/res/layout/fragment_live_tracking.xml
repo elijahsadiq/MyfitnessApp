@@ -1,0 +1,251 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/surface_dark"
+    android:fitsSystemWindows="true"
+    tools:context=".ui.tracking.LiveTrackingFragment">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:paddingBottom="@dimen/space_xl">
+
+        <!-- Top row: GPS pill + close -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingHorizontal="@dimen/screen_margin"
+            android:paddingTop="@dimen/space_lg">
+
+            <TextView
+                android:id="@+id/gpsQualityPill"
+                style="@style/TextAppearance.Fitness.LabelSm"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_streak_pill"
+                android:paddingHorizontal="@dimen/space_md"
+                android:paddingVertical="@dimen/space_xs"
+                android:textColor="@color/text_primary"
+                tools:text="GPS strong" />
+
+            <Space
+                android:layout_width="0dp"
+                android:layout_height="1dp"
+                android:layout_weight="1" />
+
+            <ImageView
+                android:id="@+id/closeButton"
+                android:layout_width="@dimen/touch_target_min"
+                android:layout_height="@dimen/touch_target_min"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:clickable="true"
+                android:contentDescription="@string/live_tracking_close_content_description"
+                android:focusable="true"
+                android:padding="@dimen/space_sm"
+                android:src="@drawable/ic_arrow_forward_24"
+                android:rotation="180"
+                app:tint="@color/text_on_dark" />
+        </LinearLayout>
+
+        <!-- Map -->
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_marginHorizontal="@dimen/screen_margin"
+            android:layout_marginTop="@dimen/space_lg"
+            android:layout_weight="4">
+
+            <org.osmdroid.views.MapView
+                android:id="@+id/mapView"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@color/surface_charcoal" />
+        </FrameLayout>
+
+        <!-- Elapsed time -->
+        <TextView
+            android:id="@+id/elapsedText"
+            style="@style/TextAppearance.Fitness.DisplayMetric"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="@dimen/space_lg"
+            android:textColor="@color/text_on_dark"
+            tools:text="00:00" />
+
+        <!-- Metrics row: distance + pace/speed + calories -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_md"
+            android:orientation="horizontal"
+            android:paddingHorizontal="@dimen/screen_margin">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center_horizontal"
+                android:orientation="vertical">
+
+                <TextView
+                    style="@style/TextAppearance.Fitness.LabelSm"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/live_tracking_distance_label"
+                    android:textColor="@color/text_on_dark_muted" />
+
+                <TextView
+                    android:id="@+id/distanceText"
+                    style="@style/TextAppearance.Fitness.HeadlineLg"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/text_on_dark"
+                    tools:text="0.00 km" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center_horizontal"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/paceLabel"
+                    style="@style/TextAppearance.Fitness.LabelSm"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/live_tracking_pace_label"
+                    android:textColor="@color/text_on_dark_muted" />
+
+                <TextView
+                    android:id="@+id/paceText"
+                    style="@style/TextAppearance.Fitness.HeadlineLg"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/text_on_dark"
+                    tools:text="— /km" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center_horizontal"
+                android:orientation="vertical">
+
+                <TextView
+                    style="@style/TextAppearance.Fitness.LabelSm"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/live_tracking_calories_label"
+                    android:textColor="@color/text_on_dark_muted" />
+
+                <TextView
+                    android:id="@+id/caloriesText"
+                    style="@style/TextAppearance.Fitness.HeadlineLg"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/text_on_dark"
+                    tools:text="0" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Tracking controls -->
+        <LinearLayout
+            android:id="@+id/trackingControls"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:layout_marginTop="@dimen/space_xl"
+            android:orientation="horizontal"
+            android:paddingHorizontal="@dimen/screen_margin">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/stopButton"
+                style="@style/Widget.Fitness.Button.Outlined"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/live_tracking_stop_button" />
+
+            <Space
+                android:layout_width="@dimen/space_md"
+                android:layout_height="1dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/pauseResumeButton"
+                style="@style/Widget.Fitness.Button.Primary"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/live_tracking_pause_button"
+                app:icon="@drawable/ic_add_24"
+                app:iconGravity="textStart" />
+        </LinearLayout>
+
+        <!-- Save mode (shown after stop) -->
+        <LinearLayout
+            android:id="@+id/saveControls"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingHorizontal="@dimen/screen_margin"
+            android:paddingTop="@dimen/space_lg"
+            android:visibility="gone"
+            tools:visibility="visible">
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/notesFieldLayout"
+                style="@style/Widget.Fitness.TextField"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="@string/live_tracking_notes_hint"
+                app:boxBackgroundColor="@color/surface_charcoal"
+                app:boxStrokeColor="@color/divider"
+                app:hintTextColor="@color/text_on_dark_muted">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/notesInput"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:imeOptions="actionDone"
+                    android:inputType="textCapSentences|textMultiLine"
+                    android:maxLines="3"
+                    android:textColor="@color/text_on_dark" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_md"
+                android:orientation="horizontal">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/discardButton"
+                    style="@style/Widget.Fitness.Button.Outlined"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/live_tracking_discard_button" />
+
+                <Space
+                    android:layout_width="0dp"
+                    android:layout_height="1dp"
+                    android:layout_weight="1" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/saveButton"
+                    style="@style/Widget.Fitness.Button.Primary"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/live_tracking_save_button" />
+            </LinearLayout>
+        </LinearLayout>
+    </LinearLayout>
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

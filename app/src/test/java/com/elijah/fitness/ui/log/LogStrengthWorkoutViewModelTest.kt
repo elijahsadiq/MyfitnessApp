@@ -111,7 +111,7 @@ class LogStrengthWorkoutViewModelTest {
         override suspend fun refresh(): com.elijah.fitness.data.remote.ApiResult<Unit> =
             com.elijah.fitness.data.remote.ApiResult.Success(Unit)
 
-        override suspend fun addWorkout(workout: Workout): com.elijah.fitness.data.remote.ApiResult<Unit> {
+        override suspend fun addWorkout(workout: Workout, routePoints: List<com.elijah.fitness.tracking.TrackPoint>): com.elijah.fitness.data.remote.ApiResult<Unit> {
             state.value = state.value + workout
             return com.elijah.fitness.data.remote.ApiResult.Success(Unit)
         }

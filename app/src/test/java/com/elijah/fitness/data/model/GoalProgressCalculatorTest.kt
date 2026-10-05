@@ -160,7 +160,7 @@ class GoalProgressCalculatorTest {
     ) : WorkoutRepository {
         override fun observeWorkouts(): Flow<List<Workout>> = flow.asStateFlow()
         override suspend fun refresh(): ApiResult<Unit> = ApiResult.Success(Unit)
-        override suspend fun addWorkout(workout: Workout): ApiResult<Unit> = ApiResult.Success(Unit)
+        override suspend fun addWorkout(workout: Workout, routePoints: List<com.elijah.fitness.tracking.TrackPoint>): ApiResult<Unit> = ApiResult.Success(Unit)
         override suspend fun getWorkout(id: String): Workout? = flow.value.firstOrNull { it.id == id }
     }
 }

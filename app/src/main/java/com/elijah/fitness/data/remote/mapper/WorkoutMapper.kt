@@ -7,9 +7,12 @@ import com.elijah.fitness.data.model.RunningWorkout
 import com.elijah.fitness.data.model.StrengthSet
 import com.elijah.fitness.data.model.StrengthWorkout
 import com.elijah.fitness.data.model.Workout
+import com.elijah.fitness.data.remote.dto.RoutePointDto
+import com.elijah.fitness.data.remote.dto.RoutePointRequestDto
 import com.elijah.fitness.data.remote.dto.StrengthSetRequestDto
 import com.elijah.fitness.data.remote.dto.WorkoutDto
 import com.elijah.fitness.data.remote.dto.WorkoutRequestDto
+import com.elijah.fitness.tracking.TrackPoint
 import java.time.Duration
 import java.time.Instant
 
@@ -53,16 +56,38 @@ fun WorkoutDto.toDomain(): Workout {
 
 /**
  * Domain model -> server request DTO. `startTime` is emitted as ISO-8601
- * UTC (`Instant.toString()` already gives that shape).
+ * UTC (`Instant.toString()` already gives that shape). Route points are
+ * added by [toRequestDto] below when a GPS session is being saved; for
+ * manual logs the default `emptyList()` means the server stores no route.
  */
-fun Workout.toRequestDto(): WorkoutRequestDto = WorkoutRequestDto(
-    clientUuid = id,
-    activityType = type.name,
-    startTime = startTime.toString(),
-    durationSeconds = duration.seconds,
-    distanceMeters = (this as? DistanceWorkout)?.distanceMeters,
-    notes = notes,
-    sets = (this as? StrengthWorkout)?.sets?.map {
-        StrengthSetRequestDto(it.exercise, it.reps, it.weightKg)
-    } ?: emptyList(),
+fun Workout.toRequestDto(routePoints: List<TrackPoint> = emptyList()): WorkoutRequestDto =
+    WorkoutRequestDto(
+        clientUuid = id,
+        activityType = type.name,
+        startTime = startTime.toString(),
+        durationSeconds = duration.seconds,
+        distanceMeters = (this as? DistanceWorkout)?.distanceMeters,
+        notes = notes,
+        sets = (this as? StrengthWorkout)?.sets?.map {
+            StrengthSetRequestDto(it.exercise, it.reps, it.weightKg)
+        } ?: emptyList(),
+        routePoints = routePoints.map { it.toRequestDto() },
+    )
+
+fun TrackPoint.toRequestDto(): RoutePointRequestDto = RoutePointRequestDto(
+    seq = seq,
+    latitude = latitude,
+    longitude = longitude,
+    elapsedMs = elapsedMs,
+    accuracyM = accuracyM,
+    recordedAt = recordedAt.toString(),
+)
+
+fun RoutePointDto.toDomain(): TrackPoint = TrackPoint(
+    seq = seq,
+    latitude = latitude,
+    longitude = longitude,
+    elapsedMs = elapsedMs,
+    accuracyM = accuracyM,
+    recordedAt = Instant.parse(recordedAt),
 )

@@ -63,7 +63,22 @@
             android:id="@+id/action_choose_to_log_strength"
             app:destination="@id/logStrengthWorkoutFragment"
             app:popUpTo="@id/workoutHistoryFragment" />
+        <action
+            android:id="@+id/action_choose_to_live_tracking"
+            app:destination="@id/liveTrackingFragment"
+            app:popUpTo="@id/workoutHistoryFragment" />
     </dialog>
+
+    <fragment
+        android:id="@+id/liveTrackingFragment"
+        android:name="com.elijah.fitness.ui.tracking.LiveTrackingFragment"
+        android:label="@string/activity_type_running"
+        tools:layout="@layout/fragment_live_tracking">
+        <argument
+            android:name="activityType"
+            app:argType="string"
+            android:defaultValue="RUNNING" />
+    </fragment>
 
     <fragment
         android:id="@+id/logDistanceWorkoutFragment"

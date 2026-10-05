@@ -36,6 +36,34 @@
     <string name="tracking_notification_title_cycling">Ride in progress</string>
     <string name="tracking_notification_body">%1$s · %2$s</string>
 
+    <!-- Live tracking screen -->
+    <string name="live_tracking_close_content_description">Back</string>
+    <string name="live_tracking_distance_label">Distance</string>
+    <string name="live_tracking_pace_label">Pace</string>
+    <string name="live_tracking_speed_label">Speed</string>
+    <string name="live_tracking_calories_label">kcal</string>
+    <string name="live_tracking_gps_searching">GPS searching</string>
+    <string name="live_tracking_gps_strong">GPS strong</string>
+    <string name="live_tracking_gps_weak">GPS weak</string>
+    <string name="live_tracking_pause_button">Pause</string>
+    <string name="live_tracking_resume_button">Resume</string>
+    <string name="live_tracking_stop_button">Stop</string>
+    <string name="live_tracking_stop_confirm_title">Stop workout?</string>
+    <string name="live_tracking_stop_confirm_body">Your route and stats will be ready to save.</string>
+    <string name="live_tracking_stop_confirm_positive">Stop</string>
+    <string name="live_tracking_stop_confirm_negative">Keep going</string>
+    <string name="live_tracking_discard_confirm_title">Discard workout?</string>
+    <string name="live_tracking_discard_confirm_body">The route and stats from this session will be lost.</string>
+    <string name="live_tracking_discard_confirm_positive">Discard</string>
+    <string name="live_tracking_notes_hint">Notes (optional)</string>
+    <string name="live_tracking_save_button">Save workout</string>
+    <string name="live_tracking_discard_button">Discard</string>
+    <string name="live_tracking_saved_snackbar">Workout saved.</string>
+    <string name="live_tracking_save_failed_snackbar">Could not save — check your connection and try again.</string>
+    <string name="live_tracking_pace_value">%1$s /km</string>
+    <string name="live_tracking_distance_value">%.2f km</string>
+    <string name="live_tracking_no_route_warning">No GPS points were recorded. Save anyway?</string>
+
     <!-- Onboarding host placeholder (Step 5) — no longer used but kept
          so any stale reference resolves. -->
     <string name="auth_onboarding_placeholder_title">Welcome to Fitness</string>
@@ -289,6 +317,11 @@
     <!-- Choose activity bottom sheet -->
     <string name="choose_activity_title">Log a workout</string>
     <string name="choose_activity_subtitle">Pick the type of activity.</string>
+    <string name="choose_mode_title">How would you like to log it?</string>
+    <string name="choose_mode_subtitle">Track live with GPS or enter the numbers yourself.</string>
+    <string name="choose_mode_track">Track with GPS</string>
+    <string name="choose_mode_manual">Enter manually</string>
+    <string name="choose_mode_back">Back</string>
 
     <!-- Log forms — shared -->
     <string name="log_field_date">Date</string>
