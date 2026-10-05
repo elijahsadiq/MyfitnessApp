@@ -67,6 +67,58 @@ final class Workout
         return $stmt->fetchAll();
     }
 
+    /** Read every route_point for a workout, in seq order. */
+    public static function routeFor(int $workoutId): array
+    {
+        $stmt = Database::pdo()->prepare(
+            'SELECT * FROM route_points WHERE workout_id = ? ORDER BY seq ASC'
+        );
+        $stmt->execute([$workoutId]);
+        return $stmt->fetchAll();
+    }
+
+    /**
+     * Batched multi-row insert for route points. Must run inside an open
+     * transaction (the workout row is already inserted; this call simply
+     * joins the party). Points come pre-validated from the controller.
+     *
+     * Chunked so we never approach PDO's 65 535 parameter cap even on a
+     * 10 000-point workout (each row needs 6 placeholders → 500 rows ×
+     * 6 = 3 000 placeholders per statement, well within the budget).
+     *
+     * @param array<int, array{seq:int, latitude:float, longitude:float,
+     *     elapsedMs:int, accuracyM?:float|null, recordedAt:string}> $points
+     */
+    public static function insertRoutePoints(
+        PDO $pdo,
+        int $workoutId,
+        array $points,
+    ): void {
+        if (empty($points)) return;
+
+        $chunkSize = 500;
+        foreach (array_chunk($points, $chunkSize) as $chunk) {
+            $placeholders = implode(',', array_fill(0, count($chunk), '(?,?,?,?,?,?,?)'));
+            $sql = "INSERT INTO route_points
+                        (workout_id, seq, latitude, longitude,
+                         elapsed_ms, accuracy_m, recorded_at)
+                    VALUES $placeholders";
+            $stmt = $pdo->prepare($sql);
+            $params = [];
+            foreach ($chunk as $p) {
+                $params[] = $workoutId;
+                $params[] = (int) $p['seq'];
+                $params[] = (float) $p['latitude'];
+                $params[] = (float) $p['longitude'];
+                $params[] = (int) $p['elapsedMs'];
+                $params[] = isset($p['accuracyM']) && $p['accuracyM'] !== null
+                    ? (float) $p['accuracyM'] : null;
+                $params[] = self::toMysqlDatetime((string) $p['recordedAt']);
+            }
+            $stmt->execute($params);
+        }
+    }
+
     /**
      * Insert a workout (and its strength sets, if any) inside a transaction.
      * Returns the new workout id.
@@ -81,7 +133,8 @@ final class Workout
         int $durationSeconds,
         ?float $distanceMeters,
         ?string $notes,
-        array $sets
+        array $sets,
+        array $routePoints = []
     ): int {
         $pdo = Database::pdo();
         $pdo->beginTransaction();
@@ -121,6 +174,10 @@ final class Workout
                 }
             }
 
+            if (!empty($routePoints)) {
+                self::insertRoutePoints($pdo, $workoutId, $routePoints);
+            }
+
             $pdo->commit();
             return $workoutId;
         } catch (Throwable $e) {
@@ -142,9 +199,10 @@ final class Workout
     /**
      * @param array<string,mixed>          $row
      * @param array<int, array<string,mixed>> $sets
+     * @param array<int, array<string,mixed>> $routePoints
      * @return array<string,mixed>
      */
-    public static function toDto(array $row, array $sets = []): array
+    public static function toDto(array $row, array $sets = [], array $routePoints = []): array
     {
         return [
             'id'              => (int) $row['id'],
@@ -162,6 +220,17 @@ final class Workout
                     'weightKg'     => (float) $s['weight_kg'],
                 ],
                 $sets
+            ),
+            'routePoints'     => array_map(
+                static fn (array $p): array => [
+                    'seq'        => (int) $p['seq'],
+                    'latitude'   => (float) $p['latitude'],
+                    'longitude'  => (float) $p['longitude'],
+                    'elapsedMs'  => (int) $p['elapsed_ms'],
+                    'accuracyM'  => $p['accuracy_m'] !== null ? (float) $p['accuracy_m'] : null,
+                    'recordedAt' => self::isoUtc((string) $p['recorded_at']),
+                ],
+                $routePoints
             ),
             'createdAt'       => self::isoUtc((string) $row['created_at']),
             'updatedAt'       => self::isoUtc((string) $row['updated_at']),

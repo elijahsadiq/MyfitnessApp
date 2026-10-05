@@ -248,3 +248,106 @@ Authorization: Bearer {{token}}
   "periodStart": "2026-09-14",
   "periodEnd": "2026-09-21"
 }
+
+### ----------------------------------------------------------------------
+### Phase 8a — route points
+### ----------------------------------------------------------------------
+
+### 29. Create a running workout with a 3-point route
+### Returns 201. The response.routePoints echoes what was stored.
+POST {{baseUrl}}/workouts
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "clientUuid": "a0e5b3f8-11aa-4cc0-9fe2-000000000001",
+  "activityType": "RUNNING",
+  "startTime": "2026-10-05T10:00:00Z",
+  "durationSeconds": 1800,
+  "distanceMeters": 4800,
+  "notes": "Phase 8a smoke test",
+  "routePoints": [
+    { "seq": 0, "latitude": 51.5007, "longitude": -0.1246,
+      "elapsedMs": 0,    "accuracyM": 5.0, "recordedAt": "2026-10-05T10:00:00Z" },
+    { "seq": 1, "latitude": 51.5017, "longitude": -0.1236,
+      "elapsedMs": 60000, "accuracyM": 6.0, "recordedAt": "2026-10-05T10:01:00Z" },
+    { "seq": 2, "latitude": 51.5027, "longitude": -0.1226,
+      "elapsedMs": 120000, "accuracyM": 4.5, "recordedAt": "2026-10-05T10:02:00Z" }
+  ]
+}
+
+### 30. Fetch that workout — response includes routePoints in seq order
+GET {{baseUrl}}/workouts/REPLACE_WITH_ID_FROM_29
+Authorization: Bearer {{token}}
+
+### 31. Re-POST the same clientUuid (idempotency) — route stays as originally stored
+POST {{baseUrl}}/workouts
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "clientUuid": "a0e5b3f8-11aa-4cc0-9fe2-000000000001",
+  "activityType": "RUNNING",
+  "startTime": "2026-10-05T10:00:00Z",
+  "durationSeconds": 1800,
+  "distanceMeters": 4800,
+  "routePoints": [
+    { "seq": 99, "latitude": 0.0, "longitude": 0.0,
+      "elapsedMs": 0, "recordedAt": "2026-10-05T10:00:00Z" }
+  ]
+}
+
+### 32. Rejected: latitude out of range (expect 422)
+POST {{baseUrl}}/workouts
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "clientUuid": "a0e5b3f8-11aa-4cc0-9fe2-000000000002",
+  "activityType": "CYCLING",
+  "startTime": "2026-10-05T11:00:00Z",
+  "durationSeconds": 600,
+  "distanceMeters": 3000,
+  "routePoints": [
+    { "seq": 0, "latitude": 95.0, "longitude": 10.0,
+      "elapsedMs": 0, "recordedAt": "2026-10-05T11:00:00Z" }
+  ]
+}
+
+### 33. Rejected: WEIGHTLIFTING workout cannot carry a route (expect 422)
+POST {{baseUrl}}/workouts
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "clientUuid": "a0e5b3f8-11aa-4cc0-9fe2-000000000003",
+  "activityType": "WEIGHTLIFTING",
+  "startTime": "2026-10-05T12:00:00Z",
+  "durationSeconds": 1800,
+  "sets": [
+    { "exerciseName": "Squat", "reps": 5, "weightKg": 60.0 }
+  ],
+  "routePoints": [
+    { "seq": 0, "latitude": 0.0, "longitude": 0.0,
+      "elapsedMs": 0, "recordedAt": "2026-10-05T12:00:00Z" }
+  ]
+}
+
+### 34. Rejected: duplicate seq within one request (expect 422)
+POST {{baseUrl}}/workouts
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "clientUuid": "a0e5b3f8-11aa-4cc0-9fe2-000000000004",
+  "activityType": "RUNNING",
+  "startTime": "2026-10-05T13:00:00Z",
+  "durationSeconds": 1800,
+  "distanceMeters": 4800,
+  "routePoints": [
+    { "seq": 0, "latitude": 51.5, "longitude": -0.12,
+      "elapsedMs": 0, "recordedAt": "2026-10-05T13:00:00Z" },
+    { "seq": 0, "latitude": 51.5, "longitude": -0.12,
+      "elapsedMs": 1000, "recordedAt": "2026-10-05T13:00:01Z" }
+  ]
+}

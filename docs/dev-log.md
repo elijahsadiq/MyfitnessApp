@@ -905,3 +905,40 @@ The final report (assignment brief) can now describe:
 3. The "progress lives on the client" trade-off (calculator + `combine {}`) and why it makes offline-first easy.
 4. The one-sheet-two-modes pattern for New Goal / Edit.
 5. The completion celebration's seed-pass + in-session-set + server-flag idempotency.
+
+---
+
+# Phase 8a — Geolocation
+
+## Step 1 — Backend route storage
+**Built**
+- **`backend/sql/04_migration_route_points_phase8a.sql`** — adds a `route_points` table with `(workout_id, seq)` as a `UNIQUE KEY`, cascade-deleted when its workout is removed. `latitude`/`longitude` stored as `DECIMAL(9,6)` (≈11 cm precision at the equator). Idempotent (`CREATE TABLE IF NOT EXISTS`), `utf8mb4_unicode_ci`, InnoDB, no MySQL-8-only syntax so MariaDB/XAMPP imports it cleanly.
+- **`Workout.php`** — two new methods:
+  - `routeFor(int $workoutId)` — reads all points in `seq` order.
+  - `insertRoutePoints(PDO $pdo, int $workoutId, array $points)` — batched multi-row INSERT in chunks of 500 (6 placeholders each → max 3 000 per statement, well under PDO's 65 535 cap). Runs inside the caller's open transaction.
+  - `create(...)` gained an optional 9th parameter `array $routePoints = []`, inserted inside the same transaction as the workout + sets.
+  - `toDto(...)` gained a third parameter `$routePoints`; the DTO exposes `routePoints: [{seq, latitude, longitude, elapsedMs, accuracyM, recordedAt}, ...]`.
+- **`WorkoutController.php`**:
+  - `MAX_ROUTE_POINTS = 10000` — ~2.5 hours at 1 Hz. Hard cap so a buggy client cannot flood the table.
+  - `create()` validates every incoming point (`seq ≥ 0` integer, `latitude -90..90`, `longitude -180..180`, `elapsedMs ≥ 0`, `recordedAt` is an ISO 8601 datetime, optional `accuracyM 0..10000`). Duplicate `seq` within one request rejects with 422. Weightlifting + routePoints rejects with 422 (meaningless pairing).
+  - `show()` includes the full route in its response; `index()` deliberately omits it — the list view doesn't need 10 k points per row, and the detail call is where the map renders.
+  - Idempotent upsert preserved: when a `clientUuid` already exists, the server returns the existing row **with its originally-stored route** and ignores the retry's `routePoints` entirely. First successful create wins.
+- **`api-tests.http`** — six new cases (#29–#34): happy-path create with 3 points, show returns them, idempotent retry doesn't overwrite, latitude-out-of-range → 422, weightlifting + route → 422, duplicate `seq` → 422.
+
+**Key design decision — hard cap in the controller, not the schema**
+Rejected adding a trigger / constraint. A trigger locks to a specific engine (MariaDB vs MySQL semantics differ), and a count-based check runs after insert. A controller-level cap fails fast with a per-field error that matches the project's existing 422 envelope.
+
+**Rejected alternative — one `INSERT` per point in a loop**
+A 2 000-point run would be 2 000 round-trips to MySQL; the batched multi-row approach is ~4 statements. Prepared statements still, so no SQL injection risk; the chunking keeps us far from PDO's placeholder cap.
+
+**Backwards compatibility**
+A request with no `routePoints` field, or an empty one, follows the pre-phase-8a path exactly: no validation runs, no INSERT fires. Phase-7 and earlier clients are untouched.
+
+**Verified**
+- `docker exec fitness-php php -l` clean on both edited files.
+- Migration file is additive-only and uses `CREATE TABLE IF NOT EXISTS`, so re-running on a seeded DB is safe.
+- Migration **not yet applied** to the live Docker DB — awaiting user approval per the "show me the migration before running it" clause.
+
+**Assignment task supported**
+- **Task 4 (development)** — the storage half of the geolocation requirement.
+- **Task 3b (design)** — the "idempotency extends over route points" story (first-create-wins) is worth a line in the design chapter.

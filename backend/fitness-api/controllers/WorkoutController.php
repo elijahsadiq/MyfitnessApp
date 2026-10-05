@@ -8,6 +8,9 @@ final class WorkoutController
 {
     private const ALLOWED_TYPES = ['RUNNING', 'CYCLING', 'WEIGHTLIFTING'];
 
+    /** Hard cap so a malformed client cannot flood route_points (~2.5 h at 1 Hz). */
+    private const MAX_ROUTE_POINTS = 10000;
+
     public static function health(array $_params, array $_body): void
     {
         // No auth — used by clients / monitoring to check the API is up.
@@ -31,7 +34,8 @@ final class WorkoutController
             Response::error('Invalid date filter', 400, ['from' => 'ISO 8601 expected', 'to' => 'ISO 8601 expected']);
         }
 
-        $out = array_map(static function (array $row) use ($userId): array {
+        // List view omits route_points — the detail call fetches them when needed.
+        $out = array_map(static function (array $row): array {
             $sets = $row['activity_type'] === 'WEIGHTLIFTING'
                 ? Workout::setsFor((int) $row['id'])
                 : [];
@@ -50,7 +54,8 @@ final class WorkoutController
         $sets = $row['activity_type'] === 'WEIGHTLIFTING'
             ? Workout::setsFor((int) $row['id'])
             : [];
-        Response::success(Workout::toDto($row, $sets));
+        $route = Workout::routeFor((int) $row['id']);
+        Response::success(Workout::toDto($row, $sets, $route));
     }
 
     public static function create(array $_params, array $body): void
@@ -71,6 +76,42 @@ final class WorkoutController
         $clientUuid   = (string) $body['clientUuid'];
         $activityType = (string) $body['activityType'];
         $sets         = is_array($body['sets'] ?? null) ? $body['sets'] : [];
+        $routePoints  = is_array($body['routePoints'] ?? null) ? $body['routePoints'] : [];
+
+        // Validate the route payload once up front — easier for the client
+        // than discovering errors deep inside the transaction.
+        if (!empty($routePoints)) {
+            if ($activityType === 'WEIGHTLIFTING') {
+                Response::error('Validation failed', 422,
+                    ['routePoints' => 'Weightlifting workouts cannot carry a route']);
+            }
+            if (count($routePoints) > self::MAX_ROUTE_POINTS) {
+                Response::error('Validation failed', 422,
+                    ['routePoints' => 'Too many points (max ' . self::MAX_ROUTE_POINTS . ')']);
+            }
+            $seen = [];
+            foreach ($routePoints as $i => $pt) {
+                $pv = (new Validator($pt))
+                    ->required('seq')->integer('seq')->inRange('seq', 0, PHP_INT_MAX)
+                    ->required('latitude')->numeric('latitude')->inRange('latitude', -90, 90)
+                    ->required('longitude')->numeric('longitude')->inRange('longitude', -180, 180)
+                    ->required('elapsedMs')->integer('elapsedMs')->inRange('elapsedMs', 0, PHP_INT_MAX)
+                    ->required('recordedAt')->isDatetime('recordedAt');
+                if (isset($pt['accuracyM']) && $pt['accuracyM'] !== null) {
+                    $pv->numeric('accuracyM')->inRange('accuracyM', 0, 10000);
+                }
+                if ($pv->fails()) {
+                    Response::error('Validation failed', 422,
+                        ['routePoints' => 'Point #' . ($i + 1) . ' is invalid']);
+                }
+                $seq = (int) $pt['seq'];
+                if (isset($seen[$seq])) {
+                    Response::error('Validation failed', 422,
+                        ['routePoints' => 'Duplicate seq ' . $seq]);
+                }
+                $seen[$seq] = true;
+            }
+        }
 
         // Server-side rules that depend on activity type.
         if ($activityType === 'WEIGHTLIFTING') {
@@ -94,13 +135,15 @@ final class WorkoutController
         }
 
         // Upsert: if we already have a row with this (user_id, client_uuid),
-        // return it — do NOT create a duplicate.
+        // return it — do NOT create a duplicate. Route points on the retry
+        // are intentionally ignored; the first successful create wins.
         $existing = Workout::findByClientUuid($userId, $clientUuid);
         if ($existing !== null) {
             $existingSets = $existing['activity_type'] === 'WEIGHTLIFTING'
                 ? Workout::setsFor((int) $existing['id'])
                 : [];
-            Response::success(Workout::toDto($existing, $existingSets), 200);
+            $existingRoute = Workout::routeFor((int) $existing['id']);
+            Response::success(Workout::toDto($existing, $existingSets, $existingRoute), 200);
         }
 
         try {
@@ -112,7 +155,8 @@ final class WorkoutController
                 (int) $body['durationSeconds'],
                 isset($body['distanceMeters']) ? (float) $body['distanceMeters'] : null,
                 isset($body['notes']) ? (string) $body['notes'] : null,
-                $sets
+                $sets,
+                $routePoints
             );
         } catch (PDOException $e) {
             // Unique-key violation on (user_id, client_uuid) — race between
@@ -123,7 +167,8 @@ final class WorkoutController
                     $existingSets = $again['activity_type'] === 'WEIGHTLIFTING'
                         ? Workout::setsFor((int) $again['id'])
                         : [];
-                    Response::success(Workout::toDto($again, $existingSets), 200);
+                    $existingRoute = Workout::routeFor((int) $again['id']);
+                    Response::success(Workout::toDto($again, $existingSets, $existingRoute), 200);
                 }
             }
             throw $e;
@@ -133,7 +178,8 @@ final class WorkoutController
         $sets = ($row !== null && $row['activity_type'] === 'WEIGHTLIFTING')
             ? Workout::setsFor($workoutId)
             : [];
-        Response::success(Workout::toDto($row ?? [], $sets), 201);
+        $route = Workout::routeFor($workoutId);
+        Response::success(Workout::toDto($row ?? [], $sets, $route), 201);
     }
 
     public static function destroy(array $params, array $_body): void
