@@ -942,3 +942,35 @@ A request with no `routePoints` field, or an empty one, follows the pre-phase-8a
 **Assignment task supported**
 - **Task 4 (development)** — the storage half of the geolocation requirement.
 - **Task 3b (design)** — the "idempotency extends over route points" story (first-create-wins) is worth a line in the design chapter.
+
+## Step 2 — Permissions
+**Built**
+- **`AndroidManifest.xml`** gains five `uses-permission` entries:
+  - `ACCESS_FINE_LOCATION`, `ACCESS_COARSE_LOCATION` — the actual request pair.
+  - `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_LOCATION` — API 34+ needs the typed variant for `foregroundServiceType="location"` (the service lands in Step 4).
+  - `POST_NOTIFICATIONS` — API 33+ runtime permission for the ongoing tracking notification.
+  - `WAKE_LOCK` — for the tracking service to hold a partial wake lock across the pause/resume cycle.
+- **`tracking/LocationPermissions.kt`** — a stateless utility object shared between the onboarding screen and the eventual live-tracking entry. One place owns the request array, the `Outcome` enum (`FineGranted` / `CoarseOnly` / `Denied`), the two `registerForActivityResult` helpers, and the "is already granted" probe. Nothing in it holds state, so it can be `object` rather than injected through `AppContainer`.
+- **`LocationPermissionFragment`** — the "// TODO(phase 3): call the ActivityResultLauncher" line is replaced with a real `RequestMultiplePermissions` launcher. Behaviour per outcome:
+  - **FineGranted / CoarseOnly** — continue to register.
+  - **Denied, can-ask-again** — short Snackbar, then continue; manual logging is unaffected.
+  - **Denied, "don't ask again"** — longer Snackbar with an **Open settings** action that deep-links to `ACTION_APPLICATION_DETAILS_SETTINGS`, then continues.
+- **Strings** — three new entries (`auth_location_denied_snackbar`, `auth_location_permanent_denied_snackbar`, `auth_location_open_settings`). Existing comment "no runtime request in phase 2" updated.
+
+**Key design decision — no `ACCESS_BACKGROUND_LOCATION`**
+Tracking happens while the user is actively on a run, with a foreground service and a persistent notification. That combination lifts the background-location requirement entirely. Adding `ACCESS_BACKGROUND_LOCATION` would trigger a far stricter Play Store review and offer the user no new capability on top of what the foreground service already provides. Written out here because the Task-1b design chapter should justify the permission scope.
+
+**Rejected alternative — a stateful `PermissionController` injected through `AppContainer`**
+Permission state is derived from the OS at call time; caching it in `AppContainer` would just introduce a stale copy. The utility object is pure dispatch; the Fragment holds the launcher via `registerForActivityResult`, which is the lifecycle-correct ownership.
+
+**Nav-safety nit**
+`continueToRegister()` now checks `currentDestination?.id == R.id.locationPermissionFragment` before navigating. Without that, the delayed `postDelayed(::continueToRegister, 1500L)` on the denied path would crash if the user had already navigated elsewhere (back-press, process death).
+
+**Verified**
+- `./gradlew assembleLocalDebug` — BUILD SUCCESSFUL in 12s.
+- Manifest declares every permission the subsequent steps will need; no `ACCESS_BACKGROUND_LOCATION`.
+- No new tests this step — pure wiring; the next step adds the testable track-calculator.
+
+**Assignment task supported**
+- **Task 4 (development)** — runtime permissions is the gate for the geolocation requirement.
+- **Task 1b (design)** — the "foreground only, no background permission" scope decision has a clean paragraph in it.

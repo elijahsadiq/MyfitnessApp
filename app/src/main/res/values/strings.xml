@@ -17,7 +17,7 @@
     <string name="auth_onboarding_page3_title">Set goals.\nSee progress.</string>
     <string name="auth_onboarding_page3_body">Track personal records and weekly trends, and watch every session add up.</string>
 
-    <!-- Location permission priming (no runtime request in phase 2) -->
+    <!-- Location permission priming (phase 8a: real runtime request wired) -->
     <string name="auth_location_title">Track your runs</string>
     <string name="auth_location_body">My Fitness App uses your location while a workout is active to map your route and measure distance and pace.</string>
     <string name="auth_location_bullet_1">Only while a workout is running</string>
@@ -25,6 +25,9 @@
     <string name="auth_location_bullet_3">You can turn this off any time in Profile</string>
     <string name="auth_location_allow">Allow location</string>
     <string name="auth_location_not_now">Not now</string>
+    <string name="auth_location_denied_snackbar">That\'s fine — you can still log workouts manually.</string>
+    <string name="auth_location_permanent_denied_snackbar">Location is off. You can turn it on in app settings whenever you want.</string>
+    <string name="auth_location_open_settings">Open settings</string>
 
     <!-- Onboarding host placeholder (Step 5) — no longer used but kept
          so any stale reference resolves. -->
