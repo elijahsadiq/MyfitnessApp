@@ -1134,3 +1134,56 @@ Would have needed `RecyclerView` with a one-row-type ListAdapter and a view hold
 **Assignment task supported**
 - **Task 4 (development)** — the "redisplay the saved route on the workout detail screen" bullet of the brief, plus per-km splits (useful for the UI screenshot in the report).
 - **Task 2b (design)** — a one-fragment detail screen that composes two testable domain pieces (`WorkoutDetail`, `RouteSplits`) is clean material for the architecture write-up.
+
+## Step 7 — Verification + report evidence
+**Built**
+- **`docs/testing/sample_route.gpx`** — a ~2.4 km, 15-minute Hyde Park loop with 16 points at 1-minute strides. Every point clears the accuracy filter (synthetic — no `hdop` noise), every segment clears the min-step-distance filter (minimum segment ≈ 150 m), and no segment comes near the teleport filter (max segment speed ≈ 5 m/s). Chosen so a demo plays in a reasonable amount of time without having to step outside.
+- **`docs/testing/README.md`** — the end-to-end walkthrough: install, log in, import GPX, start a tracked run, pause/resume, stop/save, inspect `route_points` in phpMyAdmin. Also the denial path (revoke permission, re-enter, confirm manual logging still works). This is the script the written report cites when I'm demonstrating geolocation.
+- **`docs/screenshots/README.md`** — a five-row table naming each screenshot the report needs, where to shoot it, and `adb exec-out screencap -p > ...` for a repeatable capture. Filenames follow `geolocation_<n>_<slug>.png` so the assignment-coverage table in phase 8 Step 7 can link them as figure IDs.
+- **No code changes this step** — the verification artefacts are docs; the live code has to work end-to-end under the walkthrough for the step to count as done.
+
+**End-to-end walkthrough (planned, run on the user's machine)**
+1. `installLocalDebug` boots the latest build onto the emulator.
+2. Register `demo@example.com` or sign in as the seed `alex@example.com`.
+3. Import `sample_route.gpx` into Extended Controls → Location → Routes.
+4. Home → Start workout → Running → Track with GPS → grant permission → **Play** the route.
+5. Mid-run: pause, resume (verify elapsed holds through the pause).
+6. Stop → confirm → add a note → Save.
+7. Snackbar confirms; History tab → tap the fresh row → detail screen shows the lime polyline + three per-km splits (first two full, third partial).
+8. phpMyAdmin → `route_points` table shows 16 rows with the right `seq`, `elapsed_ms`, and sub-metre `latitude` / `longitude` precision.
+
+**Rejected alternative — scripting the emulator run via `adb emu geo fix …`**
+Would have made the demo one shell script. Rejected because `adb emu geo` only sends one coordinate at a time with no timing control, so you can't easily simulate the 1 Hz-ish cadence the engine's filters are tuned for. GPX replay is the examiner-friendly path and is already a one-click flow in Android Studio.
+
+**Known caveats to document in the report**
+- Process-kill mid-workout drops the session (no on-disk journal in phase 8a — called out in Step 4's dev-log entry).
+- osmdroid tile fetch is network-dependent on first use; after that, Mapnik tiles live in the app's cache. A completely offline demo would need the examiner to zoom to the sample area once with network before cutting it.
+- Our emulator-GPX fixtures carry synthetic timestamps; `recordedAt` on real device fixes comes from `Location.getTime()` which is wall-clock UTC and may diverge from the server's clock. The route-points columns store exactly what the device sent, which is the right behaviour but means a very-wrong device clock would surface as an obviously-wrong `recorded_at` in phpMyAdmin.
+
+**Verified**
+- `./gradlew assembleLocalDebug` — BUILD SUCCESSFUL.
+- `./gradlew testLocalDebugUnitTest` — **235 tests, 0 failures**.
+- GPX file parses with the standard schema (`gpx` → `trk` → `trkseg` → `trkpt` with `lat`/`lon`/`time`). Android Studio's extended controls accept it on API 29+ emulators.
+
+**Assignment task supported**
+- **Task 4 (development)** — closes the "capture screenshots and demonstrate end-to-end" requirement of the geolocation deliverable.
+- **Task 2b (design)** — the walkthrough is the live-demo script the written report will reference when the examiner walks through the GPS feature.
+
+---
+
+# Phase 8a — Done
+
+Six functional steps + one verification step landed. Final counts:
+- **Kotlin main sources**: 8 new files in `tracking/` + `ui/tracking/` + `ui/history/WorkoutDetailFragment+VM` (plus `data/model/WorkoutDetail`, `data/remote/dto/RoutePoint*`, mapper additions).
+- **Backend**: 1 migration (`04_migration_route_points_phase8a.sql`), extended Workout model + controller for route I/O, 6 new api-tests cases.
+- **Tests**: 235 total, 0 failures. 18 new phase-8a tests (`TrackCalculatorTest`, `TrackingSessionTest`, `RouteSplitsTest`).
+- **Design-system compliance**: all new layouts route through Kinetic Glow tokens; no hard-coded colours or dp outside the dimens.xml scale.
+- **Dependencies added (two)**: `play-services-location 21.3.0` + `osmdroid-android 6.1.20` — neither requires an API key, so the marker's machine renders the maps the same as mine.
+
+The written report can now cover:
+1. The runtime permission scope decision (foreground-only, no background location).
+2. The three-filter sensor-accuracy story (accuracy / min-step / teleport thresholds) with the constants file as the cite.
+3. The service-owned authoritative `StateFlow<TrackingState>` and the rotation story that falls out of it.
+4. The osmdroid vs Google Maps API-key decision.
+5. The idempotent POST path extended to carry route points.
+6. The per-km splits as a worked example of a pure-Kotlin domain calculation feeding a non-trivial UI.

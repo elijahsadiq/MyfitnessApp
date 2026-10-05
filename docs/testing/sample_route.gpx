@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Sample GPX for phase 8a verification.
+
+  Loop around Hyde Park, London — approximately 2.4 km over 15 minutes, so
+  a run plays back in a reasonable live-tracking demo without requiring
+  the examiner to wait. 15 points at ~1 point per minute keeps the
+  emulator's GPX player working at its default replay rate.
+
+  Load via Android Studio's Emulator extended controls:
+    More (…) -> Location -> Routes -> Import GPX -> this file -> Play.
+
+  The accuracy filter in TrackingConstants (25 m) will accept every point;
+  the min-step-distance filter (5 m) will accept all but the first-same-
+  location pair (none here); the teleport filter (15 m/s) will accept the
+  whole route (max segment speed is ~5 m/s / 18 km/h).
+-->
+<gpx version="1.1" creator="MyFitnessApp phase 8a test fixture"
+     xmlns="http://www.topografix.com/GPX/1/1">
+  <trk>
+    <name>Hyde Park loop — phase 8a sample</name>
+    <trkseg>
+      <trkpt lat="51.5076" lon="-0.1657"><time>2026-10-05T10:00:00Z</time></trkpt>
+      <trkpt lat="51.5085" lon="-0.1640"><time>2026-10-05T10:01:00Z</time></trkpt>
+      <trkpt lat="51.5094" lon="-0.1620"><time>2026-10-05T10:02:00Z</time></trkpt>
+      <trkpt lat="51.5102" lon="-0.1598"><time>2026-10-05T10:03:00Z</time></trkpt>
+      <trkpt lat="51.5110" lon="-0.1578"><time>2026-10-05T10:04:00Z</time></trkpt>
+      <trkpt lat="51.5115" lon="-0.1556"><time>2026-10-05T10:05:00Z</time></trkpt>
+      <trkpt lat="51.5118" lon="-0.1533"><time>2026-10-05T10:06:00Z</time></trkpt>
+      <trkpt lat="51.5112" lon="-0.1513"><time>2026-10-05T10:07:00Z</time></trkpt>
+      <trkpt lat="51.5104" lon="-0.1498"><time>2026-10-05T10:08:00Z</time></trkpt>
+      <trkpt lat="51.5095" lon="-0.1510"><time>2026-10-05T10:09:00Z</time></trkpt>
+      <trkpt lat="51.5086" lon="-0.1529"><time>2026-10-05T10:10:00Z</time></trkpt>
+      <trkpt lat="51.5078" lon="-0.1551"><time>2026-10-05T10:11:00Z</time></trkpt>
+      <trkpt lat="51.5071" lon="-0.1574"><time>2026-10-05T10:12:00Z</time></trkpt>
+      <trkpt lat="51.5068" lon="-0.1599"><time>2026-10-05T10:13:00Z</time></trkpt>
+      <trkpt lat="51.5072" lon="-0.1630"><time>2026-10-05T10:14:00Z</time></trkpt>
+      <trkpt lat="51.5076" lon="-0.1657"><time>2026-10-05T10:15:00Z</time></trkpt>
+    </trkseg>
+  </trk>
+</gpx>
