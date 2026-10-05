@@ -974,3 +974,40 @@ Permission state is derived from the OS at call time; caching it in `AppContaine
 **Assignment task supported**
 - **Task 4 (development)** — runtime permissions is the gate for the geolocation requirement.
 - **Task 1b (design)** — the "foreground only, no background permission" scope decision has a clean paragraph in it.
+
+## Step 3 — Location engine + track calculations
+**Built**
+- **`gradle/libs.versions.toml`** gains two libraries, both wired through `app/build.gradle.kts`:
+  - `com.google.android.gms:play-services-location:21.3.0` — the only way to get `FusedLocationProviderClient`.
+  - `org.osmdroid:osmdroid-android:6.1.20` — OSM tile MapView for Steps 5 and 6. No API key, so a marker running the project on their own machine renders maps exactly as mine does. Added here so the whole `tracking/` package has its deps in one commit.
+- **`tracking/TrackingConstants.kt`** — one object owns every filter number: update interval (2 s), fastest interval (1 s), accuracy threshold (25 m), minimum step distance (5 m), max plausible speed (15 m/s), Earth's mean radius (6 371 008.8 m). The report's Task-1b sensor-accuracy discussion cites these values verbatim.
+- **`tracking/TrackPoint.kt`** — pure-Kotlin DTO for one accepted fix (`seq`, lat, lon, `elapsedMs`, `accuracyM`, `recordedAt`). No `android.location.Location` import so tests can build it with primitives.
+- **`tracking/TrackCalculator.kt`** — stateless object with `haversineMeters`, `totalDistanceMeters`, `movingDurationMs`, `averagePaceMsPerKm`, `averageSpeedKmh`, `recentPaceMsPerKm` (200 m sliding window for the live "current pace" readout). Noise floor of 10 m before pace / speed return a value; `elapsedMs` is session-time (freezes during pause) so moving-duration arithmetic trivially excludes pauses.
+- **`tracking/TrackingState.kt`** — immutable snapshot the UI binds to: `Status` (Idle / Tracking / Paused / Stopped), `GpsQuality` (Searching / Strong / Weak), all current metrics, and the full point list. Has a single `IDLE` constant so a fresh session has a non-null starting point.
+- **`tracking/TrackingSession.kt`** — the state machine. Takes a `Clock` for determinism; exposes a `StateFlow<TrackingState>`; owns `start / pause / resume / stop / reset / tickElapsed / onFix`. `onFix` returns a `FilterResult` enum (`Accepted`, `RejectedLowAccuracy`, `RejectedTooClose`, `RejectedTeleport`, `Ignored`) so the service can count rejections for the dev log and the "GPS weak" pill flips the moment a bad accuracy comes in, before the point is even rejected.
+- **`tracking/LocationTracker.kt`** — thin Android-side wrapper that turns `requestLocationUpdates` into a cold `Flow<Location>` via `callbackFlow { ... awaitClose { removeLocationUpdates(callback) } }`. Permission is held by contract; the `@SuppressLint("MissingPermission")` sits here, not in the service.
+
+**New tests (14)**:
+- `TrackCalculatorTest` — 7 cases: London→Paris Haversine within 0.5 %, zero distance for a single point, segment summation, moving-duration span, sub-10 m noise floor returns `null` pace, 10 km in 60 min → 6:00/km, pause contributes zero elapsed time.
+- `TrackingSessionTest` — 7 cases: start transitions correctly, low-accuracy rejected + marks `GpsQuality.Weak`, too-close rejected, teleport rejected, accepted fix advances distance, pause/resume keeps `elapsedMs` steady (asserts exactly: 10 min paused doesn't add to the counter), fix while paused is `Ignored`.
+
+**Key design decision — pure state machine + Android-side wrapper**
+The engine is a `TrackingSession` that depends only on `kotlin.time` and `java.time.Clock`. The `android.location.Location` → `TrackingSession.onFix(lat, lon, acc, time)` boundary lives in the service (Step 4). That means the full state machine is unit-testable; only the one-liner `LocationTracker.callbackFlow` and the service plumbing need an emulator.
+
+**Rejected alternative — `com.google.android.gms.location.LocationCallback`-based delivery everywhere**
+Would have shortened the service by ten lines but dragged a Play Services dependency into the test classpath. Keeping the engine pure costs one wrapper file and buys unit tests.
+
+**Rejected alternative — "moving" distance by subtracting pause durations from wall-clock**
+Would need the session to remember every `(pauseStart, pauseEnd)` pair. `elapsedMs = session-time` folds all of that into a single counter that `TrackCalculator.movingDurationMs(points)` reads trivially — one state variable, one invariant.
+
+**Kotlin/Android concepts** *(for my notes)*
+- `callbackFlow { ... awaitClose { ... } }` — the standard bridge from a push-API callback to a `Flow`. `awaitClose` runs when the collector cancels, so provider updates stop automatically; nothing leaks on back-press.
+- `StateFlow` + `copy()` — the whole state is replaced atomically on every emission; subscribers get the latest value for free on subscribe.
+
+**Verified**
+- `./gradlew assembleLocalDebug` — BUILD SUCCESSFUL.
+- `./gradlew testLocalDebugUnitTest` — **231 tests, 0 failures** (14 new).
+
+**Assignment task supported**
+- **Task 4 (development)** — the engine half of the geolocation requirement.
+- **Task 1b (design)** — the three filter thresholds give the sensor-accuracy section a concrete worked example.

@@ -80,6 +80,12 @@ dependencies {
     implementation(libs.retrofit)
     implementation(libs.retrofit.converter.kotlinx.serialization)
     implementation(libs.okhttp.logging.interceptor)
+    // Phase 8a — geolocation.
+    //   play-services-location: FusedLocationProviderClient.
+    //   osmdroid-android: OpenStreetMap tile MapView — no API key, so the
+    //     marker's machine renders it exactly as mine does.
+    implementation(libs.play.services.location)
+    implementation(libs.osmdroid.android)
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
