@@ -25,8 +25,9 @@ import com.elijah.fitness.util.Formatters
  *  - `HistoryItem.Row(DistanceWorkout)` -> distance row
  *  - `HistoryItem.Row(StrengthWorkout)` -> strength row
  */
-class WorkoutAdapter :
-    ListAdapter<HistoryItem, RecyclerView.ViewHolder>(HistoryItemDiff) {
+class WorkoutAdapter(
+    private val onRowClick: (com.elijah.fitness.data.model.Workout) -> Unit = {},
+) : ListAdapter<HistoryItem, RecyclerView.ViewHolder>(HistoryItemDiff) {
 
     override fun getItemViewType(position: Int): Int = when (val item = getItem(position)) {
         is HistoryItem.SectionHeader -> VIEW_TYPE_HEADER
@@ -60,9 +61,12 @@ class WorkoutAdapter :
         when (val item = getItem(position)) {
             is HistoryItem.SectionHeader ->
                 (holder as SectionHeaderViewHolder).bind(item)
-            is HistoryItem.Row -> when (holder) {
-                is DistanceWorkoutViewHolder -> holder.bind(item.workout as DistanceWorkout)
-                is StrengthWorkoutViewHolder -> holder.bind(item.workout as StrengthWorkout)
+            is HistoryItem.Row -> {
+                when (holder) {
+                    is DistanceWorkoutViewHolder -> holder.bind(item.workout as DistanceWorkout)
+                    is StrengthWorkoutViewHolder -> holder.bind(item.workout as StrengthWorkout)
+                }
+                holder.itemView.setOnClickListener { onRowClick(item.workout) }
             }
         }
     }

@@ -1,6 +1,7 @@
 package com.elijah.fitness.data.repository
 
 import com.elijah.fitness.data.model.Workout
+import com.elijah.fitness.data.model.WorkoutDetail
 import com.elijah.fitness.data.remote.ApiResult
 import com.elijah.fitness.tracking.TrackPoint
 import kotlinx.coroutines.flow.Flow
@@ -48,4 +49,12 @@ interface WorkoutRepository {
 
     /** Look up a workout by its device-generated id; null if none matches. */
     suspend fun getWorkout(id: String): Workout?
+
+    /**
+     * Fetch the full detail (workout + route points) for one workout. Route
+     * points come from the server because the list endpoint omits them.
+     * Returns [ApiResult.Error] with a lookup message if the clientUuid
+     * isn't known locally (e.g. deep link to a deleted workout).
+     */
+    suspend fun getWorkoutDetail(clientUuid: String): ApiResult<WorkoutDetail>
 }

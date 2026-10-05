@@ -112,6 +112,7 @@ class MainActivity : AppCompatActivity() {
             R.id.logDistanceWorkoutFragment,
             R.id.logStrengthWorkoutFragment,
             R.id.profileFragment,
+            R.id.workoutDetailFragment,
         )
     }
 }

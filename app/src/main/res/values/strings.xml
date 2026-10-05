@@ -64,6 +64,23 @@
     <string name="live_tracking_distance_value">%.2f km</string>
     <string name="live_tracking_no_route_warning">No GPS points were recorded. Save anyway?</string>
 
+    <!-- Workout detail -->
+    <string name="detail_title_running">Run</string>
+    <string name="detail_title_cycling">Ride</string>
+    <string name="detail_title_strength">Strength session</string>
+    <string name="detail_subtitle">%1$s · %2$s</string>
+    <string name="detail_distance_label">Distance</string>
+    <string name="detail_duration_label">Duration</string>
+    <string name="detail_pace_label">Pace</string>
+    <string name="detail_speed_label">Avg speed</string>
+    <string name="detail_calories_label">Energy</string>
+    <string name="detail_calories_value">%1$d kcal</string>
+    <string name="detail_splits_header">Per-km splits</string>
+    <string name="detail_split_km_label">%1$d</string>
+    <string name="detail_split_km_partial_label">%1$d*</string>
+    <string name="detail_notes_header">Notes</string>
+    <string name="detail_load_error">Could not load this workout.</string>
+
     <!-- Onboarding host placeholder (Step 5) — no longer used but kept
          so any stale reference resolves. -->
     <string name="auth_onboarding_placeholder_title">Welcome to Fitness</string>
@@ -306,6 +323,7 @@
     <string name="history_row_type_and_date">%1$s · %2$s</string>
     <string name="history_row_distance_and_duration">%1$s · %2$s</string>
     <string name="history_row_total_volume">%1$.0f kg</string>
+    <string name="history_row_total_volume_label">Sets</string>
     <string name="history_empty_title">No workouts yet</string>
     <string name="history_empty_body">Tap + to log your first workout.</string>
     <string name="history_empty_icon_content_description">History icon</string>

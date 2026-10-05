@@ -1094,3 +1094,43 @@ If the OS kills the process mid-workout, the tracked data in `TrackingSession.st
 **Assignment task supported**
 - **Task 4 (development)** — live tracking, start/pause/resume/stop, route display, save-with-points — the whole user-facing geolocation story is now reachable from the Home "Start workout" button → Running/Cycling → "Track with GPS".
 - **Task 2b (design)** — the map library trade-off has its justification: Google Maps SDK is cert-pinned so a marker's machine couldn't render it; osmdroid works for everyone.
+
+## Step 6 — Workout detail screen + per-km splits
+**Built**
+- **`data/model/WorkoutDetail`** — the detail-API return type: `workout: Workout` + `routePoints: List<TrackPoint>`.
+- **`WorkoutRepository.getWorkoutDetail(clientUuid): ApiResult<WorkoutDetail>`** — new method on the repo interface.
+  - `RemoteWorkoutRepository` keeps a `MutableMap<clientUuid, serverId>` populated by every `refresh()` and `addWorkout()`, then dispatches to `GET /workouts/{id}` using the numeric server id. The route-points list the server returns is sorted by `seq` and mapped into `TrackPoint`s.
+  - `FakeWorkoutRepository` returns the workout from its in-memory list with an empty route (there's no track to synthesise).
+  - **Why map, not domain-widening**: adding a `serverId` field to `Workout` would ripple through every mapper, every log test, and the ViewModel factories. One side table in the repo keeps the domain pure and the two systems reconciled.
+- **`tracking/RouteSplits.kt`** — pure-Kotlin splits calculator with four unit tests covering: empty track, single point, multi-km synthetic track with 6:00/km pace, and the sub-1 km tail. One pass through consecutive point pairs: cumulate Haversine distance, emit a `RouteSplit` each time a `kmBucket * 1000.0` threshold is crossed, and emit a final partial split for any tail after the last full km. Each split carries `distanceMeters`, `durationMs`, `paceMsPerKm`, and `isPartial`.
+- **`ui/history/WorkoutDetailFragment` + `WorkoutDetailViewModel` + `fragment_workout_detail.xml`**:
+  - Fragment reached by a history-row tap (new nav action `action_history_to_detail`, `clientUuid` string arg).
+  - VM loads on init, exposes `State.Loading / Loaded / Error`, has an explicit `retry()` so a transient failure doesn't need a navigation round-trip.
+  - Layout: header (activity title + date/time), optional 240 dp osmdroid map card (hidden when no points), stats card (distance + duration + pace/speed + calories; strength shows total volume + set count in the pace slot), optional splits section (header + per-row item), optional notes section.
+  - `MapView` auto-fits to the route's bounding box via `zoomToBoundingBox` with 32 dp of padding, then draws a lime `Polyline`.
+  - Per-split row is a one-off `item_route_split.xml`: km label on the left, lime bar whose width is proportional to that split's pace vs the slowest split (so the slowest km is the fattest bar — visual pace comparison for free), pace on the right. Partial-km splits render their label with a trailing asterisk.
+- **`WorkoutAdapter`** gains an `onRowClick: (Workout) -> Unit` constructor arg and binds `itemView.setOnClickListener { onRowClick(workout) }` on every row.
+- **`WorkoutHistoryFragment`** passes `::onWorkoutTapped` into the adapter, which navigates with the workout's `clientUuid`.
+- **Nav graph** — new `workoutDetailFragment` destination + `action_history_to_detail` on history; `MainActivity.CHROME_DESTINATIONS` extended to show the toolbar + Up arrow on this screen.
+- **Strings** — detail title/subtitle/stat labels, splits header, notes header, load error (~14 new entries).
+
+**Key design decision — reconstruct `TrackPoint` directly in the repo rather than re-exporting the mapper**
+`WorkoutMapper.kt` already has `RoutePointDto.toDomain(): TrackPoint`, but I kept a private `toTrackPoint()` inside `RemoteWorkoutRepository` for the detail-fetch path. Why: the extension function was intended for request-side mapping (write path), and the detail path is a cold read — the inline mapper makes the data flow visible in one file. Zero behavioural difference; one less cross-file jump.
+
+**Rejected alternative — new `/workouts/by-uuid/{uuid}` endpoint**
+Would have avoided the `serverIds` side-table entirely. Rejected because adding one PHP route for a single UI concern (and shipping a migration-ish server change) is heavier than keeping a tiny map on the client. The list endpoint already returns the id → clientUuid pairing on every `refresh()`, so the map stays coherent for free.
+
+**Rejected alternative — a dedicated `SplitAdapter`**
+Would have needed `RecyclerView` with a one-row-type ListAdapter and a view holder for a plain row — all for a list that is typically ≤ 15 items (a 15 km run shows 15 splits). A plain `LinearLayout` + `include`-style row inflation in a loop is simpler, measurable in milliseconds, and avoids introducing an adapter that other screens would then be tempted to depend on.
+
+**Kotlin/Android concepts** *(for my notes)*
+- `BoundingBox` + `zoomToBoundingBox(..., animated=false, borderSizeInPixels=32)` is osmdroid's one-line "fit the polyline into the viewport". Must run after the view is attached, so it's wrapped in `mapView.post { ... }`.
+- `ListAdapter` constructor click lambdas — the adapter stays stateless with respect to navigation; the fragment owns the destination choice.
+
+**Verified**
+- `./gradlew assembleLocalDebug` — BUILD SUCCESSFUL.
+- `./gradlew testLocalDebugUnitTest` — **235 tests, 0 failures** (4 new in `RouteSplitsTest`).
+
+**Assignment task supported**
+- **Task 4 (development)** — the "redisplay the saved route on the workout detail screen" bullet of the brief, plus per-km splits (useful for the UI screenshot in the report).
+- **Task 2b (design)** — a one-fragment detail screen that composes two testable domain pieces (`WorkoutDetail`, `RouteSplits`) is clean material for the architecture write-up.

@@ -48,6 +48,22 @@ class FakeWorkoutRepository(
     override suspend fun getWorkout(id: String): Workout? =
         _workouts.value.firstOrNull { it.id == id }
 
+    override suspend fun getWorkoutDetail(
+        clientUuid: String,
+    ): ApiResult<com.elijah.fitness.data.model.WorkoutDetail> {
+        val workout = _workouts.value.firstOrNull { it.id == clientUuid }
+            ?: return ApiResult.Error(
+                message = "Workout not found",
+                status = 404,
+                fieldErrors = emptyMap(),
+            )
+        // Fake repository doesn't store routes — the in-memory seed is
+        // for offline UI dev only.
+        return ApiResult.Success(
+            com.elijah.fitness.data.model.WorkoutDetail(workout, emptyList())
+        )
+    }
+
     private companion object {
 
         /** Nine sample workouts over the last 14 days, all three types. */

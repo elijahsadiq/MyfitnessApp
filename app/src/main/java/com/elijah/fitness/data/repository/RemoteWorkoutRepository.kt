@@ -1,12 +1,15 @@
 package com.elijah.fitness.data.repository
 
 import com.elijah.fitness.data.model.Workout
+import com.elijah.fitness.data.model.WorkoutDetail
 import com.elijah.fitness.data.remote.ApiResult
 import com.elijah.fitness.data.remote.api.WorkoutApi
 import com.elijah.fitness.data.remote.apiCall
 import com.elijah.fitness.data.remote.mapper.toDomain
 import com.elijah.fitness.data.remote.mapper.toRequestDto
+import com.elijah.fitness.data.remote.dto.RoutePointDto
 import com.elijah.fitness.tracking.TrackPoint
+import java.time.Instant
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -32,11 +35,21 @@ class RemoteWorkoutRepository(
 
     private val _workouts: MutableStateFlow<List<Workout>> = MutableStateFlow(emptyList())
 
+    /**
+     * `clientUuid → server id` map, populated on every `refresh()` /
+     * `addWorkout()`. The detail endpoint needs the numeric server id but
+     * the domain model only carries `clientUuid`, so this map keeps the
+     * two reconciled without widening the `Workout` type.
+     */
+    private val serverIds: MutableMap<String, Long> = mutableMapOf()
+
     override fun observeWorkouts(): Flow<List<Workout>> = _workouts.asStateFlow()
 
     override suspend fun refresh(): ApiResult<Unit> =
         when (val result = apiCall { workoutApi.list() }) {
             is ApiResult.Success -> {
+                serverIds.clear()
+                result.data.forEach { serverIds[it.clientUuid] = it.id }
                 _workouts.value = result.data
                     .map { it.toDomain() }
                     .sortedByDescending { it.startTime }
@@ -53,6 +66,7 @@ class RemoteWorkoutRepository(
         when (val result = apiCall { workoutApi.create(workout.toRequestDto(routePoints)) }) {
             is ApiResult.Success -> {
                 val added = result.data.toDomain()
+                serverIds[result.data.clientUuid] = result.data.id
                 // POST is upsert on the server side (on client_uuid); apply
                 // the same semantic locally — if the id already exists (a
                 // retry that succeeded on second try), replace it.
@@ -66,4 +80,35 @@ class RemoteWorkoutRepository(
 
     override suspend fun getWorkout(id: String): Workout? =
         _workouts.value.firstOrNull { it.id == id }
+
+    private fun RoutePointDto.toTrackPoint(): TrackPoint = TrackPoint(
+        seq = seq,
+        latitude = latitude,
+        longitude = longitude,
+        elapsedMs = elapsedMs,
+        accuracyM = accuracyM,
+        recordedAt = Instant.parse(recordedAt),
+    )
+
+    override suspend fun getWorkoutDetail(clientUuid: String): ApiResult<WorkoutDetail> {
+        val serverId = serverIds[clientUuid]
+            ?: return ApiResult.Error(
+                message = "Workout not found locally",
+                status = 404,
+                fieldErrors = emptyMap(),
+            )
+        return when (val result = apiCall { workoutApi.get(serverId) }) {
+            is ApiResult.Success -> {
+                val dto = result.data
+                serverIds[dto.clientUuid] = dto.id
+                val workout = dto.toDomain()
+                val points = dto.routePoints
+                    .sortedBy { it.seq }
+                    .map { it.toTrackPoint() }
+                ApiResult.Success(WorkoutDetail(workout, points))
+            }
+            is ApiResult.Error -> result
+            ApiResult.NetworkError -> ApiResult.NetworkError
+        }
+    }
 }

@@ -6,6 +6,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.core.view.isVisible
 import androidx.fragment.app.viewModels
+import androidx.core.os.bundleOf
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.elijah.fitness.FitnessApp
@@ -31,7 +32,14 @@ class WorkoutHistoryFragment : BaseFragment<FragmentWorkoutHistoryBinding>() {
         )
     }
 
-    private val adapter = WorkoutAdapter()
+    private val adapter = WorkoutAdapter(::onWorkoutTapped)
+
+    private fun onWorkoutTapped(workout: com.elijah.fitness.data.model.Workout) {
+        findNavController().navigate(
+            R.id.action_history_to_detail,
+            bundleOf(WorkoutDetailFragment.ARG_CLIENT_UUID to workout.id),
+        )
+    }
 
     override fun inflateBinding(
         inflater: LayoutInflater,

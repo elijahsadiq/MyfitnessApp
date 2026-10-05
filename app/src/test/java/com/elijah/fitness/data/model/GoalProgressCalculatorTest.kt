@@ -162,5 +162,7 @@ class GoalProgressCalculatorTest {
         override suspend fun refresh(): ApiResult<Unit> = ApiResult.Success(Unit)
         override suspend fun addWorkout(workout: Workout, routePoints: List<com.elijah.fitness.tracking.TrackPoint>): ApiResult<Unit> = ApiResult.Success(Unit)
         override suspend fun getWorkout(id: String): Workout? = flow.value.firstOrNull { it.id == id }
+        override suspend fun getWorkoutDetail(clientUuid: String): com.elijah.fitness.data.remote.ApiResult<com.elijah.fitness.data.model.WorkoutDetail> =
+            com.elijah.fitness.data.remote.ApiResult.Error("not supported in test fake", 404, emptyMap())
     }
 }

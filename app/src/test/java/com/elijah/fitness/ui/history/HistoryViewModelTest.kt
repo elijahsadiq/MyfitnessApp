@@ -99,5 +99,12 @@ class HistoryViewModelTest {
 
         override suspend fun getWorkout(id: String): Workout? =
             state.value.firstOrNull { it.id == id }
+
+        override suspend fun getWorkoutDetail(
+            clientUuid: String,
+        ): com.elijah.fitness.data.remote.ApiResult<com.elijah.fitness.data.model.WorkoutDetail> =
+            com.elijah.fitness.data.remote.ApiResult.Error(
+                "not supported in test fake", 404, emptyMap(),
+            )
     }
 }
