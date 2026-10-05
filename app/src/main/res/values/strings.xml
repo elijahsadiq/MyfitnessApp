@@ -29,6 +29,13 @@
     <string name="auth_location_permanent_denied_snackbar">Location is off. You can turn it on in app settings whenever you want.</string>
     <string name="auth_location_open_settings">Open settings</string>
 
+    <!-- Live tracking (phase 8a) -->
+    <string name="tracking_notification_channel_name">Workout tracking</string>
+    <string name="tracking_notification_channel_description">Shown while a GPS workout is in progress.</string>
+    <string name="tracking_notification_title_running">Run in progress</string>
+    <string name="tracking_notification_title_cycling">Ride in progress</string>
+    <string name="tracking_notification_body">%1$s · %2$s</string>
+
     <!-- Onboarding host placeholder (Step 5) — no longer used but kept
          so any stale reference resolves. -->
     <string name="auth_onboarding_placeholder_title">Welcome to Fitness</string>

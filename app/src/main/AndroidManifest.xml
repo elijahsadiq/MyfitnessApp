@@ -60,6 +60,17 @@
             android:name=".ui.main.MainActivity"
             android:exported="false"
             android:theme="@style/Theme.MyFitnessApp" />
+
+        <!--
+          Phase 8a — live-tracking foreground service.
+          foregroundServiceType="location" is required from API 29 for the
+          service to use location while backgrounded; the matching
+          FOREGROUND_SERVICE_LOCATION permission is declared above.
+        -->
+        <service
+            android:name=".tracking.LocationTrackingService"
+            android:exported="false"
+            android:foregroundServiceType="location" />
     </application>
 
 </manifest>

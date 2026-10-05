@@ -1011,3 +1011,41 @@ Would need the session to remember every `(pauseStart, pauseEnd)` pair. `elapsed
 **Assignment task supported**
 - **Task 4 (development)** — the engine half of the geolocation requirement.
 - **Task 1b (design)** — the three filter thresholds give the sensor-accuracy section a concrete worked example.
+
+## Step 4 — Foreground service
+**Built**
+- **`AndroidManifest.xml`** — added a `<service>` node for `LocationTrackingService` with `android:exported="false"` and `android:foregroundServiceType="location"`. The matching permissions (`FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_LOCATION`, `WAKE_LOCK`) were declared in Step 2.
+- **`AppContainer`** — exposes `trackingSession: TrackingSession` and `locationTracker: LocationTracker` as singletons so the service, the live-tracking screen (Step 5) and the save step read the same state.
+- **`LocationTrackingService.kt`**:
+  - Plain `Service` (not `LifecycleService` — that would pull in another AndroidX dep; its only benefit here is `lifecycleScope`, which a two-line `CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)` replaces).
+  - Four actions: `ACTION_START` + `EXTRA_ACTIVITY_TYPE`, `ACTION_PAUSE`, `ACTION_RESUME`, `ACTION_STOP`.
+  - `handleStart` promotes to foreground via `ServiceCompat.startForeground(..., FOREGROUND_SERVICE_TYPE_LOCATION)` on API 29+ (required typed call on 34+), launches three jobs:
+    1. **location job** — collects `locationTracker.locationUpdates()` and forwards each fix to `session.onFix(...)` with primitive doubles.
+    2. **ticker job** — calls `session.tickElapsed()` once per second so the Elapsed readout ticks between GPS fixes.
+    3. **notification job** — observes `session.state`, downsamples to 1-second / 10-metre grains with `distinctUntilChanged`, and `nm.notify(...)` the new notification body.
+  - Acquires a `PARTIAL_WAKE_LOCK` with a 4-hour safety ceiling (not reference-counted, so the one explicit release in `handleStop` / `onDestroy` is enough).
+  - `handleStop` cancels all three jobs, releases the wake lock, calls `ServiceCompat.stopForeground(..., STOP_FOREGROUND_REMOVE)` and `stopSelf()`. `onDestroy` is defensive against a system-triggered teardown and additionally cancels the parent scope.
+  - Notification: low-importance channel, ongoing, `onlyAlertOnce`, `SmallIcon = ic_location_pin_24`, title picks between `tracking_notification_title_running` / `_cycling`, body is `"MM:SS · 1.23 km"` built from a one-off `formatElapsed` / `formatKm`. Tapping it routes to `LauncherActivity` (deep-link into the live-tracking fragment lands in Step 5).
+- **Strings** — five new entries (`tracking_notification_channel_*`, `tracking_notification_title_*`, `tracking_notification_body`).
+
+**Key design decision — notification updates downsampled with `distinctUntilChanged`**
+`session.state` emits on every accepted fix *and* every elapsed tick, so a 30-minute run can push 1 800+ emissions. Posting a notification each time would spam the status bar and burn CPU redrawing a persistent-notification body. Mapping to `(activityType, elapsedSeconds, distanceDecaMetres)` and running through `distinctUntilChanged` reduces that to one notify per second max, which is both the user's perceptible rate and far below the OS's enforced rate limit.
+
+**Rejected alternative — `LifecycleService` from `androidx.lifecycle:lifecycle-service`**
+Would have given a `lifecycleScope` and auto-cancelled jobs on destroy. The cost is one extra library in `app/build.gradle.kts` for ~10 lines of saved code. The custom scope approach is explicit and keeps the dependency count honest.
+
+**Rejected alternative — persisting every accepted fix to a journal file**
+Would survive a process kill, but phase 8a has no Room / disk model to lean on. Shipping half of a disk cache would be worse than being explicit: a process kill mid-workout drops the session, and the save screen (Step 5) commits to the API only on explicit stop + save.
+
+**Kotlin/Android concepts** *(for my notes)*
+- `SupervisorJob` + custom `CoroutineScope` — the service's own lifecycle, so cancelling the scope cancels every launched job in one call.
+- `ServiceCompat.startForeground(..., type)` — the AndroidX-safe way to meet API 34+'s typed-foreground-service contract while still compiling against lower APIs.
+- `PendingIntent.FLAG_IMMUTABLE | FLAG_UPDATE_CURRENT` — required on API 31+, prevents other apps from mutating the Intent payload.
+
+**Verified**
+- `./gradlew assembleLocalDebug` — BUILD SUCCESSFUL.
+- Tests still pass (no new test code added for the service; it's an Android-side composition, not a logic unit).
+
+**Assignment task supported**
+- **Task 4 (development)** — closes the "tracking continues with the screen off" and "foreground service with location type" requirements of the brief.
+- **Task 1b (design)** — the "no background permission, foreground-only" paragraph has its implementation to point at.

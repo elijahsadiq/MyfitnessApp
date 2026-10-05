@@ -20,6 +20,8 @@ import com.elijah.fitness.data.repository.RemoteGoalRepository
 import com.elijah.fitness.data.repository.RemoteWorkoutRepository
 import com.elijah.fitness.data.repository.UserSettings
 import com.elijah.fitness.data.repository.WorkoutRepository
+import com.elijah.fitness.tracking.LocationTracker
+import com.elijah.fitness.tracking.TrackingSession
 
 /**
  * Manual dependency container. Instantiated once in [FitnessApp] and read
@@ -83,4 +85,16 @@ class AppContainer(applicationContext: Context) {
         onboardingStore = onboardingStore,
         userSettings = userSettings,
     )
+
+    // -----------------------------------------------------------------
+    // Phase 8a — live tracking singletons.
+    //
+    // Single `TrackingSession` per process so the live screen, the
+    // foreground service, and the save step all see the same state
+    // flow. `LocationTracker` is also singleton-scoped — it holds the
+    // fused provider's callback registration, which must survive a
+    // rotation without being torn down and recreated.
+    // -----------------------------------------------------------------
+    val trackingSession: TrackingSession = TrackingSession()
+    val locationTracker: LocationTracker = LocationTracker(applicationContext)
 }
