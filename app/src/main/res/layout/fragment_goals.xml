@@ -60,13 +60,15 @@
         tools:listitem="@layout/item_goal_active" />
 
     <!-- Empty state. Centered in the viewport above the bottom nav so the
-         primary CTA sits where the user's thumb naturally rests. -->
+         primary CTA sits where the user's thumb naturally rests.
+         Phase 8 defect 11: the parent fragment already lives above the
+         bottom-nav rail, so a `marginBottom=bottom_nav_height` here was
+         double-counting. Removed. -->
     <LinearLayout
         android:id="@+id/goalsEmptyState"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginHorizontal="@dimen/screen_margin"
-        android:layout_marginBottom="@dimen/bottom_nav_height"
         android:gravity="center"
         android:orientation="vertical"
         android:padding="@dimen/space_xl"

@@ -19,4 +19,13 @@ data class GoalWithProgress(
     val progressFraction: Double,
     val isComplete: Boolean,
     val daysRemaining: Long,
+    /**
+     * `true` once the goal's period has ended (`daysRemaining < 0`). The
+     * UI treats this as a third goal state alongside active + completed:
+     * expired goals move to their own "Ended" section and are never
+     * eligible for the featured card. Phase 7 deliberately excluded
+     * auto-recurring goals, so expiry is the terminal state for an
+     * uncompleted goal.
+     */
+    val isExpired: Boolean = false,
 )

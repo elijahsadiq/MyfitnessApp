@@ -26,4 +26,11 @@ sealed interface GoalListItem {
 
     /** A completed goal (progressFraction == 1.0). */
     data class Completed(val goal: GoalWithProgress) : GoalListItem
+
+    /**
+     * A goal whose period has passed with the target unmet. Rendered in
+     * its own section below Completed; the final value is shown as
+     * `X / Y units` so the user still sees how close they got.
+     */
+    data class Ended(val goal: GoalWithProgress) : GoalListItem
 }

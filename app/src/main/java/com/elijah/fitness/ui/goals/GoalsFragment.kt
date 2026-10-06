@@ -4,7 +4,10 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.isVisible
+import androidx.core.view.updatePadding
 import androidx.fragment.app.viewModels
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.elijah.fitness.FitnessApp
@@ -41,6 +44,16 @@ class GoalsFragment : BaseFragment<FragmentGoalsBinding>() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
+        // Status-bar inset lives on the fragment root (no shared toolbar
+        // on this destination); nav-bar inset is applied to the list so
+        // it clears the bottom-nav rail without a hardcoded padding.
+        applySystemBarInsets(target = binding.root, applyBottom = false)
+        ViewCompat.setOnApplyWindowInsetsListener(binding.goalsList) { v, insets ->
+            val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            v.updatePadding(bottom = bars.bottom)
+            insets
+        }
 
         binding.goalsList.layoutManager = LinearLayoutManager(requireContext())
         binding.goalsList.adapter = adapter
@@ -115,6 +128,7 @@ class GoalsFragment : BaseFragment<FragmentGoalsBinding>() {
                     is GoalListItem.Featured -> item.goal.goal
                     is GoalListItem.Active -> item.goal.goal
                     is GoalListItem.Completed -> item.goal.goal
+                    is GoalListItem.Ended -> item.goal.goal
                     else -> null
                 }
             }

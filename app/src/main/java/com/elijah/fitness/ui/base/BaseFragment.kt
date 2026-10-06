@@ -4,6 +4,9 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.updatePadding
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
@@ -101,6 +104,35 @@ abstract class BaseFragment<VB : ViewBinding> : Fragment() {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 flow.collect { block(it) }
             }
+        }
+    }
+
+    /**
+     * Consume status-bar + navigation-bar insets as padding on [target].
+     * Call from `onViewCreated` on any top-level fragment that draws its
+     * own header (Home / History / Progress / Goals) — the shared toolbar
+     * is hidden for those, so the fragment root sits beneath the status
+     * bar unless we pay rent on the insets ourselves.
+     *
+     * The returned [WindowInsetsCompat] is consumed in full so sibling
+     * views don't double-apply the padding.
+     *
+     * @param applyBottom when true (default), nav-bar + IME inset is also
+     *   added as bottom padding. Pass `false` when the layout already has
+     *   room for the bottom-nav rail (e.g. a `MaterialCardView` the user
+     *   won't scroll past).
+     */
+    protected fun applySystemBarInsets(
+        target: View = binding.root,
+        applyBottom: Boolean = true,
+    ) {
+        ViewCompat.setOnApplyWindowInsetsListener(target) { view, insets ->
+            val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            view.updatePadding(
+                top = bars.top,
+                bottom = if (applyBottom) bars.bottom else view.paddingBottom,
+            )
+            WindowInsetsCompat.CONSUMED
         }
     }
 }

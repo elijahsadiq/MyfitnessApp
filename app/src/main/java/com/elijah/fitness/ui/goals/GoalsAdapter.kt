@@ -39,6 +39,7 @@ class GoalsAdapter(
         is GoalListItem.SectionHeader -> VIEW_TYPE_HEADER
         is GoalListItem.Active -> VIEW_TYPE_ACTIVE
         is GoalListItem.Completed -> VIEW_TYPE_COMPLETED
+        is GoalListItem.Ended -> VIEW_TYPE_ENDED
     }
 
     override fun onCreateViewHolder(
@@ -59,6 +60,9 @@ class GoalsAdapter(
             VIEW_TYPE_COMPLETED -> CompletedGoalViewHolder(
                 ItemGoalCompletedBinding.inflate(inflater, parent, false), onGoalTap,
             )
+            VIEW_TYPE_ENDED -> EndedGoalViewHolder(
+                ItemGoalCompletedBinding.inflate(inflater, parent, false), onGoalTap,
+            )
             else -> error("Unknown view type $viewType")
         }
     }
@@ -69,6 +73,7 @@ class GoalsAdapter(
             is GoalListItem.SectionHeader -> (holder as GoalsSectionHeaderViewHolder).bind(item)
             is GoalListItem.Active -> (holder as ActiveGoalViewHolder).bind(item)
             is GoalListItem.Completed -> (holder as CompletedGoalViewHolder).bind(item)
+            is GoalListItem.Ended -> (holder as EndedGoalViewHolder).bind(item)
         }
     }
 
@@ -77,6 +82,7 @@ class GoalsAdapter(
         private const val VIEW_TYPE_HEADER = 1
         private const val VIEW_TYPE_ACTIVE = 2
         private const val VIEW_TYPE_COMPLETED = 3
+        private const val VIEW_TYPE_ENDED = 4
     }
 }
 
@@ -89,6 +95,8 @@ private object GoalListItemDiff : DiffUtil.ItemCallback<GoalListItem>() {
             oldItem is GoalListItem.Active && newItem is GoalListItem.Active ->
                 oldItem.goal.goal.id == newItem.goal.goal.id
             oldItem is GoalListItem.Completed && newItem is GoalListItem.Completed ->
+                oldItem.goal.goal.id == newItem.goal.goal.id
+            oldItem is GoalListItem.Ended && newItem is GoalListItem.Ended ->
                 oldItem.goal.goal.id == newItem.goal.goal.id
             oldItem is GoalListItem.SectionHeader && newItem is GoalListItem.SectionHeader ->
                 oldItem.labelRes == newItem.labelRes
@@ -186,6 +194,31 @@ class CompletedGoalViewHolder(
         binding.completedCaption.text = ctx.getString(
             R.string.goal_value_over_target_decimal,
             GoalFormatters.formatValue(goal.targetValue, goal.goalType()),
+            GoalFormatters.formatValue(goal.targetValue, goal.goalType()),
+            GoalFormatters.unitLabel(ctx, goal.goalType()),
+        )
+        binding.completedCard.setOnClickListener { onGoalTap(gwp) }
+    }
+}
+
+/**
+ * Ended = period passed with the target unmet. Uses the Completed row's
+ * layout but binds the *actual* final value against the target — the
+ * user still sees how close they got.
+ */
+class EndedGoalViewHolder(
+    private val binding: ItemGoalCompletedBinding,
+    private val onGoalTap: (GoalWithProgress) -> Unit,
+) : BaseViewHolder<GoalListItem.Ended>(binding) {
+    override fun bind(item: GoalListItem.Ended) {
+        val ctx = binding.root.context
+        val gwp = item.goal
+        val goal = gwp.goal
+
+        binding.completedTitle.text = goal.title
+        binding.completedCaption.text = ctx.getString(
+            R.string.goal_ended_caption,
+            GoalFormatters.formatValue(gwp.currentValue, goal.goalType()),
             GoalFormatters.formatValue(goal.targetValue, goal.goalType()),
             GoalFormatters.unitLabel(ctx, goal.goalType()),
         )

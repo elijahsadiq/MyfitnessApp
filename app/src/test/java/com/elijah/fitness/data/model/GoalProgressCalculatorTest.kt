@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.Clock
@@ -49,6 +50,7 @@ class GoalProgressCalculatorTest {
             goalRepository = FakeGoalRepo(goals),
             workoutRepository = FakeWorkoutRepo(workouts),
             clock = fixedClock,
+            zone = java.time.ZoneOffset.UTC,
         )
 
         val snapshot = calc.observe().first().single()
@@ -76,6 +78,7 @@ class GoalProgressCalculatorTest {
         val workouts = MutableStateFlow<List<Workout>>(emptyList())
         val calc = GoalProgressCalculator(
             FakeGoalRepo(goals), FakeWorkoutRepo(workouts), fixedClock,
+            zone = java.time.ZoneOffset.UTC,
         )
 
         // Snapshot 1: no workouts → progress 0.
@@ -100,6 +103,7 @@ class GoalProgressCalculatorTest {
         val workouts = MutableStateFlow<List<Workout>>(emptyList())
         val calc = GoalProgressCalculator(
             FakeGoalRepo(goals), FakeWorkoutRepo(workouts), fixedClock,
+            zone = java.time.ZoneOffset.UTC,
         )
         assertEquals(0, calc.observe().first().size)
 
@@ -131,9 +135,137 @@ class GoalProgressCalculatorTest {
         val workouts = MutableStateFlow<List<Workout>>(emptyList())
         val calc = GoalProgressCalculator(
             FakeGoalRepo(goals), FakeWorkoutRepo(workouts), clockAfter,
+            zone = java.time.ZoneOffset.UTC,
         )
         val snap = calc.observe().first().single()
         assertTrue("expected negative, got ${snap.daysRemaining}", snap.daysRemaining < 0)
+    }
+
+    // ---------- Amendment A: calendar-day semantics + boundary tests ----------
+
+    @Test
+    fun `weekly goal — Monday morning shows six days remaining`() = runTest {
+        // Period: Mon 14 Sep → Mon 21 Sep (exclusive) → inclusive last day Sun 20 Sep.
+        val snap = snapshotFor(
+            now = Instant.parse("2026-09-14T06:00:00Z"), // Monday
+            period = GoalPeriod.THIS_WEEK,
+            start = periodStart, end = periodEnd,
+        )
+        assertEquals(6L, snap.daysRemaining)
+        assertFalse(snap.isExpired)
+    }
+
+    @Test
+    fun `weekly goal — mid-week shows the right day count`() = runTest {
+        val snap = snapshotFor(
+            now = Instant.parse("2026-09-17T22:00:00Z"), // Thursday evening UTC
+            period = GoalPeriod.THIS_WEEK,
+            start = periodStart, end = periodEnd,
+        )
+        assertEquals(3L, snap.daysRemaining)
+        assertFalse(snap.isExpired)
+    }
+
+    @Test
+    fun `weekly goal — last day Sunday returns zero and isExpired is false`() = runTest {
+        val snap = snapshotFor(
+            now = Instant.parse("2026-09-20T12:00:00Z"), // Sunday
+            period = GoalPeriod.THIS_WEEK,
+            start = periodStart, end = periodEnd,
+        )
+        assertEquals(0L, snap.daysRemaining)
+        assertFalse(snap.isExpired)
+    }
+
+    @Test
+    fun `weekly goal — day after period end flips isExpired to true`() = runTest {
+        val snap = snapshotFor(
+            now = Instant.parse("2026-09-21T06:00:00Z"), // Mon of next week
+            period = GoalPeriod.THIS_WEEK,
+            start = periodStart, end = periodEnd,
+        )
+        assertEquals(-1L, snap.daysRemaining)
+        assertTrue(snap.isExpired)
+    }
+
+    @Test
+    fun `monthly goal — first of the month shows the full month`() = runTest {
+        val monthStart = Instant.parse("2026-09-01T00:00:00Z")
+        val monthEnd   = Instant.parse("2026-10-01T00:00:00Z")
+        val snap = snapshotFor(
+            now = Instant.parse("2026-09-01T08:00:00Z"),
+            period = GoalPeriod.THIS_MONTH,
+            start = monthStart, end = monthEnd,
+        )
+        assertEquals(29L, snap.daysRemaining) // 1 Sep → 30 Sep inclusive = 29 days diff.
+        assertFalse(snap.isExpired)
+    }
+
+    @Test
+    fun `monthly goal — mid-month shows the right day count`() = runTest {
+        val monthStart = Instant.parse("2026-09-01T00:00:00Z")
+        val monthEnd   = Instant.parse("2026-10-01T00:00:00Z")
+        val snap = snapshotFor(
+            now = Instant.parse("2026-09-15T23:00:00Z"),
+            period = GoalPeriod.THIS_MONTH,
+            start = monthStart, end = monthEnd,
+        )
+        assertEquals(15L, snap.daysRemaining)
+        assertFalse(snap.isExpired)
+    }
+
+    @Test
+    fun `monthly goal — last day of month returns zero`() = runTest {
+        val monthStart = Instant.parse("2026-09-01T00:00:00Z")
+        val monthEnd   = Instant.parse("2026-10-01T00:00:00Z")
+        val snap = snapshotFor(
+            now = Instant.parse("2026-09-30T18:00:00Z"),
+            period = GoalPeriod.THIS_MONTH,
+            start = monthStart, end = monthEnd,
+        )
+        assertEquals(0L, snap.daysRemaining)
+        assertFalse(snap.isExpired)
+    }
+
+    @Test
+    fun `goal that ended yesterday is isExpired with daysRemaining of minus one`() = runTest {
+        // Last week's goal; "today" is one day past the inclusive last day.
+        val lastWeekStart = Instant.parse("2026-09-07T00:00:00Z") // Mon
+        val lastWeekEnd   = Instant.parse("2026-09-14T00:00:00Z") // exclusive
+        val snap = snapshotFor(
+            now = Instant.parse("2026-09-14T08:00:00Z"), // the following Monday
+            period = GoalPeriod.THIS_WEEK,
+            start = lastWeekStart, end = lastWeekEnd,
+        )
+        assertEquals(-1L, snap.daysRemaining)
+        assertTrue(snap.isExpired)
+    }
+
+    /** Shared helper — builds a `WorkoutCountGoal` snapshot at [now] with UTC zone. */
+    private suspend fun snapshotFor(
+        now: Instant,
+        period: GoalPeriod,
+        start: Instant,
+        end: Instant,
+    ): GoalWithProgress {
+        val goals = MutableStateFlow<List<Goal>>(
+            listOf(
+                WorkoutCountGoal(
+                    id = "g", title = "test", activityType = null,
+                    targetValue = 1.0, period = period,
+                    periodStart = start, periodEnd = end,
+                    createdAt = start,
+                )
+            )
+        )
+        val workouts = MutableStateFlow<List<Workout>>(emptyList())
+        val calc = GoalProgressCalculator(
+            goalRepository = FakeGoalRepo(goals),
+            workoutRepository = FakeWorkoutRepo(workouts),
+            clock = Clock.fixed(now, java.time.ZoneOffset.UTC),
+            zone = java.time.ZoneOffset.UTC,
+        )
+        return calc.observe().first().single()
     }
 
     // ---------- test doubles ----------

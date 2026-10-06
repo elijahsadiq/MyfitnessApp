@@ -119,6 +119,70 @@ class GoalsViewModelTest {
         assertTrue(items[1] is GoalListItem.Completed)
     }
 
+    // ---------- Amendment A: three-section partition ----------
+
+    @Test
+    fun `expired goals land in Ended, not Active, and are never featured`() = runTest {
+        // Build four goals around the fixed `now` (Wed 16 Sep 09Z):
+        //  - active: this-week, incomplete → should go to Featured
+        //  - completed-current: this-week, hit the target → Completed section
+        //  - ended-unmet: last-week period, incomplete → Ended section
+        //  - ended-but-complete: last-week period, hit target → Completed (completion wins)
+        val lastWeekStart = Instant.parse("2026-09-07T00:00:00Z")
+        val lastWeekEnd   = Instant.parse("2026-09-14T00:00:00Z")
+
+        val active = distanceGoal("active", target = 10.0, createdAt = periodStart)
+        val completedCurrent = WorkoutCountGoal(
+            id = "comp-current", title = "comp-current", activityType = null,
+            targetValue = 1.0, period = GoalPeriod.THIS_WEEK,
+            periodStart = periodStart, periodEnd = periodEnd, createdAt = periodStart,
+        )
+        val endedUnmet = WorkoutCountGoal(
+            id = "ended-unmet", title = "ended-unmet", activityType = null,
+            targetValue = 5.0, period = GoalPeriod.THIS_WEEK,
+            periodStart = lastWeekStart, periodEnd = lastWeekEnd, createdAt = lastWeekStart,
+        )
+        val endedComplete = WorkoutCountGoal(
+            id = "ended-comp", title = "ended-comp", activityType = null,
+            targetValue = 1.0, period = GoalPeriod.THIS_WEEK,
+            periodStart = lastWeekStart, periodEnd = lastWeekEnd, createdAt = lastWeekStart,
+        )
+        val workoutInCompleted = com.elijah.fitness.data.model.RunningWorkout(
+            id = "w1", startTime = Instant.parse("2026-09-15T10:00:00Z"),
+            duration = Duration.ofMinutes(20), distanceMeters = 1_000.0,
+        )
+        val workoutInEnded = com.elijah.fitness.data.model.RunningWorkout(
+            id = "w2", startTime = Instant.parse("2026-09-10T10:00:00Z"),
+            duration = Duration.ofMinutes(20), distanceMeters = 1_000.0,
+        )
+
+        val vm = viewModelWith(
+            goals = listOf(active, completedCurrent, endedUnmet, endedComplete),
+            workouts = listOf(workoutInCompleted, workoutInEnded),
+        )
+        val items = collectItems(vm)
+
+        // Featured must be the one active goal.
+        val featured = items.filterIsInstance<GoalListItem.Featured>().singleOrNull()
+        assertTrue("expected one Featured item, got $featured", featured != null)
+        assertEquals("active", featured!!.goal.goal.id)
+
+        // Section headers in order: no Active header (featured is the only active),
+        // then Completed, then Ended.
+        val headers = items.filterIsInstance<GoalListItem.SectionHeader>()
+            .map { it.labelRes }
+        assertEquals(listOf(R.string.goals_completed_title, R.string.goals_ended_title), headers)
+
+        // Completed section carries both the current-complete AND the past-complete.
+        val completed = items.filterIsInstance<GoalListItem.Completed>().map { it.goal.goal.id }
+        assertTrue("ended-comp belongs in Completed, got $completed", "ended-comp" in completed)
+        assertTrue("comp-current belongs in Completed, got $completed", "comp-current" in completed)
+
+        // Ended section only carries the unmet past goal.
+        val ended = items.filterIsInstance<GoalListItem.Ended>().map { it.goal.goal.id }
+        assertEquals(listOf("ended-unmet"), ended)
+    }
+
     // ---------- helpers ----------
 
     /**
@@ -150,7 +214,7 @@ class GoalsViewModelTest {
         val workoutsFlow = MutableStateFlow(workouts)
         val goalRepo = FakeGoalRepo(goalsFlow)
         val workoutRepo = FakeWorkoutRepo(workoutsFlow)
-        val calc = GoalProgressCalculator(goalRepo, workoutRepo, clock)
+        val calc = GoalProgressCalculator(goalRepo, workoutRepo, clock, ZoneOffset.UTC)
         return GoalsViewModel(goalRepo, calc)
     }
 
@@ -160,7 +224,7 @@ class GoalsViewModelTest {
         repo: FakeGoalRepo = FakeGoalRepo(goals),
     ): GoalsViewModel {
         val workoutRepo = FakeWorkoutRepo(workouts)
-        val calc = GoalProgressCalculator(repo, workoutRepo, clock)
+        val calc = GoalProgressCalculator(repo, workoutRepo, clock, ZoneOffset.UTC)
         return GoalsViewModel(repo, calc)
     }
 

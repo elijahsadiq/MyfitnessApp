@@ -186,11 +186,19 @@ class GoalsViewModel(
     private fun buildItems(all: List<GoalWithProgress>): List<GoalListItem> {
         if (all.isEmpty()) return emptyList()
 
-        val (active, completed) = all.partition { !it.isComplete }
+        // Three states, mutually exclusive: Active (period current + not
+        // yet complete), Completed, Ended (period past + target unmet).
+        // The order of the checks matters — a goal that is both complete
+        // AND expired is treated as Completed (the achievement wins).
+        val active = all.filter { !it.isComplete && !it.isExpired }
+        val completed = all.filter { it.isComplete }
+        val ended = all.filter { !it.isComplete && it.isExpired }
+
         val out = mutableListOf<GoalListItem>()
 
         // "Most urgent" = smallest daysRemaining, ties broken by higher
         // progress fraction (closer to completion) then earlier createdAt.
+        // Only active goals are eligible — never completed, never expired.
         val featured = active.minWithOrNull(
             compareBy<GoalWithProgress> { it.daysRemaining }
                 .thenByDescending { it.progressFraction }
@@ -211,6 +219,10 @@ class GoalsViewModel(
         if (completed.isNotEmpty()) {
             out += GoalListItem.SectionHeader(labelRes = R.string.goals_completed_title)
             completed.forEach { out += GoalListItem.Completed(it) }
+        }
+        if (ended.isNotEmpty()) {
+            out += GoalListItem.SectionHeader(labelRes = R.string.goals_ended_title)
+            ended.forEach { out += GoalListItem.Ended(it) }
         }
         return out
     }
