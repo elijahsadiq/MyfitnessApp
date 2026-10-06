@@ -19,10 +19,11 @@
         tools:visibility="visible" />
 
     <androidx.core.widget.NestedScrollView
+        android:id="@+id/progressScroll"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:clipToPadding="false"
-        android:paddingBottom="@dimen/space_2xl">
+        android:paddingBottom="@dimen/bottom_nav_height_plus_breathing_room">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -158,21 +159,6 @@
 
                 <com.elijah.fitness.ui.progress.BarChartView
                     android:id="@+id/periodChart"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/space_sm" />
-
-                <!-- Trend chart -->
-                <TextView
-                    android:id="@+id/trendTitle"
-                    style="@style/TextAppearance.Fitness.HeadlineSm"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/section_gap"
-                    android:text="@string/progress_section_trend_chart" />
-
-                <com.elijah.fitness.ui.progress.BarChartView
-                    android:id="@+id/trendChart"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/space_sm" />

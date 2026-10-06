@@ -50,6 +50,7 @@ class WorkoutHistoryFragment : BaseFragment<FragmentWorkoutHistoryBinding>() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         applySystemBarInsets(applyBottom = false)
+        applyBottomNavInset(binding.scroll)
 
         binding.workoutList.adapter = adapter
         binding.workoutList.layoutManager = LinearLayoutManager(requireContext())

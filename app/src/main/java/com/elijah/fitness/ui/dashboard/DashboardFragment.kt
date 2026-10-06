@@ -45,6 +45,7 @@ class DashboardFragment : BaseFragment<FragmentDashboardBinding>() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         applySystemBarInsets(applyBottom = false)
+        applyBottomNavInset(binding.dashboardScroll)
 
         binding.avatar.setOnClickListener {
             findNavController().navigate(R.id.action_home_to_profile)

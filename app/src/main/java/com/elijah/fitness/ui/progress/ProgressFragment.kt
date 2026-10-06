@@ -42,7 +42,8 @@ class ProgressFragment : BaseFragment<FragmentProgressBinding>() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        applySystemBarInsets()
+        applySystemBarInsets(applyBottom = false)
+        applyBottomNavInset(binding.progressScroll)
 
         binding.periodWeek.setOnClickListener { viewModel.setPeriod(AnalyticsPeriod.WEEK) }
         binding.periodMonth.setOnClickListener { viewModel.setPeriod(AnalyticsPeriod.MONTH) }
@@ -86,18 +87,9 @@ class ProgressFragment : BaseFragment<FragmentProgressBinding>() {
         if (state.isEmpty) return
 
         binding.periodChart.setData(state.periodBars)
-        binding.trendChart.setData(state.trendBars)
-        binding.trendTitle.setText(trendTitleResFor(viewModel.filter.value))
 
         bindActivityCards(state.perActivity)
         bindPersonalRecords(state.personalRecords)
-    }
-
-    private fun trendTitleResFor(filter: ActivityFilter): Int = when (filter) {
-        ActivityFilter.RUNNING -> R.string.progress_section_trend_chart_running
-        ActivityFilter.CYCLING -> R.string.progress_section_trend_chart_cycling
-        ActivityFilter.WEIGHTLIFTING -> R.string.progress_section_trend_chart_strength
-        ActivityFilter.ALL -> R.string.progress_section_trend_chart
     }
 
     private fun bindActivityCards(perActivity: Map<ActivityType, ProgressStats>) {

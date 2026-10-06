@@ -20,10 +20,11 @@
         tools:visibility="visible" />
 
     <androidx.core.widget.NestedScrollView
+        android:id="@+id/dashboardScroll"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:clipToPadding="false"
-        android:paddingBottom="@dimen/space_2xl"
+        android:paddingBottom="@dimen/bottom_nav_height_plus_breathing_room"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintTop_toBottomOf="@id/loadingBar">
 

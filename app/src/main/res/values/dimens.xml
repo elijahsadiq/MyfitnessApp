@@ -46,6 +46,13 @@
 
     <!-- Bottom-nav & FAB -->
     <dimen name="bottom_nav_height">64dp</dimen>
+    <!--
+      Baseline bottom padding for scrollable top-level fragments so the
+      last item isn't hidden behind the BottomNavigationView. The inset
+      listener adds the system nav-bar inset on top for three-button-nav
+      devices.
+    -->
+    <dimen name="bottom_nav_height_plus_breathing_room">96dp</dimen>
     <dimen name="fab_margin_bottom">88dp</dimen>
     <dimen name="fab_margin_end">16dp</dimen>
 

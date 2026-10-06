@@ -62,35 +62,6 @@ object ProgressAnalytics {
         }
     }
 
-    /**
-     * Trend bars for the selected activity across the period. Shape:
-     *   RUNNING       → pace (seconds per km) per workout, newest right
-     *   CYCLING       → average speed (km/h) per workout, newest right
-     *   WEIGHTLIFTING → total volume per workout, newest right
-     *   null (ALL)    → active minutes per workout, newest right
-     */
-    fun trendBars(
-        workouts: List<Workout>,
-        activityType: ActivityType?,
-    ): List<BarPoint> {
-        val ordered = workouts.sortedBy { it.startTime }
-        if (ordered.isEmpty()) return emptyList()
-        val maxBars = 12
-        val sampled = if (ordered.size <= maxBars) ordered
-                      else ordered.takeLast(maxBars)
-        return sampled.map { workout ->
-            val label = workout.startTime.atZone(ZoneId.systemDefault())
-                .toLocalDate().dayOfMonth.toString()
-            val value: Double = when (activityType) {
-                ActivityType.RUNNING -> (workout as? RunningWorkout)?.paceSecondsPerKm()?.toDouble() ?: 0.0
-                ActivityType.CYCLING -> (workout as? CyclingWorkout)?.averageSpeedKmh() ?: 0.0
-                ActivityType.WEIGHTLIFTING -> (workout as? StrengthWorkout)?.totalVolumeKg() ?: 0.0
-                null -> workout.duration.toMinutes().toDouble()
-            }
-            BarPoint(label, value)
-        }
-    }
-
     /** Per-activity statistics over an already-filtered-by-period list. */
     fun statsFor(workouts: List<Workout>, activityType: ActivityType): ProgressStats {
         val subset = workouts.filter { it.type == activityType }

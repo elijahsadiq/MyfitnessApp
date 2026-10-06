@@ -153,4 +153,28 @@ abstract class BaseFragment<VB : ViewBinding> : Fragment() {
         // place on the next layout pass.
         ViewCompat.requestApplyInsets(target)
     }
+
+    /**
+     * Add just the system navigation-bar inset as additional bottom
+     * padding on [target]. Use this on the scrolling view of a top-level
+     * fragment so its content can scroll fully clear of both the app's
+     * `BottomNavigationView` (handled by a baseline `paddingBottom =
+     * bottom_nav_height_plus_breathing_room` in the layout) **and** the
+     * device's system nav bar on three-button-nav devices.
+     *
+     * Preserves [target]'s XML padding and adds the inset on top, same
+     * as [applySystemBarInsets].
+     */
+    protected fun applyBottomNavInset(target: View) {
+        val baseLeft = target.paddingLeft
+        val baseTop = target.paddingTop
+        val baseRight = target.paddingRight
+        val baseBottom = target.paddingBottom
+        ViewCompat.setOnApplyWindowInsetsListener(target) { view, insets ->
+            val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            view.setPadding(baseLeft, baseTop, baseRight, baseBottom + bars.bottom)
+            WindowInsetsCompat.CONSUMED
+        }
+        ViewCompat.requestApplyInsets(target)
+    }
 }

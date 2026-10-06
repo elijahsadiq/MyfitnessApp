@@ -258,10 +258,6 @@
     <string name="progress_empty_title">Nothing to show yet</string>
     <string name="progress_empty_body">Log a workout to start seeing your progress here.</string>
     <string name="progress_section_period_chart">Active minutes</string>
-    <string name="progress_section_trend_chart_running">Pace trend</string>
-    <string name="progress_section_trend_chart_cycling">Speed trend</string>
-    <string name="progress_section_trend_chart_strength">Volume trend</string>
-    <string name="progress_section_trend_chart">Trend</string>
     <string name="progress_section_personal_records">Personal records</string>
 
     <string name="progress_stat_total_distance">Total distance</string>

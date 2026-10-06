@@ -51,7 +51,6 @@ class ProgressViewModel(
 
     data class State(
         val periodBars: List<BarPoint>,
-        val trendBars: List<BarPoint>,
         val perActivity: Map<ActivityType, ProgressStats>,
         val personalRecords: PersonalRecords,
         val isEmpty: Boolean,
@@ -59,7 +58,6 @@ class ProgressViewModel(
         companion object {
             val EMPTY = State(
                 periodBars = emptyList(),
-                trendBars = emptyList(),
                 perActivity = emptyMap(),
                 personalRecords = PersonalRecords.EMPTY,
                 isEmpty = true,
@@ -116,10 +114,6 @@ class ProgressViewModel(
             now = now,
             zone = zone,
         )
-        val trendBars = ProgressAnalytics.trendBars(
-            workouts = if (activityType != null) inPeriod.filter { it.type == activityType } else inPeriod,
-            activityType = activityType,
-        )
         val perActivity = ActivityType.entries.associateWith { type ->
             ProgressAnalytics.statsFor(inPeriod, type)
         }
@@ -128,7 +122,6 @@ class ProgressViewModel(
         val isEmpty = inPeriod.isEmpty() && perActivity.values.all { it.workoutCount == 0 }
         return State(
             periodBars = periodBars,
-            trendBars = trendBars,
             perActivity = perActivity,
             personalRecords = personalRecords,
             isEmpty = isEmpty,
