@@ -114,25 +114,43 @@ abstract class BaseFragment<VB : ViewBinding> : Fragment() {
      * is hidden for those, so the fragment root sits beneath the status
      * bar unless we pay rent on the insets ourselves.
      *
-     * The returned [WindowInsetsCompat] is consumed in full so sibling
-     * views don't double-apply the padding.
+     * ### Preserves the view's original padding
+     * The target view's XML padding is captured once per call and used as
+     * the baseline; the inset values are **added** on top. This is the
+     * standard pattern — the previous "set padding to bars.top" shape
+     * silently wiped out any `android:paddingTop` the layout declared
+     * AND accumulated extra space when inset dispatch happened to fire
+     * through a different hierarchy path (e.g. after returning from an
+     * edit dialog that briefly showed the IME). Preserving the baseline
+     * makes the result idempotent: multiple dispatches land on the same
+     * final padding.
      *
-     * @param applyBottom when true (default), nav-bar + IME inset is also
-     *   added as bottom padding. Pass `false` when the layout already has
-     *   room for the bottom-nav rail (e.g. a `MaterialCardView` the user
-     *   won't scroll past).
+     * @param applyBottom when true (default), nav-bar inset is added to
+     *   the baseline bottom padding. Pass `false` when a sibling view
+     *   (e.g. the BottomNavigationView drawn on top) already handles
+     *   the bottom inset.
      */
     protected fun applySystemBarInsets(
         target: View = binding.root,
         applyBottom: Boolean = true,
     ) {
+        val baseLeft = target.paddingLeft
+        val baseTop = target.paddingTop
+        val baseRight = target.paddingRight
+        val baseBottom = target.paddingBottom
         ViewCompat.setOnApplyWindowInsetsListener(target) { view, insets ->
             val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            view.updatePadding(
-                top = bars.top,
-                bottom = if (applyBottom) bars.bottom else view.paddingBottom,
+            view.setPadding(
+                baseLeft,
+                baseTop + bars.top,
+                baseRight,
+                if (applyBottom) baseBottom + bars.bottom else baseBottom,
             )
             WindowInsetsCompat.CONSUMED
         }
+        // Force a dispatch so the padding applies immediately — otherwise
+        // the first frame draws without insets and the content pops into
+        // place on the next layout pass.
+        ViewCompat.requestApplyInsets(target)
     }
 }

@@ -48,12 +48,19 @@ class GoalsFragment : BaseFragment<FragmentGoalsBinding>() {
         // Status-bar inset lives on the fragment root (no shared toolbar
         // on this destination); nav-bar inset is applied to the list so
         // it clears the bottom-nav rail without a hardcoded padding.
+        //
+        // Both listeners preserve the view's XML padding and ADD the
+        // inset values on top — using `updatePadding` with a straight
+        // assignment would wipe out the list's `paddingBottom =
+        // fab_margin_bottom` AND accumulate space on re-dispatch.
         applySystemBarInsets(target = binding.root, applyBottom = false)
+        val listBaseBottom = binding.goalsList.paddingBottom
         ViewCompat.setOnApplyWindowInsetsListener(binding.goalsList) { v, insets ->
             val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            v.updatePadding(bottom = bars.bottom)
-            insets
+            v.updatePadding(bottom = listBaseBottom + bars.bottom)
+            WindowInsetsCompat.CONSUMED
         }
+        ViewCompat.requestApplyInsets(binding.goalsList)
 
         binding.goalsList.layoutManager = LinearLayoutManager(requireContext())
         binding.goalsList.adapter = adapter

@@ -285,6 +285,7 @@
     <string name="progress_pr_one_rep_max">%1$s 1RM</string>
     <string name="progress_pr_one_rep_max_value">%1$.1f kg</string>
     <string name="progress_pr_none">Keep logging workouts to unlock personal records.</string>
+    <string name="chart_empty_label">No data yet</string>
 
     <!-- Activity type labels -->
     <string name="activity_type_running">Running</string>
