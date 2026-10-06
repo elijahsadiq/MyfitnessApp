@@ -1,52 +1,205 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout
+<androidx.coordinatorlayout.widget.CoordinatorLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/background_warm"
-    android:padding="@dimen/screen_margin"
     tools:context=".ui.progress.ProgressFragment">
 
-    <ImageView
-        android:id="@+id/progressIcon"
-        android:layout_width="72dp"
-        android:layout_height="72dp"
-        android:background="@drawable/bg_icon_tile"
-        android:contentDescription="@null"
-        android:padding="16dp"
-        android:src="@drawable/ic_trending_up_24"
-        app:layout_constraintBottom_toTopOf="@id/progressTitle"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_chainStyle="packed"
-        app:tint="@color/lime_deep" />
-
-    <TextView
-        android:id="@+id/progressTitle"
-        style="@style/TextAppearance.Fitness.HeadlineSm"
-        android:layout_width="wrap_content"
+    <com.google.android.material.progressindicator.LinearProgressIndicator
+        android:id="@+id/progressLoadingBar"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="@dimen/space_lg"
-        android:text="@string/progress_placeholder_title"
-        app:layout_constraintBottom_toTopOf="@id/progressBody"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/progressIcon" />
+        android:indeterminate="true"
+        android:visibility="gone"
+        app:indicatorColor="@color/lime_deep"
+        app:trackColor="@color/surface_container_high"
+        tools:visibility="visible" />
 
-    <TextView
-        android:id="@+id/progressBody"
-        style="@style/TextAppearance.Fitness.BodyMd"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="@dimen/space_sm"
-        android:gravity="center"
-        android:text="@string/progress_placeholder_body"
-        android:textColor="@color/text_secondary"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/progressTitle" />
-</androidx.constraintlayout.widget.ConstraintLayout>
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:clipToPadding="false"
+        android:paddingBottom="@dimen/space_2xl">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingHorizontal="@dimen/screen_margin"
+            android:paddingTop="@dimen/space_xl">
+
+            <TextView
+                style="@style/TextAppearance.Fitness.HeadlineLg"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/progress_title" />
+
+            <!-- Period selector -->
+            <com.google.android.material.button.MaterialButtonToggleGroup
+                android:id="@+id/periodGroup"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_md"
+                app:singleSelection="true">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/periodWeek"
+                    style="?attr/materialButtonOutlinedStyle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/progress_period_week" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/periodMonth"
+                    style="?attr/materialButtonOutlinedStyle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/progress_period_month" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/periodYear"
+                    style="?attr/materialButtonOutlinedStyle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/progress_period_year" />
+            </com.google.android.material.button.MaterialButtonToggleGroup>
+
+            <!-- Activity filter chips -->
+            <com.google.android.material.chip.ChipGroup
+                android:id="@+id/filterChips"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_md"
+                app:singleLine="true"
+                app:singleSelection="true">
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/filterAll"
+                    style="@style/Widget.Fitness.Chip.Filter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:checkable="true"
+                    android:checked="true"
+                    android:text="@string/progress_filter_all" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/filterRunning"
+                    style="@style/Widget.Fitness.Chip.Filter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:checkable="true"
+                    android:text="@string/activity_type_running" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/filterCycling"
+                    style="@style/Widget.Fitness.Chip.Filter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:checkable="true"
+                    android:text="@string/activity_type_cycling" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/filterWeightlifting"
+                    style="@style/Widget.Fitness.Chip.Filter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:checkable="true"
+                    android:text="@string/activity_type_weightlifting" />
+            </com.google.android.material.chip.ChipGroup>
+
+            <!-- Empty state -->
+            <LinearLayout
+                android:id="@+id/progressEmpty"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/section_gap"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:padding="@dimen/space_xl"
+                android:visibility="gone"
+                tools:visibility="visible">
+
+                <TextView
+                    style="@style/TextAppearance.Fitness.HeadlineSm"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/progress_empty_title" />
+
+                <TextView
+                    style="@style/TextAppearance.Fitness.BodyMd"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_xs"
+                    android:gravity="center"
+                    android:text="@string/progress_empty_body"
+                    android:textColor="@color/text_secondary" />
+            </LinearLayout>
+
+            <!-- Content block (hidden when empty) -->
+            <LinearLayout
+                android:id="@+id/progressContent"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <!-- Period activity chart -->
+                <TextView
+                    style="@style/TextAppearance.Fitness.HeadlineSm"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/section_gap"
+                    android:text="@string/progress_section_period_chart" />
+
+                <com.elijah.fitness.ui.progress.BarChartView
+                    android:id="@+id/periodChart"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_sm" />
+
+                <!-- Trend chart -->
+                <TextView
+                    android:id="@+id/trendTitle"
+                    style="@style/TextAppearance.Fitness.HeadlineSm"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/section_gap"
+                    android:text="@string/progress_section_trend_chart" />
+
+                <com.elijah.fitness.ui.progress.BarChartView
+                    android:id="@+id/trendChart"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_sm" />
+
+                <!-- Per-activity statistics container -->
+                <LinearLayout
+                    android:id="@+id/perActivityContainer"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/section_gap"
+                    android:orientation="vertical" />
+
+                <!-- Personal records -->
+                <TextView
+                    style="@style/TextAppearance.Fitness.HeadlineSm"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/section_gap"
+                    android:text="@string/progress_section_personal_records" />
+
+                <LinearLayout
+                    android:id="@+id/personalRecordsContainer"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_sm"
+                    android:orientation="vertical" />
+            </LinearLayout>
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

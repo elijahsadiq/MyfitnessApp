@@ -246,8 +246,45 @@
     <string name="nav_dashboard">Home</string>
 
     <!-- Progress placeholder -->
-    <string name="progress_placeholder_title">Progress arrives in phase 5</string>
-    <string name="progress_placeholder_body">Charts for personal records, weekly trends and effort will land here.</string>
+    <!-- Progress tab (phase 8 step 5 rebuild). The old
+         progress_placeholder_* strings have been deleted — the Progress
+         tab now renders real charts and statistics against the stored
+         workouts. -->
+    <string name="progress_title">Progress</string>
+    <string name="progress_period_week">Week</string>
+    <string name="progress_period_month">Month</string>
+    <string name="progress_period_year">Year</string>
+    <string name="progress_filter_all">All</string>
+    <string name="progress_empty_title">Nothing to show yet</string>
+    <string name="progress_empty_body">Log a workout to start seeing your progress here.</string>
+    <string name="progress_section_period_chart">Active minutes</string>
+    <string name="progress_section_trend_chart_running">Pace trend</string>
+    <string name="progress_section_trend_chart_cycling">Speed trend</string>
+    <string name="progress_section_trend_chart_strength">Volume trend</string>
+    <string name="progress_section_trend_chart">Trend</string>
+    <string name="progress_section_personal_records">Personal records</string>
+
+    <string name="progress_stat_total_distance">Total distance</string>
+    <string name="progress_stat_total_time">Total time</string>
+    <string name="progress_stat_average_pace">Average pace</string>
+    <string name="progress_stat_best_pace">Best pace</string>
+    <string name="progress_stat_longest_run">Longest run</string>
+    <string name="progress_stat_longest_ride">Longest ride</string>
+    <string name="progress_stat_average_speed">Average speed</string>
+    <string name="progress_stat_max_speed">Fastest</string>
+    <string name="progress_stat_total_sets">Total sets</string>
+    <string name="progress_stat_total_volume">Total volume</string>
+    <string name="progress_stat_most_frequent">Most frequent</string>
+    <string name="progress_stat_value_distance">%1$.1f km</string>
+    <string name="progress_stat_value_duration_minutes">%1$d min</string>
+    <string name="progress_stat_value_volume">%1$.0f kg</string>
+
+    <string name="progress_pr_fastest_5k">Fastest 5 km</string>
+    <string name="progress_pr_longest_run">Longest run</string>
+    <string name="progress_pr_longest_ride">Longest ride</string>
+    <string name="progress_pr_one_rep_max">%1$s 1RM</string>
+    <string name="progress_pr_one_rep_max_value">%1$.1f kg</string>
+    <string name="progress_pr_none">Keep logging workouts to unlock personal records.</string>
 
     <!-- Activity type labels -->
     <string name="activity_type_running">Running</string>

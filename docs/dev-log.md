@@ -1388,3 +1388,44 @@ Would have let the project share the OkHttp instance between Coil and Retrofit. 
 **Assignment task supported**
 - **Task 4 (development)** — closes the Profile rebuild requirement end to end: avatar upload with re-encode-on-server, three editable fields with server-mirroring validation, BMI relocated from Home, lifetime totals, password-gated account delete.
 - **Task 3b (design)** — the "server-is-the-single-source-of-truth" story + the Amendment-B fix (fake-data-leak bug) are both strong material for the architecture chapter.
+
+## Step 5 — Progress and analytics screen
+**Built**
+- **`analytics/` package** — pure Kotlin, zero Android imports:
+  - `AnalyticsPeriod` (`WEEK` / `MONTH` / `YEAR`) and `ActivityFilter` (`ALL` / `RUNNING` / `CYCLING` / `WEIGHTLIFTING`, `asActivityType()` returns null for ALL).
+  - `BarPoint(label, value)` — the data point every chart in the tab consumes.
+  - `ProgressStats` — nullable-fielded per-activity numbers (totals, averages, bests). `null` means "no data for this activity in this window" so the UI hides the row instead of printing a dash.
+  - `PersonalRecords` — lifetime bests across the whole workout history.
+  - `ProgressAnalytics` — one object exposing `periodWorkouts`, `activityBars`, `trendBars`, `statsFor`, `personalRecords`:
+    - `activityBars` buckets differently per period: 7 bars (Mon..Sun) for WEEK, 4–5 bars (W1..) by in-month week index for MONTH, 12 bars (Jan..Dec) for YEAR.
+    - `trendBars` returns up to 12 values across the current workouts in time order, one per workout. Metric picked by activity filter: pace for Running, speed for Cycling, volume for Weightlifting, active minutes for ALL.
+    - `statsFor(workouts, ActivityType.RUNNING)` → total distance, total time, avg pace, best pace, longest run. CYCLING → distance + time + avg speed + max speed + longest ride. WEIGHTLIFTING → total sets + total volume + total time + most-frequent exercise.
+    - `personalRecords(allWorkouts)` → fastest-5 km pace (over runs ≥ 5 km), longest run, longest ride, Epley 1RM per exercise (`weight × (1 + reps / 30)`).
+- **8 new unit tests** (`ProgressAnalyticsTest`): week bars layout + ordering, month bars with the right week bucket, year bars indexing September correctly, running stats (total distance / average pace / best pace / longest run), cycling stats (average + max speed from totals), strength stats (most-frequent exercise), personal records across a mixed history (5 km PR excludes a 3 km run, Epley formula), empty-history edge case.
+- **`ui/progress/BarChartView.kt`** — custom `View`, zero chart dependency. One pass through the point list: compute max, normalise, draw rounded `drawRoundRect` per bar, highlight the tallest bar in `@color/lime_accent`, draw labels at the baseline. `onMeasure` falls back to `chart_default_height = 160dp` when the parent doesn't pin a height. Report-friendly: a single file the examiner can read in two minutes.
+- **`ProgressViewModel`** — combines three cold flows (workouts + period + filter) into a derived `State(periodBars, trendBars, perActivity, personalRecords, isEmpty)`. Loading/error paths covered. `refresh()` kicks the repository on init so a cold Progress-tab-open fetches.
+- **`ProgressFragment` rewrite** (replaces the `"Progress arrives in phase 5"` placeholder):
+  - `MaterialButtonToggleGroup` for the period selector; `ChipGroup` for activity filter.
+  - Two `BarChartView`s stacked: period chart (active minutes per bucket) + trend chart with a context-sensitive title (`Pace trend` / `Speed trend` / `Volume trend` / `Trend` for ALL).
+  - Per-activity card list — one `item_progress_activity_card.xml` per activity-type that has workouts in the period, each with a dynamically-inflated `item_progress_stat_row.xml` per stat. Null stats are skipped so an empty row never shows.
+  - Personal records list — same `item_progress_stat_row.xml` for consistency. Shows up to three top 1RMs; falls back to the `progress_pr_none` message when there's literally nothing to show.
+  - Empty state ("Nothing to show yet / Log a workout to see your progress here.") when the workout list is empty altogether.
+- **Strings** — ~25 new entries. Deleted `progress_placeholder_title` + `progress_placeholder_body` (phase language gone).
+- **Dimens** — `chart_default_height`, `chart_label_size`, `chart_bar_corner`.
+
+**Key design decision — one custom `BarChartView` for both the period chart and the trend chart**
+Both are "n bars with labels" shaped data. Writing a second view would have shipped two copies of the same `drawRoundRect` loop. The chart has one responsibility (render `List<BarPoint>` into a canvas) and the fragment picks what data to feed into which instance.
+
+**Rejected alternative — MPAndroidChart**
+Would have given animated charts, multiple axes, interaction out of the box. Rejected per Step 0's decision: one less dependency to resolve on the marker's machine, and a hand-written `onDraw` is directly cite-able in Task 1b as a worked example of custom view authoring. If the design ever needs multi-series overlays or pinch-to-zoom, MPAndroidChart becomes worth the dependency.
+
+**Rejected alternative — surface the aggregated numbers through the WeeklySummaryCalculator**
+Would have avoided building a second analytics layer. The problem: WeeklySummaryCalculator is scoped to "the current calendar week + body metrics for the hero card", and the Progress tab needs arbitrary windows + lifetime personal records. Separate concerns, separate home.
+
+**Verified**
+- `./gradlew assembleLocalDebug` — BUILD SUCCESSFUL.
+- `./gradlew testLocalDebugUnitTest` — **256 tests, 0 failures** (+ 8 new).
+
+**Assignment task supported**
+- **Task 4 (development)** — closes the brief's "detailed statistics for each activity" and "monitor progress over time" bullets. Pace / speed / volume trends across time + PRs are visible from day one of real data.
+- **Task 1b (design)** — `BarChartView` is the hand-written-canvas worked example the report wants. The analytics layer being pure-Kotlin + unit-tested is also strong architectural material.
