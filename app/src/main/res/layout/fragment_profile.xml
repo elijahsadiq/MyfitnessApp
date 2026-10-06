@@ -17,21 +17,57 @@
         android:paddingHorizontal="@dimen/screen_margin"
         android:paddingTop="@dimen/space_xl">
 
-        <!-- Avatar + name -->
+        <!-- Avatar + name + email -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:gravity="center_horizontal"
             android:orientation="vertical">
 
-            <ImageView
-                android:layout_width="88dp"
-                android:layout_height="88dp"
+            <FrameLayout
+                android:id="@+id/avatarContainer"
+                android:layout_width="@dimen/profile_avatar_size"
+                android:layout_height="@dimen/profile_avatar_size"
                 android:background="@drawable/bg_home_avatar"
-                android:contentDescription="@null"
-                android:padding="20dp"
-                android:src="@drawable/ic_person_24"
-                app:tint="@color/text_secondary" />
+                android:clickable="true"
+                android:contentDescription="@string/profile_avatar_content_description"
+                android:focusable="true">
+
+                <ImageView
+                    android:id="@+id/avatarImage"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:contentDescription="@null"
+                    android:scaleType="centerCrop" />
+
+                <ImageView
+                    android:id="@+id/avatarPlaceholder"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:contentDescription="@null"
+                    android:padding="@dimen/space_xl"
+                    android:src="@drawable/ic_person_24"
+                    app:tint="@color/text_secondary" />
+
+                <ProgressBar
+                    android:id="@+id/avatarProgress"
+                    style="?android:attr/progressBarStyleSmall"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:visibility="gone"
+                    tools:visibility="visible" />
+            </FrameLayout>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/removePhotoButton"
+                style="@style/Widget.Fitness.Button.Text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_sm"
+                android:text="@string/profile_remove_photo"
+                android:visibility="gone"
+                tools:visibility="visible" />
 
             <TextView
                 android:id="@+id/profileName"
@@ -46,14 +82,60 @@
                 style="@style/TextAppearance.Fitness.BodyMd"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="2dp"
+                android:layout_marginTop="@dimen/space_xs"
                 android:textColor="@color/text_secondary"
-                tools:text="alex\@example.com" />
+                tools:text="alex@example.com" />
+
+            <TextView
+                style="@style/TextAppearance.Fitness.LabelSm"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_xs"
+                android:gravity="center"
+                android:text="@string/profile_email_hint"
+                android:textAllCaps="false"
+                android:textColor="@color/text_secondary" />
         </LinearLayout>
 
-        <!-- Body weight card -->
+        <!-- Summary tiles: workouts / distance / member since -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/section_gap"
+            android:orientation="horizontal">
+
+            <include
+                android:id="@+id/tileWorkouts"
+                layout="@layout/item_profile_tile"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1" />
+
+            <Space
+                android:layout_width="@dimen/space_sm"
+                android:layout_height="1dp" />
+
+            <include
+                android:id="@+id/tileDistance"
+                layout="@layout/item_profile_tile"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1" />
+
+            <Space
+                android:layout_width="@dimen/space_sm"
+                android:layout_height="1dp" />
+
+            <include
+                android:id="@+id/tileMemberSince"
+                layout="@layout/item_profile_tile"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1" />
+        </LinearLayout>
+
+        <!-- Editable fields card -->
         <com.google.android.material.card.MaterialCardView
-            android:id="@+id/weightCard"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/section_gap"
@@ -67,44 +149,199 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="20dp">
+                android:padding="@dimen/card_padding">
+
+                <!-- Name row -->
+                <LinearLayout
+                    android:id="@+id/nameRow"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="?attr/selectableItemBackground"
+                    android:gravity="center_vertical"
+                    android:minHeight="@dimen/row_min_height"
+                    android:orientation="horizontal"
+                    android:padding="@dimen/space_sm">
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            style="@style/TextAppearance.Fitness.LabelSm"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/profile_name_label"
+                            android:textColor="@color/text_secondary" />
+
+                        <TextView
+                            android:id="@+id/nameValue"
+                            style="@style/TextAppearance.Fitness.BodyLg"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            tools:text="Alex Runner" />
+                    </LinearLayout>
+
+                    <TextView
+                        style="@style/TextAppearance.Fitness.LabelMd"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/profile_edit_action"
+                        android:textAllCaps="false"
+                        android:textColor="@color/lime_deep" />
+                </LinearLayout>
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="@dimen/stroke_hairline"
+                    android:background="@color/divider" />
+
+                <!-- Weight row -->
+                <LinearLayout
+                    android:id="@+id/weightRow"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="?attr/selectableItemBackground"
+                    android:gravity="center_vertical"
+                    android:minHeight="@dimen/row_min_height"
+                    android:orientation="horizontal"
+                    android:padding="@dimen/space_sm">
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            style="@style/TextAppearance.Fitness.LabelSm"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/profile_weight_label"
+                            android:textColor="@color/text_secondary" />
+
+                        <TextView
+                            android:id="@+id/weightValue"
+                            style="@style/TextAppearance.Fitness.BodyLg"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            tools:text="72.0 kg" />
+
+                        <TextView
+                            style="@style/TextAppearance.Fitness.LabelSm"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:text="@string/profile_weight_hint"
+                            android:textAllCaps="false"
+                            android:textColor="@color/text_secondary" />
+                    </LinearLayout>
+
+                    <TextView
+                        style="@style/TextAppearance.Fitness.LabelMd"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/profile_edit_action"
+                        android:textAllCaps="false"
+                        android:textColor="@color/lime_deep" />
+                </LinearLayout>
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="@dimen/stroke_hairline"
+                    android:background="@color/divider" />
+
+                <!-- Height row -->
+                <LinearLayout
+                    android:id="@+id/heightRow"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="?attr/selectableItemBackground"
+                    android:gravity="center_vertical"
+                    android:minHeight="@dimen/row_min_height"
+                    android:orientation="horizontal"
+                    android:padding="@dimen/space_sm">
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            style="@style/TextAppearance.Fitness.LabelSm"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/profile_height_label"
+                            android:textColor="@color/text_secondary" />
+
+                        <TextView
+                            android:id="@+id/heightValue"
+                            style="@style/TextAppearance.Fitness.BodyLg"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            tools:text="178 cm" />
+                    </LinearLayout>
+
+                    <TextView
+                        style="@style/TextAppearance.Fitness.LabelMd"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/profile_edit_action"
+                        android:textAllCaps="false"
+                        android:textColor="@color/lime_deep" />
+                </LinearLayout>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- BMI card (moved from Home per phase-8 Step 4) -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_lg"
+            app:cardBackgroundColor="@color/surface_white"
+            app:cardCornerRadius="@dimen/radius_card"
+            app:cardElevation="0dp"
+            app:contentPadding="@dimen/card_padding"
+            app:strokeColor="@color/divider"
+            app:strokeWidth="@dimen/stroke_hairline">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
 
                 <TextView
                     style="@style/TextAppearance.Fitness.LabelSm"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="@string/profile_body_weight_label"
+                    android:text="@string/profile_bmi_label"
                     android:textColor="@color/text_secondary" />
 
                 <TextView
-                    android:id="@+id/bodyWeightValue"
+                    android:id="@+id/bmiValue"
                     style="@style/TextAppearance.Fitness.HeadlineLg"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    tools:text="70.0 kg" />
+                    android:layout_marginTop="2dp"
+                    tools:text="22.4" />
 
                 <TextView
+                    android:id="@+id/bmiCategory"
                     style="@style/TextAppearance.Fitness.BodyMd"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:text="@string/profile_body_weight_hint"
-                    android:textColor="@color/text_secondary" />
+                    android:layout_marginTop="2dp"
+                    android:textColor="@color/text_secondary"
+                    tools:text="Normal" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- Placeholder editing note -->
-        <TextView
-            style="@style/TextAppearance.Fitness.BodyMd"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/space_md"
-            android:gravity="center"
-            android:text="@string/profile_editing_placeholder_body"
-            android:textColor="@color/text_secondary" />
-
-        <!-- Logout -->
+        <!-- Log out -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/logoutButton"
             style="@style/Widget.Fitness.Button.Outlined"
@@ -112,5 +349,15 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/section_gap"
             android:text="@string/profile_logout_button" />
+
+        <!-- Delete account — visually separated by extra top margin -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/deleteAccountButton"
+            style="@style/Widget.Fitness.Button.Text"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_xl"
+            android:text="@string/profile_delete_account_button"
+            android:textColor="@color/error_red" />
     </LinearLayout>
 </androidx.core.widget.NestedScrollView>

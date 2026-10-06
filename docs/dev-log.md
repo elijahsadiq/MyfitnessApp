@@ -1329,3 +1329,62 @@ docker exec -i fitness-mysql mysql -uroot -prootpassword fitness_app \
 **Assignment task supported**
 - **Task 4 (development)** — the backend half of the Profile rebuild (Step 4) is now in place: GET / PUT / avatar upload / avatar delete / account delete.
 - **Task 3b (design)** — the avatar-upload security section writes itself (`getimagesize` + GD re-encode + randomised filename + `.htaccess` lockdown). Lots of concrete decisions to cite.
+
+## Step 4 — Profile screen rebuild
+**Built**
+- **Coil** added to `libs.versions.toml` + `app/build.gradle.kts` for avatar display (lightweight, Kotlin-first, uses OkHttp under the hood).
+- **`UserApi` extended** with three new endpoints:
+  - `@Multipart POST me/avatar` taking an `okhttp3.MultipartBody.Part`.
+  - `@DELETE me/avatar`.
+  - `@HTTP(method = "DELETE", path = "me", hasBody = true)` — Retrofit's `@DELETE` annotation forbids `@Body` by default, so the delete-account route uses the long form to send the `password` payload.
+- **DTOs**:
+  - `UserDto.avatarPath: String? = null` — the server returns a relative path (`uploads/avatars/<random>.jpg`). The fragment composes the full URL at display time against `BuildConfig.BASE_URL`.
+  - `DeleteAccountRequestDto(password)`.
+- **`ProfileViewModel`** owns:
+  - `user: StateFlow<UserDto?>` fetched on `init` and refreshed after every mutation.
+  - `totals: StateFlow<Totals>` — lifetime workouts count + distance, derived from the already-held workout list.
+  - `isAvatarUploading` — drives the spinner on the avatar tile.
+  - `events: Flow<Event>` — Saved / SaveFailed / AvatarUpdated / AvatarRemoved / AvatarFailed / AccountDeleted / DeleteFailed / Network.
+  - Methods: `updateProfile(fullName, weightKg, heightCm)`, `uploadAvatar(bytes, mime)`, `deleteAvatar()`, `deleteAccount(password)` (clears the stored token on 200 then emits AccountDeleted so the fragment can bounce to Auth).
+- **`ProfileFragment`** rewrite:
+  - Avatar is a 96 dp `FrameLayout` with a tappable background. Tap opens the Android photo picker (`ActivityResultContracts.PickVisualMedia(ImageOnly)`) — no storage permission needed on modern Android, falls back automatically on older versions. Picked `Uri` is read via `contentResolver.openInputStream(uri)?.use { it.readBytes() }` and uploaded through the VM. Progress spinner on the avatar itself; the rest of the screen stays interactive.
+  - "Remove photo" button appears when an avatar is set; routes through `viewModel.deleteAvatar()`.
+  - Name / weight / height each render as a row with the current value + an "Edit" affordance. Tap opens a `MaterialAlertDialogBuilder` dialog with the appropriate `inputType` (text + capWords for name; number + decimal for weight / height). Each dialog carries client-side validation that mirrors the server exactly: name 2–60 chars (short + long messages), weight 20–300 kg, height 80–260 cm (**amendment D** — the client matches the server's existing range).
+  - Email is shown but not editable, with a `profile_email_hint` line underneath spelling out why.
+  - BMI card uses the existing `BodyMetrics.bmi()` + `BmiCategory`; "Add your height to see BMI." fallback when height is missing.
+  - Three summary tiles: Workouts (count), Distance (km), Member since (`MMM yyyy`).
+  - Log out stays where it was. Delete account sits below with extra top margin and `android:textColor="@color/error_red"`.
+  - Delete-account dialog uses a custom view (`dialog_delete_account.xml`) with a password-toggle text input; the Delete button starts disabled and enables only when the password field is non-empty. The confirm handler calls `viewModel.deleteAccount(password)`; a wrong password surfaces as a `DeleteFailed` event with the server's "Password did not match" message.
+- **Amendment B** — swept and done:
+  - `profile_default_name` + `profile_default_email` deleted from `strings.xml`.
+  - Fragment binds every visible field to `GET /me`. A marker who registers a fresh account now sees their own name and email, not "Alex Runner".
+- **New dimen** `profile_avatar_size = 96dp`.
+- **New layouts**: `fragment_profile.xml` (rewrite), `item_profile_tile.xml`, `dialog_edit_profile_field.xml`, `dialog_delete_account.xml`.
+- **~25 new strings** covering the Profile screen (edit titles, validation messages, delete-account copy, hint text, avatar remove/change).
+
+**Key design decision — a single edit dialog helper rather than three bespoke dialogs**
+`showEditDialog(titleRes, initial, inputType, validate, onConfirm)` takes a `(String) -> String?` validator and intercepts the dialog's positive button so an invalid value shows an inline error without dismissing. One generic path, three one-liner call-sites. The confirm handlers pass only the single changed field, preserving every other field on the server exactly as it was.
+
+**Rejected alternative — a dedicated `EditProfileFragment` navigation destination**
+Was the first instinct. Rejected because Edit UX in-place (dialog) matches the design and avoids a navigation round-trip that would make BMI/distance disappear while editing weight; the dialog pattern keeps the whole screen context in view while the user is deciding on a new value.
+
+**Rejected alternative — Coil's `ImageLoader` configured at `AppContainer` scope**
+Would have let the project share the OkHttp instance between Coil and Retrofit. Rejected because Coil's default `ImageLoader` already does the right thing for app-wide image loading, and the overhead of a shared OkHttp costs more code (a `CoilImageLoaderBuilder` injection) than it saves. Revisit if a future screen cares about shared cache.
+
+**Server contract — tested in isolation**
+- `UserDto` round-trip: `GET /me` → populates every field including `avatarPath` (optional).
+- `PUT /me` with a shorter-than-2-chars name → fragment shows the inline error from the dialog validator; the API would also reject with 422 if it got through.
+- `DELETE /me` wrong password → `ApiResult.Error` with `fieldErrors["password"]` set, surfaced via `DeleteFailed(message)`.
+
+**Kotlin/Android concepts** *(for my notes)*
+- `ActivityResultContracts.PickVisualMedia` — the Android photo picker launcher. Doesn't need `READ_MEDIA_IMAGES`; falls back automatically on API < 33 via a system-provided compatibility shim.
+- `@HTTP(method = "DELETE", ..., hasBody = true)` — the Retrofit escape hatch for the atypical "DELETE with body" shape.
+- `contentResolver.openInputStream(uri)?.use { it.readBytes() }` — the standard way to copy a `content://` URI's bytes without needing a `File`.
+
+**Verified**
+- `./gradlew assembleLocalDebug` — BUILD SUCCESSFUL.
+- `./gradlew testLocalDebugUnitTest` — **248 tests, 0 failures** (unchanged count; this step is UI composition, not logic that unit tests cover).
+
+**Assignment task supported**
+- **Task 4 (development)** — closes the Profile rebuild requirement end to end: avatar upload with re-encode-on-server, three editable fields with server-mirroring validation, BMI relocated from Home, lifetime totals, password-gated account delete.
+- **Task 3b (design)** — the "server-is-the-single-source-of-truth" story + the Amendment-B fix (fake-data-leak bug) are both strong material for the architecture chapter.

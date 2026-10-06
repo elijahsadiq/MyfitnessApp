@@ -86,6 +86,9 @@ dependencies {
     //     marker's machine renders it exactly as mine does.
     implementation(libs.play.services.location)
     implementation(libs.osmdroid.android)
+    // Coil for avatar display. Lightweight, Kotlin-first, uses OkHttp
+    // under the hood (same client the API traffic goes through).
+    implementation(libs.coil)
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)

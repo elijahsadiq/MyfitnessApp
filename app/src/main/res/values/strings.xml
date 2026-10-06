@@ -386,12 +386,51 @@
     <string name="log_saved_strength">Strength session saved.</string>
 
     <!-- Profile -->
-    <string name="profile_default_name">Alex Runner</string>
-    <string name="profile_default_email">alex@example.com</string>
     <string name="profile_logout_button">Log out</string>
-    <string name="profile_body_weight_label">Body weight</string>
-    <string name="profile_body_weight_value">%1$.1f kg</string>
-    <string name="profile_body_weight_hint">Used to estimate calories burned.</string>
-    <string name="profile_editing_placeholder_title">Editing your profile</string>
-    <string name="profile_editing_placeholder_body">Weight editing arrives with the accounts feature in a later update.</string>
+
+    <!-- Profile screen (phase 8 step 4 rebuild). The old
+         profile_default_name / profile_default_email strings have been
+         deleted (amendment B) — Profile now binds every field to GET /me,
+         so there's no fake-data fallback that could leak into a build. -->
+    <string name="profile_avatar_content_description">Profile picture — tap to change</string>
+    <string name="profile_change_photo">Change photo</string>
+    <string name="profile_remove_photo">Remove photo</string>
+    <string name="profile_email_hint">Email can\'t be changed from the app.</string>
+
+    <string name="profile_tile_workouts_label">Workouts</string>
+    <string name="profile_tile_distance_label">Distance</string>
+    <string name="profile_tile_distance_value">%1$.1f km</string>
+    <string name="profile_tile_member_since_label">Member since</string>
+
+    <string name="profile_name_label">Name</string>
+    <string name="profile_weight_label">Weight</string>
+    <string name="profile_weight_value">%1$.1f kg</string>
+    <string name="profile_weight_hint">Used to estimate calories burned.</string>
+    <string name="profile_height_label">Height</string>
+    <string name="profile_height_value">%1$.0f cm</string>
+    <string name="profile_edit_action">Edit</string>
+
+    <string name="profile_edit_name_title">Your name</string>
+    <string name="profile_edit_weight_title">Weight (kg)</string>
+    <string name="profile_edit_height_title">Height (cm)</string>
+    <string name="profile_edit_save">Save</string>
+    <string name="profile_edit_cancel">Cancel</string>
+
+    <string name="profile_name_error_short">Name must be at least 2 characters</string>
+    <string name="profile_name_error_long">Name must be at most 60 characters</string>
+    <string name="profile_weight_error_range">Weight must be between 20 and 300 kg</string>
+    <string name="profile_height_error_range">Height must be between 80 and 260 cm</string>
+    <string name="profile_update_failed_snackbar">Could not save changes.</string>
+    <string name="profile_update_saved_snackbar">Profile updated.</string>
+    <string name="profile_network_snackbar">No network — check your connection.</string>
+    <string name="profile_avatar_updated">Photo updated.</string>
+    <string name="profile_avatar_removed">Photo removed.</string>
+    <string name="profile_avatar_failed">Could not update the photo.</string>
+
+    <string name="profile_delete_account_button">Delete account</string>
+    <string name="profile_delete_account_title">Delete this account?</string>
+    <string name="profile_delete_account_body">This permanently deletes your account, every workout, every goal, and your profile picture. This can\'t be undone.</string>
+    <string name="profile_delete_account_password_hint">Enter your password to confirm</string>
+    <string name="profile_delete_account_confirm">Delete forever</string>
+    <string name="profile_delete_account_failed">%1$s</string>
 </resources>

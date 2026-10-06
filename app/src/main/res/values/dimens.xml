@@ -38,6 +38,7 @@
     <dimen name="row_padding_h">16dp</dimen>
     <dimen name="row_padding_v">12dp</dimen>
     <dimen name="stroke_hairline">1dp</dimen>
+    <dimen name="profile_avatar_size">96dp</dimen>
 
     <!-- Bottom-nav & FAB -->
     <dimen name="bottom_nav_height">64dp</dimen>
