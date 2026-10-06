@@ -153,70 +153,72 @@ Authorization: Bearer {{token}}
 ### Goals (phase 7)
 ### ------------------------------------------------------------------
 
-### 19. List goals (empty on a fresh DB)
+### ----------------------------------------------------------------------
+### Goals (phase 8b shape: duration_days + startDate; main + extend)
+### ----------------------------------------------------------------------
+
+### 19. List goals
 GET {{baseUrl}}/goals
 Authorization: Bearer {{token}}
 
-### 20. Create a weekly distance goal (running)
-# Period dates are DATE strings — midnight in the device's local zone.
-# On success, response includes `id`; copy it into `@goalId` below.
+### 20. Create a 30-day distance running goal
+# Client sends its local startDate; server validates it against today ±1
+# and computes `lastDay = startDate + durationDays - 1` server-side.
+# Response includes `id`; copy it into `@goalId` below.
 # @name createGoal
 POST {{baseUrl}}/goals
 Content-Type: application/json
 Authorization: Bearer {{token}}
 
 {
-  "title": "Run 20 km this week",
+  "title": "Run 50 km in 30 days",
   "activityType": "RUNNING",
   "goalType": "distance",
-  "period": "WEEK",
-  "targetValue": 20,
-  "periodStart": "2026-09-14",
-  "periodEnd": "2026-09-21"
+  "targetValue": 50,
+  "startDate": "2026-10-06",
+  "durationDays": 30
 }
 
-### 21. Create a monthly weightlifting volume goal
+### 21. Create a 21-day cycling distance goal
 POST {{baseUrl}}/goals
 Content-Type: application/json
 Authorization: Bearer {{token}}
 
 {
-  "title": "Lift 5000 kg total in September",
-  "activityType": "WEIGHTLIFTING",
-  "goalType": "volume",
-  "period": "MONTH",
-  "targetValue": 5000,
-  "periodStart": "2026-09-01",
-  "periodEnd": "2026-10-01"
+  "title": "Ride 150 km in 21 days",
+  "activityType": "CYCLING",
+  "goalType": "distance",
+  "targetValue": 150,
+  "startDate": "2026-10-06",
+  "durationDays": 21
 }
 
-### 22. Create an "any activity" workout-count goal
+### 22. Create an any-activity count goal (14 days)
 POST {{baseUrl}}/goals
 Content-Type: application/json
 Authorization: Bearer {{token}}
 
 {
-  "title": "Move 4 times this week",
+  "title": "4 sessions in 14 days",
   "activityType": null,
   "goalType": "count",
-  "period": "WEEK",
   "targetValue": 4,
-  "periodStart": "2026-09-14",
-  "periodEnd": "2026-09-21"
+  "startDate": "2026-10-06",
+  "durationDays": 14
 }
 
-### 23. Save the goal id by hand
-# Copy the `id` from response 20 above.
+### 23. Save the goal id by hand (copy the `id` from response 20).
 @goalId = 1
 
-### 24. Update a goal (change title + target — period is immutable)
+### 24. Update a goal (title + target + durationDays)
 PUT {{baseUrl}}/goals/{{goalId}}
 Content-Type: application/json
 Authorization: Bearer {{token}}
 
 {
-  "title": "Run 25 km this week",
-  "targetValue": 25
+  "title": "Run 60 km in 45 days",
+  "targetValue": 60,
+  "durationDays": 45
 }
 
 ### 25. Delete a goal
@@ -227,14 +229,8 @@ Authorization: Bearer {{token}}
 DELETE {{baseUrl}}/goals/999999
 Authorization: Bearer {{token}}
 
-### 28. Mark a goal as "completion celebrated" (server flag flip)
-###     Used by the client after firing the celebration Snackbar once,
-###     so a subsequent refresh (or a new session) won't re-celebrate.
-POST {{baseUrl}}/goals/{{goalId}}/notified
-Authorization: Bearer {{token}}
-
-### 27. Create an invalid goal — distance goal scoped to WEIGHTLIFTING
-###     (expect 422 with fields.activityType)
+### 27. Create an invalid goal — distance goal on WEIGHTLIFTING
+### expect 422 with fields.activityType
 POST {{baseUrl}}/goals
 Content-Type: application/json
 Authorization: Bearer {{token}}
@@ -243,10 +239,80 @@ Authorization: Bearer {{token}}
   "title": "This shouldn't work",
   "activityType": "WEIGHTLIFTING",
   "goalType": "distance",
-  "period": "WEEK",
   "targetValue": 10,
-  "periodStart": "2026-09-14",
-  "periodEnd": "2026-09-21"
+  "startDate": "2026-10-06",
+  "durationDays": 7
+}
+
+### 28. Mark a goal as "completion celebrated" (server flag flip)
+### Used by the client after firing the celebration Snackbar once,
+### so a subsequent refresh (or a new session) won't re-celebrate.
+POST {{baseUrl}}/goals/{{goalId}}/notified
+Authorization: Bearer {{token}}
+
+### 28a. Reject: 400-day goal (expect 422 with fields.durationDays)
+POST {{baseUrl}}/goals
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "title": "Too long",
+  "activityType": "RUNNING",
+  "goalType": "distance",
+  "targetValue": 100,
+  "startDate": "2026-10-06",
+  "durationDays": 400
+}
+
+### 28b. Reject: weight goal on RUNNING (expect 422 with fields.activityType)
+POST {{baseUrl}}/goals
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "title": "Weight on running",
+  "activityType": "RUNNING",
+  "goalType": "volume",
+  "targetValue": 1000,
+  "startDate": "2026-10-06",
+  "durationDays": 30
+}
+
+### 28c. Reject: startDate too far from server today (expect 422 with fields.startDate)
+POST {{baseUrl}}/goals
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "title": "Future goal",
+  "activityType": "RUNNING",
+  "goalType": "distance",
+  "targetValue": 20,
+  "startDate": "2026-12-01",
+  "durationDays": 14
+}
+
+### 28d. Make a goal the main goal (clears is_main on sibling goals)
+POST {{baseUrl}}/goals/{{goalId}}/main
+Authorization: Bearer {{token}}
+
+### 28e. Extend an active goal by 7 days
+POST {{baseUrl}}/goals/{{goalId}}/extend
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "days": 7
+}
+
+### 28f. Reject: extend an ended goal (point at a seeded ended-goal id;
+### expect 422 with fields.days)
+POST {{baseUrl}}/goals/5/extend
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "days": 7
 }
 
 ### ----------------------------------------------------------------------

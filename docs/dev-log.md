@@ -1569,3 +1569,57 @@ Would have let a caller pass any font resource id. Rejected because the five nam
 **Assignment task supported**
 - **Task 4 (development)** — the "visually appealing user interface" criterion. The marker's emulator will now consistently render Plus Jakarta Sans, which was previously silently falling back to Roboto.
 - **Task 1b (design)** — the "bundled vs downloadable fonts" trade-off is a tidy architectural write-up; the shared `Fonts` cache is a tiny-but-honest example of avoiding a measurable per-view parse cost.
+
+## Step 2 — Backend changes (migration + endpoints + schema/seed rewrite)
+**Built**
+- **`backend/sql/migrations/` folder** — created and moved all four historical migrations (03 goals-phase7, 04 route-points-phase8a, 05 profile-phase8, 06 goals-phase8b) out of `backend/sql/`. Only `01_schema.sql` + `02_seed.sql` remain in the directory the docker-compose service bind-mounts as `/docker-entrypoint-initdb.d`, so a fresh install never runs the historical migrations — it lands straight on the authoritative shape.
+- **`backend/sql/migrations/06_migration_goals_phase8b.sql`** — the Phase 8b migration. Walks any older DB forward to the new shape:
+  1. Adds `start_date`, `last_day`, `duration_days`, `is_main` as nullable columns (so the backfill can run).
+  2. Backfills: WEEK → `start = period_start`, `last_day = start + 6`, `duration_days = 7`. MONTH → `last_day = LAST_DAY(start)`, `duration_days = DAY(LAST_DAY(start))`.
+  3. Promotes the three new column(s) from NULL to NOT NULL.
+  4. Adds the new indices `idx_goals_user_days (user_id, start_date, last_day)` and `idx_goals_user_main (user_id, is_main)`.
+  5. Drops the old shape: `idx_goals_user_period`, `period`, `period_start`, `period_end`.
+  **Correction mid-step**: on first run, step 4 and 5 were swapped — I tried to drop the old index before the new ones existed and MySQL refused because `idx_goals_user_period` was backing the FK on `user_id`. Fixed the file so new indices are added first; verified the full file now runs clean on a replay. The live DB (which had steps 1-3 landed) had the fix applied manually (steps 4-5 of the corrected order) and is now in the final shape.
+- **`backend/sql/01_schema.sql` rewritten** — single-pass authoritative schema. Includes everything the historical migrations added (users.avatar_path, route_points, and the Phase-8b goals columns). No `period`, no `period_start`/`period_end`.
+- **`backend/sql/02_seed.sql` rewritten** — one test user + 9 workouts across all three activity types + **5 goals that hit every state the Goals screen renders**:
+  - g1 **MAIN + active**: "Run 50 km in 30 days" (RUNNING, distance, started 7 days ago)
+  - g2 active: "Ride 150 km in 21 days" (CYCLING, distance, started 5 days ago)
+  - g3 active: "Train 300 min in 14 days" (null activity, duration, started 2 days ago)
+  - g4 completed: "4 workouts this week" (null, count, `completed_notified = 1`)
+  - g5 ended: "Lift 5000 kg in 7 days" (WEIGHTLIFTING, volume, `last_day` already in the past)
+- **`backend/fitness-api/models/Goal.php`** — new column constants (`DURATION_MIN`, `DURATION_MAX`), new `create()` signature (`startDate`, `lastDate`, `durationDays`), new `update()` signature (adds `goalType`, `durationDays`, `lastDate`), new `setAsMain(id, userId)` (transactional: verify ownership → zero every row for this user → set the chosen one), new `extend(id, userId, days)`. `toDto()` now emits `durationDays` / `startDate` / `lastDay` / `isMain`.
+- **`backend/fitness-api/controllers/GoalController.php`** — rewritten. New validation path:
+  - `durationDays` 1-365
+  - `targetValue` per-type caps unchanged (distance 1000, count 100, duration 10 000, volume 500 000)
+  - **`startDate` within ±1 day of the server's UTC today** — containers run in UTC and the user is in UTC+3, so a late-night goal creation in Kuwait sends tomorrow's date which lands inside the tolerance.
+  - **activity × goalType matrix** (brief): `distance` requires RUNNING or CYCLING; `volume` requires WEIGHTLIFTING; `duration` / `count` accept RUNNING / CYCLING / WEIGHTLIFTING / null.
+  - `makeMain` → calls `Goal::setAsMain` → 404 or new DTO.
+  - `extend` → body `{days}`, rejects if goal is ended (last_day < server today) or new total > 365.
+- **`backend/fitness-api/index.php`** — two new routes: `POST /goals/{id}/main`, `POST /goals/{id}/extend`.
+- **`backend/api-tests.http`** — the phase-7 goal block replaced with Phase 8b shape (requests 19-28), plus six new rejection + action cases (28a 400-day, 28b weight-on-running, 28c startDate-too-far, 28d make-main, 28e extend, 28f extend-ended).
+- **`backend/README.md`** — directory tree updated to reflect `sql/migrations/`. XAMPP users now import exactly two files (`01_schema.sql` + `02_seed.sql`). Walk-an-old-DB-forward recipe adjusted to point into `sql/migrations/`.
+
+**Key design decision — authoritative-schema model**
+The old approach ran every migration file in sequence on every fresh install, which meant `01_schema.sql` + the migrations had to agree. That's an easy place to drift. The new approach keeps `01_schema.sql` as the single source of truth for a fresh install and treats migrations as "walk an existing DB forward to the current `01_schema.sql`". Migrations never run on a fresh install because the folder isn't mounted; `docker compose down -v && docker compose up -d` produces exactly what `01_schema.sql` describes.
+
+**Rejected alternative — `ADD COLUMN IF ABSENT` on `01_schema.sql`**
+Would have let one file serve both roles. Rejected because the "walk forward" case needs to do data migration (the WEEK → 7 days / MONTH → DAY(LAST_DAY) backfill), which isn't expressible as a column-add. Splitting the roles cleanly is simpler to reason about.
+
+**Rejected alternative — single-main constraint enforced via a trigger**
+Would have given the "one main per user" invariant some belt-and-braces at the DB layer. Rejected because the transactional `setAsMain` (clear-all-for-user, then set-the-one) in a single BEGIN/COMMIT already covers the only concurrency path (two POSTs racing), and triggers are the kind of hidden behaviour the written report would rather not have to defend.
+
+**Fresh-install proof**
+Ran `docker compose down -v && docker compose up -d` after the file move. Final state:
+- 6 tables (`users`, `auth_tokens`, `workouts`, `strength_sets`, `route_points`, `goals`).
+- `goals` table has the Phase 8b shape (no `period`/`period_start`/`period_end`, new `start_date`/`last_day`/`duration_days`/`is_main`).
+- 5 seeded goals, exactly 1 with `is_main = 1`.
+- 9 workouts across 3 activity types.
+- `GET /goals` returns the new DTO shape with `durationDays` / `startDate` / `lastDay` / `isMain` populated.
+- Behavioural checks pass against the live API: 400-day goal → 422 `fields.durationDays`; weight-on-RUNNING → 422 `fields.activityType`; `POST /goals/5/extend` on the ended seed → 422 `fields.days`; `POST /goals/2/main` moves `is_main` from goal 1 → 2 transactionally with exactly one row where `is_main = 1` afterwards.
+
+**Known caveat (resolved in Step 4)**
+The Android client's `GoalDto` / `CreateGoalRequestDto` / `UpdateGoalRequestDto` still carry the old `period` / `periodStart` / `periodEnd` fields; the app will fail at runtime when it tries to talk to this server. Steps 3-4 update the Kotlin side to match. Tests pass because they use fake repositories.
+
+**Assignment task supported**
+- **Task 4 (development)** — the backend half of the Goals redesign.
+- **Task 1b (design)** — the "authoritative schema + migrations folder" split, the "server validates ±1 day on startDate" time-zone story, and the transactional single-main invariant are all tidy architectural write-ups.

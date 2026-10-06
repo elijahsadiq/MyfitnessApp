@@ -1,8 +1,19 @@
--- Fitness API — schema.
--- Runs on both MySQL 8.4 (Docker) and MariaDB 10.x (XAMPP): utf8mb4 with
--- utf8mb4_unicode_ci is declared explicitly on every table so the XAMPP
--- import doesn't fall back to MySQL 8's utf8mb4_0900_ai_ci default (which
--- MariaDB rejects).
+-- Fitness API — schema (phase 8b).
+--
+-- This file is the AUTHORITATIVE schema for a fresh install. The docker
+-- compose service mounts `backend/sql/` as /docker-entrypoint-initdb.d,
+-- so this file + 02_seed.sql are the only two files MySQL executes on
+-- `docker compose down -v && docker compose up -d`. One-time migrations
+-- that walked the historical shape live separately in
+-- backend/sql/migrations/ and are NOT auto-run — they only exist so a
+-- marker can rebuild the shape step-by-step if they want to inspect it.
+--
+-- Runs on both MySQL 8.4 (Docker) and MariaDB 10.x (XAMPP): utf8mb4
+-- with utf8mb4_unicode_ci is declared explicitly on every table so the
+-- XAMPP import doesn't fall back to MySQL 8's utf8mb4_0900_ai_ci default
+-- (which MariaDB rejects).
+--
+-- XAMPP users: import 01_schema.sql then 02_seed.sql — nothing else.
 
 CREATE DATABASE IF NOT EXISTS fitness_app
     DEFAULT CHARACTER SET utf8mb4
@@ -12,6 +23,9 @@ USE fitness_app;
 
 -- ---------------------------------------------------------------------
 -- users
+--   avatar_path points at a file under fitness-api/uploads/avatars/,
+--   stored relatively so the API moves between hosts (Docker, XAMPP)
+--   without URL fixups. NULL = no custom avatar.
 -- ---------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS users (
     id              BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -20,6 +34,7 @@ CREATE TABLE IF NOT EXISTS users (
     full_name       VARCHAR(120) NOT NULL,
     weight_kg       DECIMAL(5,2) NULL,
     height_cm       DECIMAL(5,2) NULL,
+    avatar_path     VARCHAR(255) NULL,
     created_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     UNIQUE KEY uq_users_email (email)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -42,10 +57,10 @@ CREATE TABLE IF NOT EXISTS auth_tokens (
 
 -- ---------------------------------------------------------------------
 -- workouts
---   client_uuid is the device-generated identity from phase 1. The unique
---   (user_id, client_uuid) key makes the phase-4 sync idempotent — the same
---   local UUID from the client can be POSTed twice and only the first row
---   survives.
+--   client_uuid is the device-generated identity. The unique
+--   (user_id, client_uuid) key makes POST /workouts idempotent — the
+--   same local UUID from the client can be POSTed twice and only the
+--   first row survives.
 -- ---------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS workouts (
     id                BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -83,16 +98,40 @@ CREATE TABLE IF NOT EXISTS strength_sets (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ---------------------------------------------------------------------
--- goals (phase 7)
---   Phase 7 owns four goal_type values: 'distance', 'count', 'duration',
---   'volume'. activity_type is nullable so a goal can apply to the whole
---   user ("any activity") or to one activity. period is either 'WEEK'
---   or 'MONTH' (kept as an enum so the API never has to infer it from
---   the date pair). period_start/period_end are DATEs interpreted as
---   midnight in the device's zone — progress is calculated client-side
---   from workouts the app has already loaded, so the server never needs
---   to reason about time zones. completed_notified is flipped once so
---   the client only celebrates a completion the first time.
+-- route_points (phase 8a — geolocation)
+--   Ordered polyline per GPS workout, cascade-deleted with its workout.
+--   DECIMAL(9,6) gives ~11 cm precision at the equator.
+-- ---------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS route_points (
+    id            BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    workout_id    BIGINT UNSIGNED NOT NULL,
+    seq           INT UNSIGNED NOT NULL,
+    latitude      DECIMAL(9,6) NOT NULL,
+    longitude     DECIMAL(9,6) NOT NULL,
+    elapsed_ms    BIGINT UNSIGNED NOT NULL,
+    accuracy_m    DECIMAL(6,2) NULL,
+    recorded_at   DATETIME NOT NULL,
+    CONSTRAINT fk_route_points_workout
+        FOREIGN KEY (workout_id) REFERENCES workouts (id) ON DELETE CASCADE,
+    UNIQUE KEY uq_route_points_workout_seq (workout_id, seq)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ---------------------------------------------------------------------
+-- goals (phase 8b shape)
+--   Goals cover a chosen number of days (duration_days: 1 to 365)
+--   starting on start_date. last_day is the LAST day included — so a
+--   7-day goal starting Mon has last_day = Sun of the same week.
+--   is_main picks a single "featured" goal per user; the server enforces
+--   uniqueness in a transaction (MySQL can't express "one row per user
+--   where is_main = 1" as a constraint).
+--
+--   activity_type is nullable (NULL = any activity). goal_type is one
+--   of 'distance', 'count', 'duration', 'volume' — the Kotlin side
+--   splits that into DistanceGoal / WorkoutCountGoal / DurationGoal /
+--   StrengthVolumeGoal subclasses.
+--
+--   completed_notified is flipped the first time the client celebrates
+--   this goal reaching 100% so a cold-start fetch doesn't re-fire.
 -- ---------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS goals (
     id                 BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -100,15 +139,17 @@ CREATE TABLE IF NOT EXISTS goals (
     title              VARCHAR(120) NOT NULL DEFAULT '',
     activity_type      ENUM('RUNNING', 'CYCLING', 'WEIGHTLIFTING') NULL,
     goal_type          VARCHAR(40) NOT NULL,
-    period             ENUM('WEEK', 'MONTH') NOT NULL DEFAULT 'WEEK',
     target_value       DECIMAL(10,2) NOT NULL,
-    period_start       DATE NOT NULL,
-    period_end         DATE NOT NULL,
+    start_date         DATE NOT NULL,
+    last_day           DATE NOT NULL,
+    duration_days      SMALLINT UNSIGNED NOT NULL,
     completed_notified TINYINT(1) NOT NULL DEFAULT 0,
+    is_main            TINYINT(1) NOT NULL DEFAULT 0,
     created_at         TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at         TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
                                             ON UPDATE CURRENT_TIMESTAMP,
     CONSTRAINT fk_goals_user
         FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
-    KEY idx_goals_user_period (user_id, period_start, period_end)
+    KEY idx_goals_user_days (user_id, start_date, last_day),
+    KEY idx_goals_user_main (user_id, is_main)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

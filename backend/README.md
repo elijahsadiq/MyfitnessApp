@@ -6,21 +6,27 @@ XAMPP + phpMyAdmin combination the marker is expected to use.
 
 ```
 backend/
-├── docker-compose.yml                        Dev stack (mysql + php-apache + phpmyadmin)
-├── docker/php/                               Custom PHP-Apache image (pdo_mysql, mod_rewrite, GD)
+├── docker-compose.yml      Dev stack (mysql + php-apache + phpmyadmin)
+├── docker/php/             Custom PHP-Apache image (pdo_mysql, mod_rewrite, GD)
 ├── sql/
-│   ├── 01_schema.sql                         Phase-1 tables (users, auth_tokens, workouts, strength_sets, goals)
-│   ├── 02_seed.sql                           Test user + 9 workouts + 3 in-progress goals
-│   ├── 03_migration_goals_phase7.sql         Phase 7 — adds goals.title / period / completed_notified
-│   ├── 04_migration_route_points_phase8a.sql Phase 8a — adds route_points (GPS)
-│   └── 05_migration_profile_phase8.sql       Phase 8  — adds users.avatar_path
+│   ├── 01_schema.sql       Authoritative schema for a fresh install (users,
+│   │                       auth_tokens, workouts, strength_sets, route_points, goals)
+│   ├── 02_seed.sql         Test user + 9 workouts across types + 5 goals
+│   │                       (main active, two more active, completed, ended)
+│   └── migrations/         Historical migrations, NOT auto-run on a fresh install.
+│                           Only applied against an existing DB that pre-dates
+│                           the shape in 01_schema.sql.
+│       ├── 03_migration_goals_phase7.sql
+│       ├── 04_migration_route_points_phase8a.sql
+│       ├── 05_migration_profile_phase8.sql
+│       └── 06_migration_goals_phase8b.sql
 ├── fitness-api/
-│   ├── index.php                             Front controller
-│   ├── core/                                 Router, Response, Auth, Validator, Database
-│   ├── controllers/                          Auth / User / Workout / Goal
-│   ├── models/                               User / Workout / Goal (PDO data mappers)
-│   └── uploads/avatars/                      Avatar storage + hardened .htaccess
-└── api-tests.http                            42 end-to-end request cases
+│   ├── index.php           Front controller
+│   ├── core/               Router, Response, Auth, Validator, Database
+│   ├── controllers/        Auth / User / Workout / Goal
+│   ├── models/             User / Workout / Goal (PDO data mappers)
+│   └── uploads/avatars/    Avatar storage + hardened .htaccess
+└── api-tests.http          End-to-end request cases
 ```
 
 The PHP is deliberately **framework-free and Composer-free**: the marker
@@ -53,20 +59,21 @@ Reset the database (drops the named volume and re-seeds from scratch):
 docker compose down -v && docker compose up -d
 ```
 
-Apply the phase-7, phase-8a, and phase-8 migrations against a running DB
-without wiping it:
+Migrations in `sql/migrations/` are only ever needed if you're walking
+an older DB forward to the current shape. **A fresh install never runs
+them** — `01_schema.sql` already produces the final shape in one pass.
+If you do need to walk an old DB forward:
 
 ```bash
 docker exec -i fitness-mysql mysql -uroot -prootpassword fitness_app \
-    < sql/03_migration_goals_phase7.sql
+    < sql/migrations/03_migration_goals_phase7.sql
 docker exec -i fitness-mysql mysql -uroot -prootpassword fitness_app \
-    < sql/04_migration_route_points_phase8a.sql
+    < sql/migrations/04_migration_route_points_phase8a.sql
 docker exec -i fitness-mysql mysql -uroot -prootpassword fitness_app \
-    < sql/05_migration_profile_phase8.sql
+    < sql/migrations/05_migration_profile_phase8.sql
+docker exec -i fitness-mysql mysql -uroot -prootpassword fitness_app \
+    < sql/migrations/06_migration_goals_phase8b.sql
 ```
-
-Each migration is idempotent (`ADD COLUMN IF ABSENT` + `CREATE TABLE IF
-NOT EXISTS`), so re-running them is safe.
 
 The Android emulator reaches the host via `10.0.2.2`, so the emulator
 base URL is:
@@ -86,13 +93,13 @@ Tested against XAMPP 8.2 on Windows 10 with MariaDB 10.4.
 2. Copy the entire `backend/fitness-api/` folder into XAMPP's `htdocs`
    directory (e.g. `/Applications/XAMPP/htdocs/fitness-api/` on macOS or
    `C:\xampp\htdocs\fitness-api\` on Windows).
-3. Open <http://localhost/phpmyadmin/> and import the SQL files **in
-   order** via the Import tab:
-   - `sql/01_schema.sql`
-   - `sql/03_migration_goals_phase7.sql`
-   - `sql/04_migration_route_points_phase8a.sql`
-   - `sql/05_migration_profile_phase8.sql`
-   - `sql/02_seed.sql`      *(must come last — depends on the migrations)*
+3. Open <http://localhost/phpmyadmin/> and import **two files only, in
+   this order**, via the Import tab:
+   - `sql/01_schema.sql` *(authoritative schema — includes the goals,
+     avatar and route-points columns in one pass; no migrations needed)*
+   - `sql/02_seed.sql` *(test user + workouts + goals)*
+
+   Files under `sql/migrations/` are historical; do not import them.
 4. The API is now at `http://localhost/fitness-api/`. The Android
    emulator reaches it at:
 

@@ -1,19 +1,20 @@
--- Fitness API — seed data.
+-- Fitness API — seed data (phase 8b).
 --
--- One test user + 9 workouts spread across the last 14 days, covering all
--- three activity types. Times are relative to the *first* container boot
--- (DATE_SUB(NOW(), INTERVAL X DAY)), so re-seeding after a `docker compose
--- down -v` gives you a fresh 14-day window centred on today.
+-- One test user + 9 workouts spread across the last 14 days + 5 goals
+-- (one main + two other active + one completed + one ended), so a fresh
+-- Docker install shows a fully populated app on first open.
+--
+-- All relative dates are DATE_SUB(CURDATE(), INTERVAL n DAY) / NOW() so
+-- the seed stays "today-aware" — re-seeding after `docker compose down -v`
+-- gives you a fresh window centred on whatever day you ran it on.
 
 USE fitness_app;
 
 -- ---------------------------------------------------------------------
 -- Test user
 --   email:     alex@example.com
---   password:  Password123
---   The hash is a real bcrypt cost-10 digest of "Password123" generated
---   with Python's bcrypt library; PHP's password_verify() accepts both
---   $2b$ and $2y$ prefixes since PHP 5.5.
+--   password:  Password123   (bcrypt cost 10, "$2b$..." → password_verify-accepted)
+--   Weight + height set so BMI, kcal and the insight card show real data.
 -- ---------------------------------------------------------------------
 INSERT INTO users (email, password_hash, full_name, weight_kg, height_cm) VALUES
     ('alex@example.com',
@@ -23,7 +24,7 @@ INSERT INTO users (email, password_hash, full_name, weight_kg, height_cm) VALUES
 SET @alex_id = LAST_INSERT_ID();
 
 -- ---------------------------------------------------------------------
--- Distance workouts (running + cycling)
+-- Workouts (feed goal progress + Home + Progress + Insights)
 -- ---------------------------------------------------------------------
 INSERT INTO workouts
     (user_id, client_uuid, activity_type, start_time, duration_seconds, distance_meters, notes)
@@ -47,11 +48,6 @@ VALUES
      DATE_SUB(NOW(), INTERVAL 11 DAY) - INTERVAL 4 HOUR, 2400, 13600.00,
      'Commute');
 
--- ---------------------------------------------------------------------
--- Strength workouts
---   Each one is created, its LAST_INSERT_ID captured into a variable, then
---   its strength_sets are inserted against that variable.
--- ---------------------------------------------------------------------
 INSERT INTO workouts
     (user_id, client_uuid, activity_type, start_time, duration_seconds, distance_meters, notes)
 VALUES
@@ -94,27 +90,55 @@ INSERT INTO strength_sets (workout_id, set_order, exercise_name, reps, weight_kg
     (@w_lift3, 3, 'Bench Press', 5, 65.00);
 
 -- ---------------------------------------------------------------------
--- Goals (phase 7 feature; seeded so a fresh clone shows the Goals tab
--- populated out of the box — the submission marker should see at least
--- two in-progress goals, which this gives them).
+-- Goals (phase 8b shape — duration_days + start_date + last_day + is_main)
 --
--- period_start/period_end are DATEs (midnight in the device zone), so we
--- derive them from CURDATE(). The anchors below guarantee the current
--- calendar week + month are covered regardless of what day the examiner
--- runs the seed.
+-- Five goals so a fresh install hits every state the Goals screen renders:
+--
+--   g1  MAIN · active     Run 50 km in 30 days      (started 7 days ago)
+--   g2       · active     Ride 150 km in 21 days    (started 5 days ago)
+--   g3       · active     Train 300 min in 14 days  (started 2 days ago)
+--   g4       · completed  4 workouts in 7 days      (started 10 days ago, target met)
+--   g5       · ended      Lift 5000 kg in 7 days    (started 20 days ago, target not met)
 -- ---------------------------------------------------------------------
 INSERT INTO goals
-    (user_id, title, activity_type, goal_type, period, target_value, period_start, period_end)
+    (user_id, title, activity_type, goal_type,
+     target_value, start_date, last_day, duration_days,
+     completed_notified, is_main)
 VALUES
-    (@alex_id, 'Run 20 km this week', 'RUNNING', 'distance', 'WEEK',
-     20.00,
-     DATE_SUB(CURDATE(), INTERVAL WEEKDAY(CURDATE()) DAY),
-     DATE_SUB(CURDATE(), INTERVAL WEEKDAY(CURDATE()) DAY) + INTERVAL 7 DAY),
-    (@alex_id, 'Lift 5000 kg this month', 'WEIGHTLIFTING', 'volume', 'MONTH',
-     5000.00,
-     DATE_SUB(CURDATE(), INTERVAL (DAY(CURDATE()) - 1) DAY),
-     LAST_DAY(CURDATE()) + INTERVAL 1 DAY),
-    (@alex_id, 'Move 4 times this week', NULL, 'count', 'WEEK',
+    (@alex_id, 'Run 50 km in 30 days', 'RUNNING', 'distance',
+     50.00,
+     DATE_SUB(CURDATE(), INTERVAL 7 DAY),
+     DATE_ADD(DATE_SUB(CURDATE(), INTERVAL 7 DAY), INTERVAL 29 DAY),
+     30,
+     0, 1),
+
+    (@alex_id, 'Ride 150 km in 21 days', 'CYCLING', 'distance',
+     150.00,
+     DATE_SUB(CURDATE(), INTERVAL 5 DAY),
+     DATE_ADD(DATE_SUB(CURDATE(), INTERVAL 5 DAY), INTERVAL 20 DAY),
+     21,
+     0, 0),
+
+    (@alex_id, 'Train 300 min in 14 days', NULL, 'duration',
+     300.00,
+     DATE_SUB(CURDATE(), INTERVAL 2 DAY),
+     DATE_ADD(DATE_SUB(CURDATE(), INTERVAL 2 DAY), INTERVAL 13 DAY),
+     14,
+     0, 0),
+
+    -- Completed: completed_notified = 1 so the client doesn't re-fire
+    -- the celebration Snackbar on first open.
+    (@alex_id, '4 workouts this week', NULL, 'count',
      4.00,
-     DATE_SUB(CURDATE(), INTERVAL WEEKDAY(CURDATE()) DAY),
-     DATE_SUB(CURDATE(), INTERVAL WEEKDAY(CURDATE()) DAY) + INTERVAL 7 DAY);
+     DATE_SUB(CURDATE(), INTERVAL 10 DAY),
+     DATE_ADD(DATE_SUB(CURDATE(), INTERVAL 10 DAY), INTERVAL 6 DAY),
+     7,
+     1, 0),
+
+    -- Ended: last_day = CURDATE() - 14, so it's firmly in the past.
+    (@alex_id, 'Lift 5000 kg in 7 days', 'WEIGHTLIFTING', 'volume',
+     5000.00,
+     DATE_SUB(CURDATE(), INTERVAL 20 DAY),
+     DATE_ADD(DATE_SUB(CURDATE(), INTERVAL 20 DAY), INTERVAL 6 DAY),
+     7,
+     0, 0);
