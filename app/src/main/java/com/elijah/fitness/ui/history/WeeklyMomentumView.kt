@@ -9,6 +9,7 @@ import android.util.TypedValue
 import android.view.View
 import androidx.core.content.ContextCompat
 import com.elijah.fitness.R
+import com.elijah.fitness.util.Fonts
 
 /**
  * Custom [View] used inside the History "Weekly momentum" dark card.
@@ -35,13 +36,13 @@ class WeeklyMomentumView @JvmOverloads constructor(
         color = 0xB3FFFFFF.toInt() // white 70%
         textAlign = Paint.Align.CENTER
         textSize = spToPx(11f)
-        typeface = android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.NORMAL)
+        typeface = Fonts.medium(context)
     }
     private val activeLabelPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = ContextCompat.getColor(context, R.color.lime_accent)
         textAlign = Paint.Align.CENTER
         textSize = spToPx(11f)
-        typeface = android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.BOLD)
+        typeface = Fonts.bold(context)
     }
 
     private var normalisedValues: FloatArray = FloatArray(7)  // 0..1

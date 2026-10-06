@@ -10,6 +10,7 @@ import android.view.View
 import androidx.core.content.ContextCompat
 import com.elijah.fitness.R
 import com.elijah.fitness.analytics.BarPoint
+import com.elijah.fitness.util.Fonts
 import kotlin.math.min
 
 /**
@@ -74,18 +75,23 @@ class BarChartView @JvmOverloads constructor(
         color = ContextCompat.getColor(context, R.color.text_secondary)
         textAlign = Paint.Align.CENTER
         textSize = context.resources.getDimension(R.dimen.chart_label_size)
+        typeface = Fonts.medium(context)
     }
     private val valuePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = ContextCompat.getColor(context, R.color.text_primary)
         textAlign = Paint.Align.CENTER
         textSize = context.resources.getDimension(R.dimen.chart_value_size)
-        isFakeBoldText = true
+        // Semi-bold weight comes from the font file, not the paint's
+        // fake-bold flag — the Plus Jakarta Sans SemiBold file renders
+        // more cleanly than a synthetic-bold Medium at small sizes.
+        typeface = Fonts.semibold(context)
     }
 
     private val emptyPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = ContextCompat.getColor(context, R.color.text_secondary)
         textAlign = Paint.Align.CENTER
         textSize = context.resources.getDimension(R.dimen.chart_label_size)
+        typeface = Fonts.medium(context)
     }
 
     private val maxBarWidthPx = MAX_BAR_WIDTH_DP * context.resources.displayMetrics.density

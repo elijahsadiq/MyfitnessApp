@@ -1524,3 +1524,48 @@ The written report can now cover:
 4. Pure-Kotlin `ProgressAnalytics` + custom `BarChartView` (`onDraw` worked example for Task 1b).
 5. Priority-ordered `InsightEngine` with five rules + "enough data" fallback.
 6. Full assignment-coverage map in `docs/assignment-coverage.md`.
+
+---
+
+# Phase 8b — Goals redesign + bundled font
+
+## Step 1 — Plus Jakarta Sans bundled across the app
+**Built**
+- **TTF files bundled.** The five static Plus Jakarta Sans weights from Google Fonts now live beside the layout family XML:
+  - `res/font/plus_jakarta_sans_regular.ttf`     (weight 400)
+  - `res/font/plus_jakarta_sans_medium.ttf`      (weight 500)
+  - `res/font/plus_jakarta_sans_semibold.ttf`    (weight 600)
+  - `res/font/plus_jakarta_sans_bold.ttf`        (weight 700)
+  - `res/font/plus_jakarta_sans_extrabold.ttf`   (weight 800)
+- **Downloadable XMLs deleted in the same commit** (`plus_jakarta_sans.xml`, `_medium`, `_semibold`, `_bold`, `_extrabold`) along with the Google Fonts provider certs (`values/font_certs.xml`) and the `preloaded_fonts` meta-data array (`values/preloaded_fonts.xml`). `AndroidManifest.xml` never referenced a `preloaded_fonts` meta-data element, so no manifest edit was needed.
+- **`plus_jakarta_sans.xml` reinstated as a bundled `<font-family>`** mapping each `android:fontWeight` (and matching `app:fontWeight`) to its TTF. Material 3 widgets that pick a weight dynamically (toolbars, buttons, chips, Snackbars, dialog titles, tab labels) resolve to this family via the theme's `fontFamily` attribute. The `TextAppearance.Fitness.*` styles still reference the specific weight files directly — that works reliably below API 28 where font-family weight resolution is unreliable.
+- **Theme-level Material 3 type-scale overrides.** `Theme.MyFitnessApp` now overrides every `textAppearanceDisplay*` / `Headline*` / `Title*` / `Body*` / `Label*` attribute to resolve to a `TextAppearance.Fitness.*` style. That's what makes the font land on components we never style ourselves — the Snackbar body, `MaterialAlertDialog` title + body + buttons, chip label, tab label, toolbar title.
+- **`util/Fonts.kt`** — shared `Typeface` cache for custom views that paint text through `android.graphics.Paint`. `ResourcesCompat.getFont` parses the TTF each call, so three custom views all asking for Medium would parse the font three times. The cache (process-scoped `ConcurrentHashMap`) ensures one parse per weight. Five one-liner accessors (`Fonts.regular/medium/semibold/bold/extrabold(context)`).
+- **Custom views updated**:
+  - `ui/progress/BarChartView` — label paint uses `Fonts.medium`, value paint uses `Fonts.semibold` (replaces the previous `isFakeBoldText = true` fake-bolding; a real SemiBold TTF renders cleaner at 11 sp).
+  - `ui/history/WeeklyMomentumView` — label + active-label paints swap `Typeface.create("sans-serif-medium", …)` (which was resolving to Roboto on devices without downloadable-fonts support) for `Fonts.medium` and `Fonts.bold`.
+  - `ui/dashboard/WeekStripView` — audited; renders its labels through TextViews inside day-cell layouts, so the theme-level `fontFamily` already covers it. No change needed; noting the audit here so the next reader knows it was deliberately skipped.
+- **`docs/licenses/plus-jakarta-sans/OFL.txt`** — SIL Open Font License 1.1 verbatim copy. README gets a Third-party licences section pointing at it.
+
+**Key design decision — bundle instead of downloadable fonts**
+Downloadable Fonts route through `com.google.android.gms.fonts` (Google Play Services). On a marker's emulator — or a device where GMS is older, where the first fetch loses a race with the first inflate, or where a previous failed fetch is cached — Android silently falls back to `sans-serif` and the fallback *sticks* for that resource's lifetime. That's exactly the symptom the user flagged: screens were rendering in Roboto because the fetch wasn't landing in time. Bundling makes the font a resource present at inflate time with zero runtime fetch. The brief weights "bulletproof on the marker's emulator" above the ~0.6 MB APK-size cost of the five TTFs, so bundle wins.
+
+**Rejected alternative — bundle only Regular + SemiBold, synthesise the rest**
+Would have shaved ~0.4 MB off the APK by relying on `textStyle="bold"` to produce a bolder weight on the fly. Rejected because synthetic bolding on narrow weights produces visibly rougher letters at small sizes (particularly the chart value labels), and because the design uses weight 800 (ExtraBold) which no synthesis technique can convincingly fake from Regular.
+
+**Rejected alternative — one `Fonts.get(context, R.font.*)` entry point**
+Would have let a caller pass any font resource id. Rejected because the five named helpers (`regular`, `medium`, `semibold`, `bold`, `extrabold`) make miscall-site weight choices self-documenting at the call site, and the paired resource ids never need to spread beyond `Fonts.kt`.
+
+**Kotlin/Android concepts** *(for my notes)*
+- `android:fontWeight` on a `<font>` node inside `<font-family>` tells Material 3 widgets which TTF to pick when they resolve a weight. The `app:` variant is for backwards compat on API < 26.
+- `ResourcesCompat.getFont(ctx, R.font.*)` is the one safe path to load a bundled TTF; constructing `Typeface.createFromAsset(assets, …)` doesn't work for `res/font/` resources.
+
+**Verified**
+- `./gradlew assembleLocalDebug` — BUILD SUCCESSFUL.
+- `./gradlew testLocalDebugUnitTest` — **264 tests, 0 failures**.
+- `res/font/` now holds five TTFs and one family XML; the four downloadable XMLs and both values-side resources (`font_certs.xml`, `preloaded_fonts.xml`) are gone.
+- On-device verification is deferred to the end of the phase; the font should now show on Toolbar / BottomNav / dialogs / Snackbars / chart labels without any further wiring.
+
+**Assignment task supported**
+- **Task 4 (development)** — the "visually appealing user interface" criterion. The marker's emulator will now consistently render Plus Jakarta Sans, which was previously silently falling back to Roboto.
+- **Task 1b (design)** — the "bundled vs downloadable fonts" trade-off is a tidy architectural write-up; the shared `Fonts` cache is a tiny-but-honest example of avoiding a measurable per-view parse cost.

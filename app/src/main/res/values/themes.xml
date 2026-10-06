@@ -55,8 +55,34 @@
         <item name="android:statusBarColor">@color/background_warm</item>
         <item name="android:windowLightStatusBar">true</item>
 
-        <!-- Type: applied via TextAppearance.Fitness.* per-widget. -->
+        <!-- Type: applied via TextAppearance.Fitness.* per-widget. The
+             theme-level family handles system components (Toolbar title,
+             Snackbar text, dialog titles, chip labels, tab labels, etc.)
+             that don't go through our own text appearances. -->
         <item name="fontFamily">@font/plus_jakarta_sans</item>
         <item name="android:fontFamily">@font/plus_jakarta_sans</item>
+
+        <!--
+          Phase 8b — override every Material 3 type-scale slot to resolve
+          to a Fitness.* appearance. Material widgets look up these
+          attributes for their own text (Snackbar body, dialog title,
+          chip label, etc.), so overriding them here is what makes the
+          font land on components we don't style ourselves.
+        -->
+        <item name="textAppearanceDisplayLarge">@style/TextAppearance.Fitness.DisplayMetric</item>
+        <item name="textAppearanceDisplayMedium">@style/TextAppearance.Fitness.DisplayMetric</item>
+        <item name="textAppearanceDisplaySmall">@style/TextAppearance.Fitness.HeadlineLg</item>
+        <item name="textAppearanceHeadlineLarge">@style/TextAppearance.Fitness.HeadlineLg</item>
+        <item name="textAppearanceHeadlineMedium">@style/TextAppearance.Fitness.HeadlineLg</item>
+        <item name="textAppearanceHeadlineSmall">@style/TextAppearance.Fitness.HeadlineSm</item>
+        <item name="textAppearanceTitleLarge">@style/TextAppearance.Fitness.HeadlineSm</item>
+        <item name="textAppearanceTitleMedium">@style/TextAppearance.Fitness.HeadlineSm</item>
+        <item name="textAppearanceTitleSmall">@style/TextAppearance.Fitness.LabelMd</item>
+        <item name="textAppearanceBodyLarge">@style/TextAppearance.Fitness.BodyLg</item>
+        <item name="textAppearanceBodyMedium">@style/TextAppearance.Fitness.BodyMd</item>
+        <item name="textAppearanceBodySmall">@style/TextAppearance.Fitness.BodyMd</item>
+        <item name="textAppearanceLabelLarge">@style/TextAppearance.Fitness.Button</item>
+        <item name="textAppearanceLabelMedium">@style/TextAppearance.Fitness.LabelMd</item>
+        <item name="textAppearanceLabelSmall">@style/TextAppearance.Fitness.LabelSm</item>
     </style>
 </resources>

@@ -163,3 +163,10 @@ export JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"
 A clean clone needs a `local.properties` file pointing at the Android
 SDK — Android Studio generates this on first open. `local.properties`
 is `.gitignore`d.
+
+## Third-party licences
+
+- **Plus Jakarta Sans** — bundled in `app/src/main/res/font/` as five TTF
+  files (Regular / Medium / SemiBold / Bold / ExtraBold). Licensed under
+  the SIL Open Font License 1.1; the licence text sits at
+  [`docs/licenses/plus-jakarta-sans/OFL.txt`](docs/licenses/plus-jakarta-sans/OFL.txt).
