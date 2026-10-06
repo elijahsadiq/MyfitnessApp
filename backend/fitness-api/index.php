@@ -66,6 +66,9 @@ try {
     // User
     $router->add('GET',    '/me',               [UserController::class, 'me']);
     $router->add('PUT',    '/me',               [UserController::class, 'updateMe']);
+    $router->add('POST',   '/me/avatar',        [UserController::class, 'uploadAvatar']);
+    $router->add('DELETE', '/me/avatar',        [UserController::class, 'deleteAvatar']);
+    $router->add('DELETE', '/me',               [UserController::class, 'deleteMe']);
 
     // Workouts
     $router->add('GET',    '/workouts',         [WorkoutController::class, 'index']);

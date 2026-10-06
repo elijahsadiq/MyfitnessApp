@@ -351,3 +351,91 @@ Authorization: Bearer {{token}}
       "elapsedMs": 1000, "recordedAt": "2026-10-05T13:00:01Z" }
   ]
 }
+
+### ----------------------------------------------------------------------
+### Phase 8 — Profile endpoints
+### ----------------------------------------------------------------------
+
+### 35. PUT /me — tightened validation (name 2-60, weight 20-300, height 80-260)
+PUT {{baseUrl}}/me
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "fullName": "Alex Runner Updated",
+  "weightKg": 72.0,
+  "heightCm": 178.0
+}
+
+### 36. PUT /me — email in body is silently ignored (no 422)
+### The returned fullName changes; email stays as it was.
+PUT {{baseUrl}}/me
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "email": "hacker@example.com",
+  "fullName": "Alex Runner",
+  "weightKg": 70.0,
+  "heightCm": 178.0
+}
+
+### 37. PUT /me — name too short (expect 422 with fields.fullName)
+PUT {{baseUrl}}/me
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "fullName": "A",
+  "weightKg": 70.0,
+  "heightCm": 178.0
+}
+
+### 38. POST /me/avatar — upload a profile picture (multipart)
+### Replace the file path with any local JPEG or PNG.
+POST {{baseUrl}}/me/avatar
+Authorization: Bearer {{token}}
+Content-Type: multipart/form-data; boundary=FitnessBoundary
+
+--FitnessBoundary
+Content-Disposition: form-data; name="file"; filename="avatar.jpg"
+Content-Type: image/jpeg
+
+< ./docs/testing/sample_avatar.jpg
+--FitnessBoundary--
+
+### 39. POST /me/avatar — rejected: wrong MIME (text pretending to be an image)
+### The server inspects magic bytes via getimagesize(), so this is a 422.
+POST {{baseUrl}}/me/avatar
+Authorization: Bearer {{token}}
+Content-Type: multipart/form-data; boundary=FitnessBoundary
+
+--FitnessBoundary
+Content-Disposition: form-data; name="file"; filename="avatar.jpg"
+Content-Type: image/jpeg
+
+definitely not a jpeg
+--FitnessBoundary--
+
+### 40. DELETE /me/avatar — remove the current avatar
+DELETE {{baseUrl}}/me/avatar
+Authorization: Bearer {{token}}
+
+### 41. DELETE /me — wrong password (expect 403 with fields.password)
+DELETE {{baseUrl}}/me
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "password": "wrong-password"
+}
+
+### 42. DELETE /me — correct password (permanent)
+### Only run this against a scratch account!
+DELETE {{baseUrl}}/me
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "password": "Password123"
+}

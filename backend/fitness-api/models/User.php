@@ -8,7 +8,7 @@ final class User
     public static function findById(int $id): ?array
     {
         $stmt = Database::pdo()->prepare(
-            'SELECT id, email, full_name, weight_kg, height_cm, created_at
+            'SELECT id, email, full_name, weight_kg, height_cm, avatar_path, created_at
                FROM users WHERE id = ?'
         );
         $stmt->execute([$id]);
@@ -19,12 +19,23 @@ final class User
     public static function findByEmail(string $email): ?array
     {
         $stmt = Database::pdo()->prepare(
-            'SELECT id, email, password_hash, full_name, weight_kg, height_cm, created_at
+            'SELECT id, email, password_hash, full_name, weight_kg, height_cm, avatar_path, created_at
                FROM users WHERE email = ?'
         );
         $stmt->execute([$email]);
         $row = $stmt->fetch();
         return $row !== false ? $row : null;
+    }
+
+    /** Look up only the password hash for the account-delete verify step. */
+    public static function passwordHashFor(int $id): ?string
+    {
+        $stmt = Database::pdo()->prepare(
+            'SELECT password_hash FROM users WHERE id = ?'
+        );
+        $stmt->execute([$id]);
+        $row = $stmt->fetch();
+        return $row !== false ? (string) $row['password_hash'] : null;
     }
 
     public static function create(
@@ -50,6 +61,29 @@ final class User
         $stmt->execute([$fullName, $weightKg, $heightCm, $id]);
     }
 
+    /** Set or clear the stored avatar path. */
+    public static function updateAvatarPath(int $id, ?string $relativePath): void
+    {
+        $stmt = Database::pdo()->prepare(
+            'UPDATE users SET avatar_path = ? WHERE id = ?'
+        );
+        $stmt->execute([$relativePath, $id]);
+    }
+
+    /**
+     * Delete the account row. Phase 1's FKs cascade through auth_tokens,
+     * workouts (then strength_sets + route_points), and goals, so a
+     * single row delete tears down the whole user. The controller is
+     * responsible for unlinking the avatar file first — the DB knows
+     * nothing about disk storage.
+     */
+    public static function deleteById(int $id): bool
+    {
+        $stmt = Database::pdo()->prepare('DELETE FROM users WHERE id = ?');
+        $stmt->execute([$id]);
+        return $stmt->rowCount() > 0;
+    }
+
     /**
      * Convert a row into the DTO shape the app consumes. Password hash is
      * intentionally NEVER included.
@@ -60,12 +94,13 @@ final class User
     public static function toDto(array $row): array
     {
         return [
-            'id'        => (int) $row['id'],
-            'email'     => $row['email'],
-            'fullName'  => $row['full_name'],
-            'weightKg'  => $row['weight_kg'] !== null ? (float) $row['weight_kg'] : null,
-            'heightCm'  => $row['height_cm'] !== null ? (float) $row['height_cm'] : null,
-            'createdAt' => self::isoUtc((string) $row['created_at']),
+            'id'         => (int) $row['id'],
+            'email'      => $row['email'],
+            'fullName'   => $row['full_name'],
+            'weightKg'   => $row['weight_kg'] !== null ? (float) $row['weight_kg'] : null,
+            'heightCm'   => $row['height_cm'] !== null ? (float) $row['height_cm'] : null,
+            'avatarPath' => $row['avatar_path'] ?? null,
+            'createdAt'  => self::isoUtc((string) $row['created_at']),
         ];
     }
 

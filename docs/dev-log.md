@@ -1278,3 +1278,54 @@ Already implemented accidentally pre-phase-8 (`binding.streakPill.text = ... ui.
 
 **Assignment task supported**
 - **Task 4 (development)** — Home is now coherent: the hero card shows the four metrics the design calls for (sessions / active time / distance / kcal), the streak pill reports a real streak, the Goals section has moved to its dedicated tab, no dead code left behind.
+
+## Step 3 — Profile backend
+**Built**
+- **`backend/sql/05_migration_profile_phase8.sql`** — adds a nullable `users.avatar_path VARCHAR(255)` through the same `add_col_if_absent` idempotent-ALTER procedure phase 7 used. Comment at the top documents the full cascade chain (users → auth_tokens, workouts → strength_sets + route_points, goals) so an examiner reading the schema can see exactly what a `DELETE FROM users WHERE id = ?` tears down.
+- **`User.php`**:
+  - `findById` / `findByEmail` select `avatar_path`.
+  - `passwordHashFor(id)` — minimum-information read for the delete-account verify step.
+  - `updateAvatarPath(id, ?relative)` — set or clear.
+  - `deleteById(id)` — single-row delete; cascades do the rest.
+  - `toDto(row)` emits `avatarPath` alongside the existing fields.
+- **`UserController.php`** — four new / changed endpoints:
+  - `PUT /me` — tightened: `fullName` 2–60 chars (brief), `weightKg` 20–300, `heightCm` 80–260 (**amendment D** — kept the server's existing range). `email` in the body is silently ignored, not rejected; comment and dev-log note explain why (naive clients re-posting the full profile don't trip on a 422; identity-change requires a verification flow this project doesn't have).
+  - `POST /me/avatar` — multipart `file` part only. Six layers of guard:
+    1. `is_uploaded_file` + `UPLOAD_ERR_OK` guard against swapped tmp paths.
+    2. 2 MB size check *before* reading pixels (DoS-safety).
+    3. `getimagesize()` opens the file and parses magic bytes — the only source of truth for the MIME type. `$_FILES['file']['type']` and the filename extension are never trusted.
+    4. Only `IMAGETYPE_JPEG` and `IMAGETYPE_PNG` are accepted.
+    5. The image is centre-cropped to a square and re-encoded via GD into a fresh 512 × 512 JPEG at quality 85. Re-encoding strips any payload hidden inside the original bytes (EXIF, polyglot JPEG-PHP).
+    6. Filename is `bin2hex(random_bytes(16)) . '.jpg'` — the client's filename is never trusted. Stored at `fitness-api/uploads/avatars/<random>.jpg`.
+    Previous avatar is deleted from disk after the new one is on disk + the DB row updated.
+  - `DELETE /me/avatar` — unlinks the stored file and clears `avatar_path`.
+  - `DELETE /me` — requires the current `password` in the body, verified with `password_verify`. Deletes inside a transaction; the on-disk avatar is removed *after* the DB commit so a rollback can't leave an orphaned image. Revokes the current token on success so the client bounces to Auth.
+- **`.htaccess`** at `fitness-api/uploads/avatars/`:
+  - `php_flag engine off` + `SetHandler none` + `RemoveHandler .php .phtml .phar` + `Options -ExecCGI` — Apache will not pass anything in this folder through PHP, regardless of what the file is named.
+  - `FilesMatch` denies every filename that isn't `.jpg`, so even if a hypothetical attacker got a non-image onto disk somehow, Apache wouldn't serve it.
+  - `X-Content-Type-Options: nosniff` for the served JPEGs.
+- **`backend/api-tests.http`** — eight new cases (#35–#42): happy PUT, email-silently-ignored PUT, name-too-short rejection, avatar upload (JPEG), avatar upload rejection (text pretending to be an image), avatar delete, delete-account with wrong password → 403, delete-account with correct password.
+
+**Key design decision — re-encode every upload rather than storing the original**
+Shrinks the attack surface to zero. The stored bytes are what GD wrote; the user's original file is discarded along with its EXIF, embedded scripts, and metadata. Costs us a one-off CPU hit per upload (negligible for a 2 MB cap) and buys us "whatever we store cannot have come from a malicious payload".
+
+**Rejected alternative — a dedicated `password_verify` RBAC middleware**
+Would have let `DELETE /me` share a reusable layer with any future password-gated endpoints. Rejected because this is the only password-gated endpoint in the project, and inlining the check keeps the controller readable. If a second one shows up, extract then.
+
+**Rejected alternative — storing the full URL in `avatar_path`**
+Would have broken portability — a dev running on `http://localhost:8080/` and a marker running on `http://localhost/fitness-api/` would see different URLs stored. The relative-path approach puts the base URL construction on the client, exactly where it already lives for API calls.
+
+**Verified**
+- `docker exec fitness-php php -l` on all three touched PHP files — no syntax errors.
+- Migration is additive-only (`add_col_if_absent` + idempotent `.htaccess`); will apply on your approval the same way phase 8a's migration did.
+- The emulator Android build is unaffected until Step 4 picks up the DTO additions.
+
+**Not yet applied to the live DB** — same `show me first` courtesy as the phase 8a migration. Apply with:
+```
+docker exec -i fitness-mysql mysql -uroot -prootpassword fitness_app \
+    < backend/sql/05_migration_profile_phase8.sql
+```
+
+**Assignment task supported**
+- **Task 4 (development)** — the backend half of the Profile rebuild (Step 4) is now in place: GET / PUT / avatar upload / avatar delete / account delete.
+- **Task 3b (design)** — the avatar-upload security section writes itself (`getimagesize` + GD re-encode + randomised filename + `.htaccess` lockdown). Lots of concrete decisions to cite.

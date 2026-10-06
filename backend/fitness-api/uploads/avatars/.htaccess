@@ -1,0 +1,29 @@
+# ----------------------------------------------------------------------
+# fitness-api — avatar upload directory hardening.
+# Serving an uploaded file is fine; executing it is not.
+#
+# 1. php_flag engine off — Apache will not pass *anything* in this folder
+#    through PHP (defence against a crafted upload that slips a payload
+#    past the server-side GD re-encode).
+# 2. Explicit SetHandler to no-op undoes any inherited mod_php handler.
+# 3. RemoveHandler .php .phar .phtml ensures no file extension gets
+#    silently promoted to a PHP handler by an ancestor .htaccess.
+# 4. FilesMatch denies anything that isn't a .jpg — the only extension
+#    the uploader writes. A would-be attacker's bare upload (even if it
+#    survived GD) can't be served because its filename wouldn't match.
+# ----------------------------------------------------------------------
+
+php_flag engine off
+SetHandler none
+RemoveHandler .php .phtml .phar
+Options -ExecCGI
+
+<FilesMatch "^(?!.*\.jpg$).*$">
+    Require all denied
+</FilesMatch>
+
+<FilesMatch "\.(jpg)$">
+    Require all granted
+    Header set Content-Type "image/jpeg"
+    Header set X-Content-Type-Options "nosniff"
+</FilesMatch>
