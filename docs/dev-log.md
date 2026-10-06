@@ -1246,3 +1246,35 @@ Would have broken every existing caller. The default `ZoneId.systemDefault()` is
 **Assignment task supported**
 - **Task 4 (development)** — the Goals feature now correctly handles its three terminal states (active / completed / ended), closing a real UX hole where last-week's goal was mislabelled "Last day" on this week's screen.
 - **Task 1b (design)** — the "no auto-recurring goals → expiry is terminal" scope decision has its own section in the dev log and matching unit tests.
+
+## Step 2 — Home screen fixes
+**Built**
+- **Removed the Home Goals section entirely** — the duplicate was double-rendering the same data the Goals tab shows one bottom-nav tap away. Deleted:
+  - The `homeGoalsCard` / `homeGoalSlot1` / `homeGoalSlot2` / `homeGoalDivider` / `homeGoalEmpty` block from `fragment_dashboard.xml`.
+  - `homeGoals` StateFlow + `HOME_GOAL_SLOTS` from `DashboardViewModel`, plus the init-time `goalRepository.refresh()` kick and the `goalRepository` + `goalProgressCalculator` constructor params (both were only used by that flow).
+  - `renderHomeGoals` + `bindHomeGoalRow` + `formatGoalValue` + `unitLabelRes` from `DashboardFragment`.
+  - `app/src/main/res/layout/item_home_goal_row.xml` — the row layout the deleted section used.
+  - Strings: `home_goals_title`, `home_goals_see_all`, `home_goals_empty_title`, `home_goals_empty_cta`, and the legacy `home_goal_distance*` / `home_goal_active_time` / `home_goal_minutes_value` stragglers from an earlier redesign.
+- **Replaced the BMI tile with Energy (kcal)** — the brief's take: BMI is a body measurement, not a weekly activity statistic, and belonged on Profile. The hero card's bottom-right slot now shows `summary.estimatedCalories` as an integer with a `kcal` unit label. BMI copy relocates to Profile (strings renamed `home_metric_bmi*` → `profile_bmi*`; the `home_metric_bmi_missing` prompt becomes `profile_bmi_missing` with wording tuned for the Profile location).
+- **Streak pill wired to a real streak**:
+  - `WeeklySummary.streakDays: Int` — consecutive calendar days ending today on which the user logged ≥ 1 workout. "Today-still-empty" is tolerated for one day only (the user doesn't lose their streak just because they opened the app before training) — from day 2 the chain must be unbroken.
+  - `WeeklySummaryCalculator.computeStreak(...)` — walks backwards from `today` one day at a time against a `Set<LocalDate>` of workout days.
+  - `DashboardFragment.renderHomeChrome` reads `viewModel.summary.value.streakDays` and only shows the pill when the streak is ≥ 2 (a one-day streak isn't a streak).
+- **Week strip** verified against the design: day letters + dates render, today draws as the dark pill, days with workouts draw the lime dot — all driven by the existing `homeUi.daysWithWorkouts` set. No change needed.
+- **4 new tests** on `WeeklySummaryCalculatorTest`: streak of 0 for a two-day gap, 3 for three consecutive days ending today, 2 for "yesterday counts even when today is still empty", and 2 for a gap of a day breaking the chain back to the pre-gap stretch.
+
+**Key design decision — streak read from `summary` rather than threaded through `HomeUi`**
+`HomeUi` already carries week-strip data (`monday`, `today`, `daysWithWorkouts`). Threading `streakDays` through it would couple the week-strip shape to a user-metric that has nothing to do with the week strip. Reading `viewModel.summary.value.streakDays` from `renderHomeChrome` keeps the two concerns separate and avoids a second StateFlow that would re-emit on every workout change in lockstep with `summary` anyway.
+
+**Rejected alternative — keeping the Home Goals card but driving it from `summary`**
+Would have required a dedicated "goals-free-but-looks-like-goals" surface. Rejected because the Goals tab already handles this exactly, and the single-source-of-truth story in the design chapter is strongly weakened by having two renderings of the same data stream.
+
+**Rejected alternative — streak counts "unique days this week"**
+Already implemented accidentally pre-phase-8 (`binding.streakPill.text = ... ui.daysWithWorkouts.size`). Dropped — a user who trained three days last week and twice this week should see "5-day streak" running across the week boundary, not "2-day" when it's Tue of the new week. Calendar-day distance against a workout-day set captures real streaks and resets correctly on a gap.
+
+**Verified**
+- `./gradlew assembleLocalDebug` — BUILD SUCCESSFUL.
+- `./gradlew testLocalDebugUnitTest` — **248 tests, 0 failures** (+ 4 new streak tests).
+
+**Assignment task supported**
+- **Task 4 (development)** — Home is now coherent: the hero card shows the four metrics the design calls for (sessions / active time / distance / kcal), the streak pill reports a real streak, the Goals section has moved to its dedicated tab, no dead code left behind.

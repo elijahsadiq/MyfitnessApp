@@ -68,7 +68,41 @@ object WeeklySummaryCalculator {
             estimatedCalories = estimatedCalories,
             bmi = bmi,
             bmiCategory = bmiCategory,
-            perActivity = perActivity
+            perActivity = perActivity,
+            streakDays = computeStreak(workouts, today, zone),
         )
+    }
+
+    /**
+     * Walk backwards from [today] one day at a time, counting consecutive
+     * calendar days with at least one workout. "Today has no workout" is
+     * tolerated for one day only — the user doesn't lose their streak
+     * just because they haven't trained yet by the time they open the
+     * app. From day 2 onwards the chain must be unbroken.
+     */
+    private fun computeStreak(
+        workouts: List<Workout>,
+        today: LocalDate,
+        zone: ZoneId,
+    ): Int {
+        if (workouts.isEmpty()) return 0
+        val workoutDays: Set<LocalDate> = workouts
+            .asSequence()
+            .map { LocalDate.ofInstant(it.startTime, zone) }
+            .toSet()
+
+        // Decide the starting day: today if today has a workout, else
+        // yesterday. If neither has one, the streak is 0.
+        var cursor = when {
+            today in workoutDays -> today
+            today.minusDays(1) in workoutDays -> today.minusDays(1)
+            else -> return 0
+        }
+        var days = 0
+        while (cursor in workoutDays) {
+            days++
+            cursor = cursor.minusDays(1)
+        }
+        return days
     }
 }

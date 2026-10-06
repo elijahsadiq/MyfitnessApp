@@ -149,6 +149,68 @@ class WeeklySummaryCalculatorTest {
         assertEquals(5 * 60.0 + 5 * 100.0, strength.totalVolumeKg, 1e-6)
     }
 
+    // ---------- streak ----------
+
+    @Test
+    fun `streak is zero when the user has no workouts in the last two days`() {
+        // Last workout three days ago → both today and yesterday are empty.
+        val old = RunningWorkout(
+            id = "o", startTime = Instant.parse("2026-09-13T10:00:00Z"),
+            duration = Duration.ofMinutes(30), distanceMeters = 5_000.0,
+        )
+        val summary = WeeklySummaryCalculator.compute(
+            listOf(old), now, zone, bodyWeightKg, heightCm = null,
+        )
+        assertEquals(0, summary.streakDays)
+    }
+
+    @Test
+    fun `three consecutive days ending today give a streak of three`() {
+        val workouts = listOf(
+            runOn("2026-09-14T10:00:00Z"), // Mon
+            runOn("2026-09-15T10:00:00Z"), // Tue
+            runOn("2026-09-16T07:00:00Z"), // Wed (today, before `now`)
+        )
+        val summary = WeeklySummaryCalculator.compute(
+            workouts, now, zone, bodyWeightKg, heightCm = null,
+        )
+        assertEquals(3, summary.streakDays)
+    }
+
+    @Test
+    fun `yesterday counts even when today is still empty`() {
+        // Today has nothing, but yesterday + the day before do → streak of 2.
+        val workouts = listOf(
+            runOn("2026-09-14T10:00:00Z"), // Mon
+            runOn("2026-09-15T10:00:00Z"), // Tue (yesterday)
+        )
+        val summary = WeeklySummaryCalculator.compute(
+            workouts, now, zone, bodyWeightKg, heightCm = null,
+        )
+        assertEquals(2, summary.streakDays)
+    }
+
+    @Test
+    fun `gap of a day breaks the streak`() {
+        val workouts = listOf(
+            runOn("2026-09-13T10:00:00Z"), // Sun — before the gap
+            runOn("2026-09-15T10:00:00Z"), // Tue
+            runOn("2026-09-16T08:00:00Z"), // Wed (today)
+        )
+        val summary = WeeklySummaryCalculator.compute(
+            workouts, now, zone, bodyWeightKg, heightCm = null,
+        )
+        // Walks back from Wed → Tue → stops at Mon (empty). Streak = 2.
+        assertEquals(2, summary.streakDays)
+    }
+
+    private fun runOn(iso: String): RunningWorkout = RunningWorkout(
+        id = iso,
+        startTime = Instant.parse(iso),
+        duration = Duration.ofMinutes(30),
+        distanceMeters = 5_000.0,
+    )
+
     @Test
     fun `calories scale with body weight`() {
         val cycling = CyclingWorkout(

@@ -268,24 +268,21 @@
     <string name="home_metric_minutes_unit">min</string>
     <string name="home_metric_distance">DISTANCE</string>
     <string name="home_metric_distance_unit">km</string>
-    <string name="home_metric_bmi">BMI</string>
-    <string name="home_metric_bmi_no_data">—</string>
-    <string name="home_metric_bmi_category_underweight">Underweight</string>
-    <string name="home_metric_bmi_category_normal">Normal</string>
-    <string name="home_metric_bmi_category_overweight">Overweight</string>
-    <string name="home_metric_bmi_category_obese">Obese</string>
-    <string name="home_metric_bmi_missing">Add height in profile</string>
+    <string name="home_metric_calories">ENERGY</string>
+    <string name="home_metric_calories_unit">kcal</string>
     <string name="home_start_workout">Start workout</string>
     <string name="home_insight_body">Keep logging workouts to unlock personalised insights.</string>
-    <string name="home_goals_title">Goals</string>
-    <string name="home_goals_see_all">See all</string>
-    <string name="home_goals_empty_title">No goals yet</string>
-    <string name="home_goals_empty_cta">Tap to set one</string>
-    <!-- Legacy strings, kept in case other layouts still reference them. -->
-    <string name="home_goal_distance">Weekly distance</string>
-    <string name="home_goal_distance_value">%1$d / %2$d km</string>
-    <string name="home_goal_active_time">Active time</string>
-    <string name="home_goal_minutes_value">%1$d / %2$d min</string>
+
+    <!-- BMI copy moves from Home to Profile in Phase-8 Step 4. Keep the
+         labels (Profile reads them) and drop the ones that only Home
+         used (missing-value prompt + "add height" fallback). -->
+    <string name="profile_bmi_label">BMI</string>
+    <string name="profile_bmi_no_data">—</string>
+    <string name="profile_bmi_category_underweight">Underweight</string>
+    <string name="profile_bmi_category_normal">Normal</string>
+    <string name="profile_bmi_category_overweight">Overweight</string>
+    <string name="profile_bmi_category_obese">Obese</string>
+    <string name="profile_bmi_missing">Add your height to see BMI.</string>
 
     <!-- Dashboard (legacy — no longer referenced by the current layout) -->
     <string name="dashboard_title">This week</string>

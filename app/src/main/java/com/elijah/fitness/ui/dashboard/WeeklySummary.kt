@@ -20,7 +20,14 @@ data class WeeklySummary(
     val estimatedCalories: Double,
     val bmi: Double?,
     val bmiCategory: BmiCategory?,
-    val perActivity: Map<ActivityType, ActivityBreakdown>
+    val perActivity: Map<ActivityType, ActivityBreakdown>,
+    /**
+     * Consecutive calendar days ending today on which the user logged at
+     * least one workout. 0 if today has no workout *and* yesterday has no
+     * workout; 1 if today or yesterday has one; longer runs grow from
+     * there. The pill hides below 2 (one-day "streak" isn't exciting).
+     */
+    val streakDays: Int,
 ) {
 
     /** Per-activity slice of the week. `mainStat` interpretation is type-dependent. */
@@ -48,7 +55,8 @@ data class WeeklySummary(
             estimatedCalories = 0.0,
             bmi = null,
             bmiCategory = null,
-            perActivity = emptyMap()
+            perActivity = emptyMap(),
+            streakDays = 0,
         )
     }
 }

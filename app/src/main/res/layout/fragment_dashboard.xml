@@ -329,7 +329,7 @@
                                 style="@style/TextAppearance.Fitness.LabelSm"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="@string/home_metric_bmi"
+                                android:text="@string/home_metric_calories"
                                 android:textColor="@color/text_on_dark_muted" />
 
                             <LinearLayout
@@ -341,22 +341,22 @@
                                 android:orientation="horizontal">
 
                                 <TextView
-                                    android:id="@+id/metricBmi"
+                                    android:id="@+id/metricCalories"
                                     style="@style/TextAppearance.Fitness.DisplayMetric"
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
                                     android:textColor="@color/text_on_dark"
-                                    tools:text="22.4" />
-                            </LinearLayout>
+                                    tools:text="2 148" />
 
-                            <TextView
-                                android:id="@+id/metricBmiCategory"
-                                style="@style/TextAppearance.Fitness.LabelMd"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="2dp"
-                                android:textColor="@color/text_on_dark_muted"
-                                tools:text="Normal" />
+                                <TextView
+                                    style="@style/TextAppearance.Fitness.LabelMd"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginStart="6dp"
+                                    android:layout_marginBottom="6dp"
+                                    android:text="@string/home_metric_calories_unit"
+                                    android:textColor="@color/text_on_dark_muted" />
+                            </LinearLayout>
                         </LinearLayout>
                     </LinearLayout>
 
@@ -410,113 +410,6 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Goals header -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/space_xl"
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
-                android:paddingHorizontal="@dimen/screen_margin">
-
-                <TextView
-                    style="@style/TextAppearance.Fitness.HeadlineSm"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="@string/home_goals_title" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/goalsSeeAll"
-                    style="@style/Widget.Fitness.Button.Text"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:minWidth="0dp"
-                    android:minHeight="@dimen/touch_target_min"
-                    android:text="@string/home_goals_see_all" />
-            </LinearLayout>
-
-            <!-- Goals card — driven by the real Goal repository (phase 7 step 6). -->
-            <com.google.android.material.card.MaterialCardView
-                android:id="@+id/homeGoalsCard"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginHorizontal="@dimen/screen_margin"
-                android:layout_marginTop="@dimen/space_sm"
-                app:cardBackgroundColor="@color/surface_white"
-                app:cardCornerRadius="@dimen/radius_card"
-                app:cardElevation="0dp"
-                app:contentPadding="20dp"
-                app:strokeColor="@color/divider"
-                app:strokeWidth="@dimen/stroke_hairline">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical">
-
-                    <!-- Slot 1 (visible if there's at least one active goal). -->
-                    <include
-                        android:id="@+id/homeGoalSlot1"
-                        layout="@layout/item_home_goal_row" />
-
-                    <View
-                        android:id="@+id/homeGoalDivider"
-                        android:layout_width="match_parent"
-                        android:layout_height="@dimen/stroke_hairline"
-                        android:layout_marginTop="@dimen/space_md"
-                        android:background="@color/divider"
-                        android:visibility="gone" />
-
-                    <!-- Slot 2 (visible only if there are 2+ active goals). -->
-                    <include
-                        android:id="@+id/homeGoalSlot2"
-                        layout="@layout/item_home_goal_row" />
-
-                    <!-- Empty prompt (shown when the user has no goals yet). -->
-                    <LinearLayout
-                        android:id="@+id/homeGoalEmpty"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:background="?attr/selectableItemBackground"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal"
-                        android:visibility="gone">
-
-                        <ImageView
-                            android:layout_width="@dimen/icon_tile_size"
-                            android:layout_height="@dimen/icon_tile_size"
-                            android:background="@drawable/bg_icon_tile"
-                            android:contentDescription="@string/goals_row_icon_content_description"
-                            android:padding="12dp"
-                            android:src="@drawable/ic_flag_24"
-                            app:tint="@color/text_primary" />
-
-                        <LinearLayout
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_marginStart="@dimen/space_md"
-                            android:layout_weight="1"
-                            android:orientation="vertical">
-
-                            <TextView
-                                style="@style/TextAppearance.Fitness.BodyMd"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="@string/home_goals_empty_title"
-                                android:textColor="@color/text_primary"
-                                android:textStyle="bold" />
-
-                            <TextView
-                                style="@style/TextAppearance.Fitness.LabelMd"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="@string/home_goals_empty_cta"
-                                android:textColor="@color/text_secondary" />
-                        </LinearLayout>
-                    </LinearLayout>
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 </androidx.constraintlayout.widget.ConstraintLayout>
