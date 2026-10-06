@@ -92,3 +92,29 @@ INSERT INTO strength_sets (workout_id, set_order, exercise_name, reps, weight_kg
     (@w_lift3, 1, 'Bench Press', 5, 65.00),
     (@w_lift3, 2, 'Bench Press', 5, 65.00),
     (@w_lift3, 3, 'Bench Press', 5, 65.00);
+
+-- ---------------------------------------------------------------------
+-- Goals (phase 7 feature; seeded so a fresh clone shows the Goals tab
+-- populated out of the box — the submission marker should see at least
+-- two in-progress goals, which this gives them).
+--
+-- period_start/period_end are DATEs (midnight in the device zone), so we
+-- derive them from CURDATE(). The anchors below guarantee the current
+-- calendar week + month are covered regardless of what day the examiner
+-- runs the seed.
+-- ---------------------------------------------------------------------
+INSERT INTO goals
+    (user_id, title, activity_type, goal_type, period, target_value, period_start, period_end)
+VALUES
+    (@alex_id, 'Run 20 km this week', 'RUNNING', 'distance', 'WEEK',
+     20.00,
+     DATE_SUB(CURDATE(), INTERVAL WEEKDAY(CURDATE()) DAY),
+     DATE_SUB(CURDATE(), INTERVAL WEEKDAY(CURDATE()) DAY) + INTERVAL 7 DAY),
+    (@alex_id, 'Lift 5000 kg this month', 'WEIGHTLIFTING', 'volume', 'MONTH',
+     5000.00,
+     DATE_SUB(CURDATE(), INTERVAL (DAY(CURDATE()) - 1) DAY),
+     LAST_DAY(CURDATE()) + INTERVAL 1 DAY),
+    (@alex_id, 'Move 4 times this week', NULL, 'count', 'WEEK',
+     4.00,
+     DATE_SUB(CURDATE(), INTERVAL WEEKDAY(CURDATE()) DAY),
+     DATE_SUB(CURDATE(), INTERVAL WEEKDAY(CURDATE()) DAY) + INTERVAL 7 DAY);

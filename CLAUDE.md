@@ -43,11 +43,12 @@ Repository interface  ← phase 1: FakeWorkoutRepository (in-memory)
 ## Roadmap
 | Phase | Scope |
 |---|---|
-| **1 (in progress)** | Foundation, domain models, fake repo, app shell, history + FAB, manual logging, dashboard |
-| 2 | PHP/MySQL backend, Retrofit, register/login, DataStore token, `AuthActivity` |
-| 3 | GPS live tracking (FusedLocationProvider, foreground service, route map) |
-| 4 | Room offline cache, WorkManager sync, notifications |
-| 5 | Goals, analytics charts, personalised insights, extra activity types |
+| 1  (done) | Foundation, domain models, fake repo, app shell, history + FAB, manual logging, dashboard |
+| 2  (done) | PHP/MySQL backend, Retrofit, register/login, DataStore token, `AuthActivity` |
+| 7  (done) | Goals (hierarchy #4), per-user progress calculator, Goals tab UI, completion celebration |
+| 8a (done) | **Geolocation end-to-end** — foreground service, FusedLocationProviderClient, osmdroid map, route save + detail screen (hoisted ahead of phase 8 polish because the brief weights it at 40 marks) |
+| 8  (done) | Goal expiry as a third state, Home redesign (BMI → kcal, real streak, Goals section removed), Profile backend + rebuild, Progress + analytics screen, personalised insights, submission readiness |
+| future    | Room offline cache + WorkManager sync (closes the "process-kill drops the GPS session" caveat); extra activity types if the assignment report calls for them |
 
 ## Package layout (target)
 ```

@@ -1472,3 +1472,55 @@ Would have hidden the "when are insights recomputed?" question inside the engine
 **Assignment task supported**
 - **Task 4 (development)** — the Home insight card is now powered by the user's own data; the "advanced analytics / personalised insights" line in the brief has an implementation.
 - **Task 1b (design)** — the "rules in one testable class, ranked by priority, ViewModel takes `.first()`" shape is a tidy architectural write-up with eight unit tests to back it.
+
+## Step 7 — Submission readiness
+**Built**
+- **Root `README.md`** — one-page project overview the examiner sees first: what the app is, the three required components it ships, the four inheritance hierarchies, how to boot the backend (Docker *or* XAMPP), how to install the app, test credentials, project layout, known limitations.
+- **`backend/README.md`** refresh — now covers both deployment routes end-to-end, lists all five SQL files in the right import order, documents every endpoint, and explains the avatar-upload security story in a dedicated section the written report can cite directly. Added a phpMyAdmin "how to verify the data arrived" walkthrough.
+- **`docs/assignment-coverage.md`** — the single-page requirement-to-implementation table. Every brief requirement for Task 4 has a status + a file path + (where applicable) a screenshot name. Task 1b architecture cites are listed separately so the report chapter has a direct lookup. 264-test count is called out.
+- **Seed data** (`sql/02_seed.sql`) — three in-progress goals added (weekly 20 km run, monthly 5000 kg volume, weekly "move 4 times"), anchored to `CURDATE()` so the current calendar week + month are always covered regardless of when the examiner runs the seed. Workouts seed already covered all three activity types; profile already seeds with weight (70) + height (178) so BMI + kcal + insights are populated on first open.
+- **`CLAUDE.md`** roadmap updated — phase 1, 2, 7, 8a, and 8 are marked done. Phase 8a's hoisting-ahead-of-phase-8 is called out so a future reader understands why 8a precedes 8 numerically but came after 7 chronologically.
+
+**Cross-engine SQL check**
+Walked every SQL file:
+- `01_schema.sql` — `utf8mb4` / `utf8mb4_unicode_ci` on every table, InnoDB, no MySQL-8-only syntax. Runs on MariaDB 10.4+ (XAMPP's typical version) as-is.
+- `02_seed.sql` — uses `DATE_SUB(NOW(), INTERVAL X DAY)`, `WEEKDAY(CURDATE())`, `LAST_DAY(CURDATE())`. All three are MariaDB-compatible back to 10.0.
+- `03_migration_goals_phase7.sql`, `04_migration_route_points_phase8a.sql`, `05_migration_profile_phase8.sql` — all use the `add_col_if_absent` prepared-statement wrapper or `CREATE TABLE IF NOT EXISTS`. Portable; `DELIMITER //` is supported on both engines.
+- No `JSON_` columns, no `GENERATED` columns, no `utf8mb4_0900_ai_ci` collation. Nothing to flag.
+
+**Clean-clone build verification**
+- `app/build.gradle.kts` + `gradle/libs.versions.toml` — every version is pinned, no SNAPSHOTs.
+- `local.properties` is `.gitignore`d (verified by `git check-ignore`); Android Studio generates it on first open.
+- No absolute paths in the source tree (grep confirms).
+- The two Phase-8-era libraries (`coil`, `osmdroid-android`) + the one Phase-8a-era library (`play-services-location`) are all on Maven Central / Google's standard repo — no custom resolvers needed.
+
+**Report-screenshot plan**
+`docs/screenshots/README.md` already lists five numbered figures (phase 8a step 7). No changes needed; the capture plan still matches.
+
+**Verified**
+- `./gradlew assembleLocalDebug` — BUILD SUCCESSFUL.
+- `./gradlew testLocalDebugUnitTest` — **264 tests, 0 failures**.
+- Three READMEs + one coverage doc + one CLAUDE.md update, all consistent with the current state of the repo.
+
+**Assignment task supported**
+- All of Task 4 — the submission's own documentation is now in order, so an examiner clean-cloning and following `README.md` + `backend/README.md` can get the app running end-to-end without ambiguity.
+- Task 1b (design) — the architecture chapter has a single lookup table (`docs/assignment-coverage.md`) for every "point this at X" cite.
+
+---
+
+# Phase 8 — Done
+
+Six functional steps + one submission-readiness step landed on top of phase 8a. Final counts:
+- **Kotlin main sources**: 2 new packages (`analytics/`, `insights/`), rebuilt Profile + Progress screens, Home redesign, goal-expiry third state, window-insets wiring in the base fragment.
+- **Backend**: 1 migration (`05_migration_profile_phase8.sql`), 4 new endpoints on `UserController`, hardened `.htaccess` for avatar uploads, 8 new api-tests cases.
+- **Tests**: 264 total, 0 failures. 29 new phase-8 tests (`WeeklySummaryCalculator` streak, `GoalProgressCalculator` boundary cases, `GoalsViewModel` three-section partition, `ProgressAnalytics`, `InsightEngine`).
+- **Design-system compliance**: all new layouts route through Kinetic Glow tokens; `profile_default_name` / `_email` + `progress_placeholder_*` + `home_metric_bmi_*` + `home_goals_*` + `home_goal_distance*` strings all deleted. No remaining user-facing phase/roadmap language.
+- **Dependencies added** (one in phase 8): Coil for avatar display.
+
+The written report can now cover:
+1. Goal expiry as a third terminal state (calendar-day semantics, three-section partition, featured-only-from-Active invariant).
+2. Home redesign — Goals-section removal rationale, kcal in place of BMI, real streak algorithm.
+3. Profile backend security (avatar re-encode via GD, random filename, `.htaccess` lockdown, password-gated account delete).
+4. Pure-Kotlin `ProgressAnalytics` + custom `BarChartView` (`onDraw` worked example for Task 1b).
+5. Priority-ordered `InsightEngine` with five rules + "enough data" fallback.
+6. Full assignment-coverage map in `docs/assignment-coverage.md`.
