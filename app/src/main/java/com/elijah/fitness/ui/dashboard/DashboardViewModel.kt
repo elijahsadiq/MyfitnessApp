@@ -8,12 +8,15 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.elijah.fitness.AppContainer
 import com.elijah.fitness.R
+import com.elijah.fitness.data.model.GoalProgressCalculator
 import com.elijah.fitness.data.model.Workout
 import com.elijah.fitness.data.remote.ApiResult
 import com.elijah.fitness.data.remote.api.UserApi
 import com.elijah.fitness.data.remote.apiCall
 import com.elijah.fitness.data.repository.UserSettings
 import com.elijah.fitness.data.repository.WorkoutRepository
+import com.elijah.fitness.insights.Insight
+import com.elijah.fitness.insights.InsightEngine
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -45,6 +48,8 @@ class DashboardViewModel(
     private val repository: WorkoutRepository,
     private val userSettings: UserSettings,
     private val userApi: UserApi,
+    private val goalProgressCalculator: GoalProgressCalculator,
+    private val insightEngine: InsightEngine,
     private val clock: Clock = Clock.systemDefaultZone(),
     private val zone: ZoneId = ZoneId.systemDefault(),
 ) : ViewModel() {
@@ -79,6 +84,22 @@ class DashboardViewModel(
     // one bottom-nav tap away and the duplicate was double-rendering the
     // same data. Keeping Home focused on the week's momentum tightens
     // the first-impression surface.
+
+    /**
+     * Top-ranked insight for the Home card (phase 8 step 6). `null` when
+     * no rule fires — the fragment shows the fallback copy in that case.
+     * Rebuilt whenever either stream changes.
+     */
+    val topInsight: StateFlow<Insight?> = combine(
+        repository.observeWorkouts(),
+        goalProgressCalculator.observe(),
+    ) { workouts, goals ->
+        insightEngine.rank(workouts, goals).firstOrNull()
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS),
+        initialValue = null,
+    )
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
@@ -167,6 +188,8 @@ class DashboardViewModel(
                     repository = container.workoutRepository,
                     userSettings = container.userSettings,
                     userApi = container.userApi,
+                    goalProgressCalculator = container.goalProgressCalculator,
+                    insightEngine = container.insightEngine,
                     clock = clock,
                     zone = zone,
                 )

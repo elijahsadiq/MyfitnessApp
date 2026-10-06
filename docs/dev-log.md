@@ -1429,3 +1429,46 @@ Would have avoided building a second analytics layer. The problem: WeeklySummary
 **Assignment task supported**
 - **Task 4 (development)** — closes the brief's "detailed statistics for each activity" and "monitor progress over time" bullets. Pace / speed / volume trends across time + PRs are visible from day one of real data.
 - **Task 1b (design)** — `BarChartView` is the hand-written-canvas worked example the report wants. The analytics layer being pure-Kotlin + unit-tested is also strong architectural material.
+
+## Step 6 — Personalised insights
+**Built**
+- **`insights/Insight.kt`** — small data class carrying `text`, `priority`, and a `Kind` enum (PersonalRecord / GoalProjection / PaceImprovement / VolumeChange / Dormancy / Fallback). Priorities are sparse (10, 20, 30, 40, 50, 99) so new rules can slot between without renumbering.
+- **`insights/InsightEngine.kt`** — pure-Kotlin rule engine with an injectable `Clock` and `ZoneId`. One public method `rank(workouts, goals): List<Insight>`; the Home VM takes `.first()`. Five rules, documented inline + in the file-level KDoc:
+  1. **PersonalRecord (priority 10)** — longest-run-in-the-last-7-days beats all-time prior history, OR a strength 1RM (Epley `w × (1 + reps/30)`) that beats everything before.
+  2. **GoalProjection (priority 20)** — for an in-progress **monthly** goal between 30 % and 95 % complete, projects "at this rate you'll reach your monthly goal by the Nth" using the per-day rate so far. Only fires if the projection lands within the goal's period.
+  3. **PaceImprovement (priority 30)** — this month's average running pace vs last month's; needs ≥ 2 runs in each window and a difference ≥ 5 s/km.
+  4. **VolumeChange (priority 40)** — "You ran/cycled X% further/less than last week" when both weeks have distance and the delta is ≥ 10 %.
+  5. **Dormancy (priority 50)** — "You haven't run / cycled in N days" when the latest workout of a given type is 7–60 days back.
+- **Priority order written up in the engine's class-level KDoc** so the written report has a direct cite.
+- **"Enough data" definition** — each rule inlines its own threshold rather than a global check: the PR rule needs a prior history, the volume-change rule needs both weeks' distance, the pace rule needs ≥ 2 runs in each month. The ViewModel returns `null` from `rank(...).firstOrNull()` when nothing qualifies, and the fragment falls back to the existing `home_insight_body` string ("Keep logging workouts to unlock personalised insights.").
+- **`AppContainer.insightEngine: InsightEngine`** — singleton; pure Kotlin so no Context dependency.
+- **`DashboardViewModel`**:
+  - Added `goalProgressCalculator` + `insightEngine` to the constructor + factory.
+  - New `topInsight: StateFlow<Insight?>` combining `observeWorkouts()` with `goalProgressCalculator.observe()` and rebuilding on every emission. Shared via `WhileSubscribed(5s)` so the engine idles when Home isn't on screen.
+- **`DashboardFragment`** — binds `insight.text` into `binding.insightBody` with the fallback string on null.
+- **8 new unit tests** (`InsightEngineTest`):
+  - Empty history → zero insights.
+  - Longest-run PR fires with the right distance in the text.
+  - Monthly-goal projection fires when on-track within the period.
+  - Pace improvement fires at ≥ 5 s/km delta.
+  - Volume change fires at ≥ 10 % delta with the right verb ("ran" / "cycled") + direction ("further" / "less").
+  - Dormancy fires only for the 7–60 day band on cycling, not for the fresh run.
+  - PR outranks volume change in the top position (priority ordering preserved).
+  - Strength 1RM PR fires with the exercise name in the text.
+
+**Key design decision — one `rank(...)` entry point, individual rule functions behind it**
+Rules compose independently. If a future phase adds a sixth rule, it drops in as `private fun myRuleInsight(...)` and gets added to the `out +=` list. The engine itself stays trivially testable: every rule can be driven by a synthetic workout list without any Android imports.
+
+**Rejected alternative — rules as a sealed hierarchy with their own classes**
+Would have been more OO-correct but shipped a lot of boilerplate for five one-shot computations. Private functions off a single engine is less code, easier to read, and still unit-testable.
+
+**Rejected alternative — the engine subscribes to flows directly and emits insights**
+Would have hidden the "when are insights recomputed?" question inside the engine. Rejected because `combine { ... }` in the ViewModel is the standard pattern for "two upstream flows + a transform"; keeping the engine stateless means its tests only need lists.
+
+**Verified**
+- `./gradlew assembleLocalDebug` — BUILD SUCCESSFUL.
+- `./gradlew testLocalDebugUnitTest` — **264 tests, 0 failures** (+ 8 new).
+
+**Assignment task supported**
+- **Task 4 (development)** — the Home insight card is now powered by the user's own data; the "advanced analytics / personalised insights" line in the brief has an implementation.
+- **Task 1b (design)** — the "rules in one testable class, ranked by priority, ViewModel takes `.first()`" shape is a tidy architectural write-up with eight unit tests to back it.

@@ -20,6 +20,7 @@ import com.elijah.fitness.data.repository.RemoteGoalRepository
 import com.elijah.fitness.data.repository.RemoteWorkoutRepository
 import com.elijah.fitness.data.repository.UserSettings
 import com.elijah.fitness.data.repository.WorkoutRepository
+import com.elijah.fitness.insights.InsightEngine
 import com.elijah.fitness.tracking.LocationTracker
 import com.elijah.fitness.tracking.TrackingSession
 
@@ -97,4 +98,10 @@ class AppContainer(applicationContext: Context) {
     // -----------------------------------------------------------------
     val trackingSession: TrackingSession = TrackingSession()
     val locationTracker: LocationTracker = LocationTracker(applicationContext)
+
+    /**
+     * Phase-8 personalised-insights engine. Pure Kotlin — the Home VM
+     * calls `rank(workouts, goalsWithProgress)` on each flow emission.
+     */
+    val insightEngine: InsightEngine = InsightEngine()
 }

@@ -401,6 +401,7 @@
                         app:tint="@color/text_on_lime" />
 
                     <TextView
+                        android:id="@+id/insightBody"
                         style="@style/TextAppearance.Fitness.BodyLg"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"

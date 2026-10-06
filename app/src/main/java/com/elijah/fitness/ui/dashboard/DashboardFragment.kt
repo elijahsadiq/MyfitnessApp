@@ -55,6 +55,10 @@ class DashboardFragment : BaseFragment<FragmentDashboardBinding>() {
 
         collectOnStart(viewModel.summary) { renderSummary(it) }
         collectOnStart(viewModel.homeUi) { renderHomeChrome(it) }
+        collectOnStart(viewModel.topInsight) { insight ->
+            binding.insightBody.text = insight?.text
+                ?: getString(R.string.home_insight_body)
+        }
         collectOnStart(viewModel.isLoading) { loading ->
             binding.loadingBar.isVisible = loading
         }
