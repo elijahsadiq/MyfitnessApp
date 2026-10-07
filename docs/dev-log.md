@@ -1916,3 +1916,50 @@ Keeping the empty state inside the RecyclerView preserves the single-list archit
 **Assignment task supported**
 - **Task 2a (UI implementation)** — empty state matches `Empty.dc.html` exactly, with the Quick Start suggestions and the dark hero card.
 - **Task 4 (development)** — Quick Start → New Goal pre-fill is a nice "end-to-end thought" story for the report: data flows from a const list → Fragment-Result-less adapter callback → navigation args → ViewModel seed → UI render.
+
+## Step 9 — Verification and report evidence
+
+Final phase-8b pass: build + full unit-test suite, codebase audit for hardcoded values, screenshot shot-list for the report, and the design-source attribution the user asked for.
+
+**Verified from the terminal**
+- `./gradlew assembleDebug` — BUILD SUCCESSFUL (both `cloud` and `local` product flavours).
+- `./gradlew testCloudDebugUnitTest testLocalDebugUnitTest` — BUILD SUCCESSFUL, **215 tests · 0 failures · 0 errors**.
+- Hardcoded-value audit on every new or changed Goals-v2 layout:
+  - **Hex colours**: 0 (both hits in the grep were inside XML comments).
+  - **Inline `android:text` literals**: 0.
+  - **Inline `android:contentDescription` literals**: 0.
+  - **Hex colours in Kotlin**: `ProgressRingView` keeps `0xFF2A2E28` as the Home-ring default so the home card still works without the new `app:ringTrackColor` attribute. Everything else resolves through `R.color.*` or `ContextCompat.getColor`.
+  - **Dimension overrides**: a limited set of `android:textSize` + width/height values are set inline where the design calls for brief-mandated exact sizes (stepper number 44sp, Manage title 18sp, dialog title 20sp, 48dp stepper button, 44dp close pill, 58dp metric pill, 108dp progress ring). The design-token scale (`@dimen/space_*`, `@dimen/screen_margin`, `@dimen/radius_*`, `@dimen/stroke_hairline`, the new `goal_main_card_radius` / `goal_main_ring_*`) is used wherever the token applies; one-off component dimensions prescribed by the design are inline on-purpose so the layout preview matches the Figma pixel-for-pixel. Any single-use dimension that *does* get reused later (e.g. `goal_main_ring_size`) is pulled into `dimens.xml` the moment the second reference appears.
+
+**Screenshot shot-list added to `docs/screenshots/README.md`**
+- Five target files: `goals-list.png`, `goals-new.png`, `goals-manage.png`, `goals-delete.png`, `goals-empty.png`.
+- Capture instructions include the seeded `alex@example.com` user, phpMyAdmin verification steps for `goals.is_main` / `start_date` / `last_day`, and the device matrix (320dp, tablet, landscape, largest font).
+
+**Design attribution (user ask)**
+Every Goals-v2 design file in `docs/design/goals-v2/*.dc.html` — Main, NewGoal, Manage, DeleteConfirm, Empty — was authored by me (the user) with Claude inside a design canvas before any Android work started. The implementation then followed those canvases step-for-step. The report's design-attribution footnote should say the designs were produced in Claude's design-canvas tool.
+
+### Phase-8b definition-of-done
+
+| ✓ / ◻ | Item | Evidence |
+|---|---|---|
+| ✓ | `assembleDebug` + `testDebugUnitTest` pass | 215 tests, 0 failures, both flavours build |
+| ✓ | Plus Jakarta Sans bundled across the whole app | 5 TTF weights in `res/font/`, wired through theme `textAppearance*` overrides + `Fonts` helper for `BarChartView` / `WeeklyMomentumView` (Step 1). Dark-mode checkbox is **n/a** — the app is light-only. |
+| ✓ | Goals migration shipped + 01/02 are the new shape | `backend/sql/01_schema.sql` + `02_seed.sql` rewritten; `backend/sql/migrations/06_migration_goals_phase8b.sql` ran against the live DB on 2026-10-07. Fresh install from `docker compose down -v && docker compose up -d` produces 5 goals in correct states with `is_main=1` on exactly one row. |
+| ✓ | 1–365 day range on create; `last_day` = `start + days - 1` | Enforced in `Goal.init { require(durationDays in 1..365) }`, in `NewGoalViewModel.setDays` + `incrementDays`/`decrementDays` clamps, and server-side in `GoalController::validate`. `Goal.lastDay` getter is `startDate.plusDays((durationDays - 1).toLong())`. |
+| ✓ | One main goal per user, chosen in Manage sheet, shown in dark card | Server-side single-main invariant via DB transaction in `Goal::setAsMain` (clear-all → set-one). Manage sheet exposes "Make main goal"; `RemoteGoalRepository.makeMainGoal` locally clears `is_main` on sibling rows after the HTTP call succeeds. Dark-card selection prefers an active main in `GoalsViewModel.buildItems`. |
+| ✓ | Active / Completed / Ended correct on first day, last day, day after | `GoalProgressCalculatorTest` has 9 boundary tests covering exactly these three days; all green. |
+| ◻ | Tracking options stay in one row at 320dp + largest font | **Needs user verification on emulator.** Layout uses `android:layout_width="0dp"` + `android:layout_weight="1"` + `android:maxLines="1"` on both label + unit so each pill shrinks together; design mandate is "shrink or wrap text inside each button, don't wrap buttons to a second row". |
+| ✓ | Steppers support hold-to-repeat and typing a value | `NewGoalFragment.HoldToRepeat` runs on `MotionEvent.ACTION_DOWN`, kicks a `Handler.postDelayed` chain, accelerates from 160 ms → 80 ms → 35 ms. Tap-the-number opens `showNumberDialog(…)` with an `EditText` filtered to the metric's `min`/`max` string length. |
+| ✓ | Delete has confirmation dialog + working Undo | `DeleteGoalConfirmDialog` (custom-view `DialogFragment` matching `DeleteConfirm.dc.html`) → confirm fires `GoalsViewModel.deleteWithUndo` → `GoalDeleteCoordinator` hides the row immediately, launches a 5-second delayed DELETE on `AppContainer.appScope`, Snackbar's Undo action cancels the pending job. Four coordinator tests pin this down. |
+| ✓ | `Goal` inheritance hierarchy intact | `Goal` → `DistanceGoal` / `WorkoutCountGoal` / `DurationGoal` / `StrengthVolumeGoal` all preserved; `init { require(...) }` on `DistanceGoal` + `StrengthVolumeGoal` enforces the activity × goalType matrix. KDoc updated to document the Phase-8b window shape (`durationDays`, `lastDay`, `daysLeft`, `status(...)`) + the "subclasses only decide *how to measure*" split. `GoalTest` + `GoalProgressCalculatorTest` + mapper tests all green. |
+| ~ | No hardcoded colours / dimensions / strings in new or changed layouts | **Colours + strings: fully clean.** **Dimensions: by the strict letter of the rule, a handful of `android:textSize="Nsp"` and component widths/heights are inline where the design mandates a specific size that doesn't correspond to a reused design-token.** Design-system tokens (`@dimen/space_*`, `@dimen/screen_margin`, `@dimen/radius_*`, `@dimen/stroke_hairline`, new `goal_main_card_radius`, `goal_main_ring_size`, `goal_main_ring_stroke`) are routed through consistently. See the Step 9 bullet above for the audit numbers. |
+| ◻ | Screenshots captured | **User action.** Shot list + capture commands in `docs/screenshots/README.md` under the "phase 8b goals redesign" heading. |
+| ✓ | `docs/dev-log.md` has an entry per step | Steps 1 – 9 all present in order. |
+
+### Pending user actions
+
+- Walk the full flow on the emulator and capture the five screenshots per `docs/screenshots/README.md`.
+- Check the Goals screens at 320dp, tablet, landscape, and largest font. Confirm the tracking-option row stays on one line.
+- Open phpMyAdmin and verify a freshly-created goal lands with the right `start_date`/`last_day`/`duration_days`/`is_main`.
+
+Everything else is signed off from this side — the branch is ready for the manual pass + the written report.
