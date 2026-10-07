@@ -8,13 +8,11 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.elijah.fitness.AppContainer
 import com.elijah.fitness.R
-import com.elijah.fitness.data.model.ActivityType
 import com.elijah.fitness.data.model.Goal
 import com.elijah.fitness.data.model.GoalProgressCalculator
-import com.elijah.fitness.data.model.GoalType
 import com.elijah.fitness.data.model.GoalWithProgress
 import com.elijah.fitness.data.remote.ApiResult
-import com.elijah.fitness.data.remote.mapper.goalType
+import com.elijah.fitness.data.repository.GoalDeleteCoordinator
 import com.elijah.fitness.data.repository.GoalRepository
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -22,43 +20,49 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.launchIn
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import java.time.LocalDate
 
 /**
- * State holder for the Goals screen.
+ * State holder for the Goals screen (phase-8b).
  *
  * ### Data flow
- * `GoalProgressCalculator.observe()` emits a list of every goal + its
- * live progress. This ViewModel splits that stream into a rendered list
- * of [GoalListItem]s:
+ * `GoalProgressCalculator.observe()` emits a snapshot of every goal with
+ * its current progress + status + Manage-sheet stats. This VM combines
+ * that stream with [GoalDeleteCoordinator.hiddenIds] so a goal in the
+ * middle of a pending-delete Undo window disappears from the UI without
+ * waiting for the server round-trip.
  *
- *   Featured (single, most-urgent incomplete)
- *   Section header "ACTIVE GOALS" + count pill
- *   Active rows (incomplete, minus the featured one)
+ * The output is a flat `List<GoalListItem>`:
+ *
+ *   Featured (dark-card main goal)
+ *   Section header "ACTIVE GOALS" (+ count pill)
+ *   Active rows
  *   Section header "COMPLETED"
  *   Completed rows
- *
- * Progress recomputes automatically whenever the underlying goals or
- * workouts change — see `GoalProgressCalculator`.
+ *   Section header "ENDED"
+ *   Ended rows
  */
 class GoalsViewModel(
     private val goalRepository: GoalRepository,
     private val calculator: GoalProgressCalculator,
+    private val deleteCoordinator: GoalDeleteCoordinator,
 ) : ViewModel() {
 
-    val items: StateFlow<List<GoalListItem>> = calculator.observe()
-        .map { snapshots -> buildItems(snapshots) }
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS),
-            initialValue = emptyList(),
-        )
+    val items: StateFlow<List<GoalListItem>> = combine(
+        calculator.observe(),
+        deleteCoordinator.hiddenIds,
+    ) { snapshots, hidden ->
+        buildItems(snapshots.filterNot { it.goal.id in hidden })
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS),
+        initialValue = emptyList(),
+    )
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
@@ -66,21 +70,11 @@ class GoalsViewModel(
     private val _errorEvents = Channel<ErrorEvent>(Channel.BUFFERED)
     val errorEvents: Flow<ErrorEvent> = _errorEvents.receiveAsFlow()
 
-    /**
-     * Ids of goals whose completion we've already celebrated during
-     * this ViewModel's lifetime. Combined with the server-side
-     * `completedNotified` flag on `Goal`, it prevents the Snackbar from
-     * firing twice — the local set covers the "just now, don't fire
-     * again in this session" case, and the server flag covers cold
-     * starts of a later session.
-     */
     private val celebratedThisSession: MutableSet<String> = mutableSetOf()
-    /** True once we've processed the very first snapshot. */
     private var completionsSeeded = false
 
     init {
         refresh()
-        // Observe the calculator once to detect new completions.
         calculator.observe()
             .onEach { snapshots -> detectCompletions(snapshots) }
             .launchIn(viewModelScope)
@@ -101,50 +95,32 @@ class GoalsViewModel(
     }
 
     /**
-     * Delete a goal, then keep a snapshot of it in memory for an Undo. On
-     * undo, we recreate it via the repository (a new server id will be
-     * assigned — that's fine, the delete + re-create is atomic from the
-     * user's perspective).
+     * Phase-8b delete: hide the goal immediately via the coordinator;
+     * the real DELETE fires 5 s later on an app-level scope, unless
+     * [undoDelete] is called first. The fragment shows the Snackbar.
      */
     fun deleteWithUndo(goal: Goal) {
+        deleteCoordinator.scheduleDelete(goal)
         viewModelScope.launch {
-            val snapshot = GoalSnapshot(
-                title = goal.title,
-                activityType = goal.activityType,
-                goalType = goal.goalType(),
-                targetValue = goal.targetValue,
-                startDate = goal.startDate,
-                durationDays = goal.durationDays,
-            )
-            when (goalRepository.deleteGoal(goal.id)) {
-                is ApiResult.Success ->
-                    _errorEvents.send(ErrorEvent.DeletedWithUndo(snapshot))
-                ApiResult.NetworkError ->
-                    _errorEvents.send(ErrorEvent.Network(R.string.auth_error_network))
-                is ApiResult.Error ->
-                    _errorEvents.send(ErrorEvent.Generic(R.string.goals_error_load_failed))
-            }
+            _errorEvents.send(ErrorEvent.DeletedWithUndo(goal.id, goal.title))
         }
     }
 
+    /** Cancel a pending delete; the goal reappears on the next emission. */
+    fun undoDelete(goalId: String) {
+        deleteCoordinator.undo(goalId)
+    }
+
     /**
-     * On every emission from the calculator, detect goals that have
-     * newly reached 100% (were incomplete last time OR this is the
-     * seed pass and their server-side `completedNotified` flag is
-     * still false), emit a celebration event, then persist the flag
-     * on the server so a next-session refresh won't re-fire.
+     * Called when the Snackbar fully dismisses (either timed out OR
+     * actively undone). No-op here — the coordinator already fired or
+     * cancelled based on which action happened; the Snackbar lifecycle
+     * is purely visual.
      */
     private fun detectCompletions(snapshots: List<GoalWithProgress>) {
         if (!completionsSeeded) {
-            // First snapshot: goals that are already complete + already
-            // notified are just history. Goals that are complete but not
-            // yet notified belong to a past session that never got to
-            // fire the Snackbar — celebrate them now.
             snapshots.filter { it.isCompleted && !it.goal.completedNotified }
                 .forEach { announceCompletion(it) }
-            // Seed the "already celebrated" set with everything currently
-            // complete, so we don't double-fire on the next emission when
-            // markCompletedNotified() writes back through the flow.
             snapshots.filter { it.isCompleted }.forEach { celebratedThisSession.add(it.goal.id) }
             completionsSeeded = true
             return
@@ -158,45 +134,59 @@ class GoalsViewModel(
         celebratedThisSession.add(gwp.goal.id)
         viewModelScope.launch {
             _errorEvents.send(ErrorEvent.GoalCompleted(gwp.goal.title))
-            // Persist the flag; silent on failure — worst case is the
-            // Snackbar fires once more on next cold start, which is fine.
             goalRepository.markCompletedNotified(gwp.goal.id)
         }
     }
 
-    /** Undo a delete by recreating the same goal from its captured snapshot. */
-    fun undoDelete(snapshot: GoalSnapshot) {
+    /**
+     * Call `makeMainGoal` on the repository and let `observeGoals()`
+     * re-emit with the updated `isMain`.
+     */
+    fun makeMainGoal(id: String) {
         viewModelScope.launch {
-            goalRepository.createGoal(
-                title = snapshot.title,
-                activityType = snapshot.activityType,
-                goalType = snapshot.goalType,
-                targetValue = snapshot.targetValue,
-                startDate = snapshot.startDate,
-                durationDays = snapshot.durationDays,
-            )
+            when (goalRepository.makeMainGoal(id)) {
+                is ApiResult.Success -> Unit
+                ApiResult.NetworkError ->
+                    _errorEvents.send(ErrorEvent.Network(R.string.auth_error_network))
+                is ApiResult.Error ->
+                    _errorEvents.send(ErrorEvent.Generic(R.string.goals_error_load_failed))
+            }
+        }
+    }
+
+    fun extendGoal(id: String, days: Int) {
+        viewModelScope.launch {
+            when (goalRepository.extendGoal(id, days)) {
+                is ApiResult.Success -> Unit
+                ApiResult.NetworkError ->
+                    _errorEvents.send(ErrorEvent.Network(R.string.auth_error_network))
+                is ApiResult.Error ->
+                    _errorEvents.send(ErrorEvent.Generic(R.string.goals_error_load_failed))
+            }
         }
     }
 
     private fun buildItems(all: List<GoalWithProgress>): List<GoalListItem> {
         if (all.isEmpty()) return emptyList()
 
-        // Three states already partitioned by GoalWithProgress.status:
-        // Active (window current + target unmet), Completed, Ended.
         val active = all.filter { it.isActive }
         val completed = all.filter { it.isCompleted }
         val ended = all.filter { it.isEnded }
 
         val out = mutableListOf<GoalListItem>()
 
-        // "Most urgent" = fewest days left; ties go to higher progress
-        // fraction (closer to completion), then earlier createdAt.
-        // Only active goals are eligible — never completed, never ended.
-        val featured = active.minWithOrNull(
-            compareBy<GoalWithProgress> { it.daysLeft }
-                .thenByDescending { it.progressFraction }
-                .thenBy { it.goal.createdAt }
-        )
+        // Dark-card (Featured) selection — Phase 8b Step 4:
+        //   1. The user's main goal if it's active.
+        //   2. Otherwise the active goal with the fewest days left,
+        //      tie-breaking on higher progress then earlier createdAt.
+        //   3. If there are no active goals, no dark card is shown
+        //      (completed-only / ended-only lists never feature).
+        val featured = active.firstOrNull { it.isMain }
+            ?: active.minWithOrNull(
+                compareBy<GoalWithProgress> { it.daysLeft }
+                    .thenByDescending { it.progressFraction }
+                    .thenBy { it.goal.createdAt }
+            )
         if (featured != null) {
             out += GoalListItem.Featured(featured)
         }
@@ -220,21 +210,15 @@ class GoalsViewModel(
         return out
     }
 
-    /** Enough to re-create a deleted goal from Undo without another network trip. */
-    data class GoalSnapshot(
-        val title: String,
-        val activityType: ActivityType?,
-        val goalType: GoalType,
-        val targetValue: Double,
-        val startDate: LocalDate,
-        val durationDays: Int,
-    )
-
     sealed interface ErrorEvent {
         data class Network(@StringRes val messageRes: Int) : ErrorEvent
         data class Generic(@StringRes val messageRes: Int) : ErrorEvent
-        data class DeletedWithUndo(val snapshot: GoalSnapshot) : ErrorEvent
-        /** A goal just reached 100% — the fragment shows a celebration Snackbar. */
+        /**
+         * Phase-8b: carries the goal's id (for Undo) and title (for the
+         * Snackbar copy). The actual DELETE is already scheduled on the
+         * app-level scope.
+         */
+        data class DeletedWithUndo(val goalId: String, val title: String) : ErrorEvent
         data class GoalCompleted(val title: String) : ErrorEvent
     }
 
@@ -246,6 +230,7 @@ class GoalsViewModel(
                 GoalsViewModel(
                     goalRepository = container.goalRepository,
                     calculator = container.goalProgressCalculator,
+                    deleteCoordinator = container.goalDeleteCoordinator,
                 )
             }
         }

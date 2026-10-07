@@ -20,9 +20,13 @@ import com.elijah.fitness.data.repository.RemoteGoalRepository
 import com.elijah.fitness.data.repository.RemoteWorkoutRepository
 import com.elijah.fitness.data.repository.UserSettings
 import com.elijah.fitness.data.repository.WorkoutRepository
+import com.elijah.fitness.data.repository.GoalDeleteCoordinator
 import com.elijah.fitness.insights.InsightEngine
 import com.elijah.fitness.tracking.LocationTracker
 import com.elijah.fitness.tracking.TrackingSession
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 
 /**
  * Manual dependency container. Instantiated once in [FitnessApp] and read
@@ -36,6 +40,16 @@ import com.elijah.fitness.tracking.TrackingSession
  * [WorkoutRepository] interface introduced in phase 1: no UI code moves.
  */
 class AppContainer(applicationContext: Context) {
+
+    /**
+     * Application-level [CoroutineScope]. Jobs launched here outlive any
+     * individual fragment or ViewModel — used by the Phase-8b delayed-
+     * delete coordinator so leaving the Goals screen within the 5-second
+     * Undo window doesn't cancel the pending DELETE.
+     *
+     * `SupervisorJob` so one failed child job doesn't nuke the scope.
+     */
+    val appScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
 
     // Phase-2 preferences.
     val tokenStore: TokenStore = DataStoreTokenStore(applicationContext)
@@ -98,6 +112,19 @@ class AppContainer(applicationContext: Context) {
     // -----------------------------------------------------------------
     val trackingSession: TrackingSession = TrackingSession()
     val locationTracker: LocationTracker = LocationTracker(applicationContext)
+
+    /**
+     * Phase-8b delayed-delete coordinator. The Goals screen calls
+     * `scheduleDelete(goal)` to hide a goal and start a 5-second timer;
+     * `undo(id)` cancels the timer. If the timer runs out, the real
+     * server-side `DELETE` fires. Running on [appScope] so navigating
+     * away from the Goals screen during the Undo window doesn't lose
+     * the pending delete.
+     */
+    val goalDeleteCoordinator: GoalDeleteCoordinator = GoalDeleteCoordinator(
+        repository = goalRepository,
+        appScope = appScope,
+    )
 
     /**
      * Phase-8 personalised-insights engine. Pure Kotlin — the Home VM

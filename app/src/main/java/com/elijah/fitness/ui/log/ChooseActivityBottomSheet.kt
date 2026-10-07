@@ -71,7 +71,6 @@ class ChooseActivityBottomSheet : BottomSheetDialogFragment() {
             bundleOf(ARG_ACTIVITY_TYPE to activity.name),
         )
     }
-
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null

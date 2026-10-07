@@ -1686,3 +1686,49 @@ Would have left the app booting into a broken Goals tab for several commits. Shi
 **Assignment task supported**
 - **Task 4 (development)** — the day-based goals feature is now plumbed through the domain and data layers; Steps 5-7 wire the new UI screens on top.
 - **Task 5b (hierarchies)** — the `Goal` inheritance hierarchy stays intact (filter on base, measure in subclass) with updated KDoc. New per-subclass `init { require(...) }` checks strengthen the "subclasses own their invariants" story.
+
+## Step 4 — Data-layer: delete-with-undo + dark-card selection
+Most of Step 4's content (DTO rewrite, mapper, API, repository shape change, calculator-produces-Manage-stats) landed in Step 3 while the domain model moved. Step 4 now adds the two remaining bits: the dark-card selection rule and the delayed-DELETE Undo mechanism.
+
+**Built**
+- **`AppContainer.appScope`** — a new `CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)` that outlives any individual fragment or ViewModel. Used by:
+- **`data/repository/GoalDeleteCoordinator.kt`** — the delayed-delete orchestrator. Owns:
+  - `hiddenIds: StateFlow<Set<String>>` — the Goals screen filters these out of its list immediately on tap.
+  - `pendingJobs: ConcurrentHashMap<String, Job>` — the pending-DELETE coroutine per id.
+  - `scheduleDelete(goal)` — hides the id + launches a job on `appScope` that sleeps `DEFAULT_DELAY_MS = 5000` ms then calls `repository.deleteGoal(id)`. If the goal is already pending, the second call is a no-op (second Delete tap doesn't restart the timer).
+  - `undo(id)` — cancels the pending job and takes the id back out of `hiddenIds`.
+  - `isPending(id)` / `pending()` helpers for tests.
+  - Constructor-tweakable `delayMs` so tests use `50L` or similar instead of waiting 5 seconds.
+- **`GoalsViewModel`** rewired:
+  - `items` now `combine`s `calculator.observe()` with `coordinator.hiddenIds`, filtering out any pending-delete goals so the UI reacts to the Delete tap on the very next emission — before any server round-trip.
+  - `deleteWithUndo(goal)` calls `coordinator.scheduleDelete(goal)` + emits `DeletedWithUndo(goalId, title)`.
+  - `undoDelete(goalId)` calls `coordinator.undo(id)` — the goal reappears from the next calculator emission.
+  - **Dark-card (Featured) selection** now follows the brief exactly: **main goal if active** → else **active goal with fewest days left** (tie-break on higher progress, then earlier createdAt) → else no dark card. A completed-main goal falls through to the next rule.
+  - `makeMainGoal(id)` + `extendGoal(id, days)` wired to the repository and surface Network / Generic errors on failure.
+- **`GoalsFragment`** — the `DeletedWithUndo` handler now takes a goal id (not a `GoalSnapshot`), and the Undo action calls `viewModel.undoDelete(goalId)`.
+- **`GoalSnapshot`** data class removed — the coordinator keeps the goal "alive" on the server during the Undo window, so the client-side re-create path isn't needed.
+- **New tests (6)**:
+  - `GoalDeleteCoordinatorTest` × 4 — scheduling hides immediately but doesn't DELETE yet; delay elapsed fires DELETE exactly once and un-hides; undo inside the window cancels; same-id-scheduled-twice doesn't restart the timer.
+  - `GoalsViewModelTest` × 2 — Featured prefers an active main; falls back to fewest-daysLeft when the main is in the Ended bucket.
+
+**Key design decision — delayed-DELETE on an app-level scope beats delete-then-recreate**
+Delete-then-recreate costs two network trips, loses the server-side `id` (a fresh row gets a new one on Undo), and creates a transient "goal with id X doesn't exist" window during which another device syncing the same account briefly loses the goal. Delayed-DELETE avoids all of that at the cost of a 5-second local timer. The app-level scope specifically means a user tapping Delete → immediately navigating to Home → locking the screen within 5 seconds still has the delete fire — the only cancellation path is an explicit Undo tap.
+
+**Rejected alternative — put the delayed-delete logic directly on the repository**
+Would have let any caller enjoy the behaviour without touching a separate coordinator type. Rejected because repository implementations should map faithfully to their backing data source (Retrofit for Remote, memory for Fake); baking a UI concept (Snackbar-driven Undo) into the repository confuses the layering. The coordinator sits above the repository and plumbs the Snackbar's lifecycle into a server call cleanly.
+
+**Rejected alternative — route the hidden set through `GoalProgressCalculator`**
+Would have let every consumer of goal progress (including `InsightEngine`) see the filtered view automatically. Rejected because the calculator is a pure domain object; passing a UI-level concept ("this goal is temporarily hidden pending Undo") into it muddies the boundary. The Goals-screen VM is the one surface that needs the filter, and it `combine`s the two flows locally.
+
+**Kotlin/Android concepts** *(for my notes)*
+- `SupervisorJob() + Dispatchers.Main.immediate` on an app-level scope: `SupervisorJob` so a failed child doesn't nuke the scope; `Main.immediate` because the pending-DELETE coroutine's work (updating the hidden set) is already on the main thread by the time it runs.
+- `kotlinx.coroutines.flow.combine` with `StateFlow`s: emits whenever either upstream emits; cheap to add a third upstream (the hidden set) without rewriting the computation.
+- `kotlinx.coroutines.test.StandardTestDispatcher.scheduler.advanceTimeBy(…)` — fast-forwards a controlled clock, so the 5-second timer tests run in milliseconds.
+
+**Verified**
+- `./gradlew assembleLocalDebug` — BUILD SUCCESSFUL.
+- `./gradlew testLocalDebugUnitTest` — **259 tests, 0 failures** (+ 6 new in this step).
+
+**Assignment task supported**
+- **Task 4 (development)** — the Goals screen's Delete flow is now the specified "optimistically hide + 5-second Undo + real DELETE". The dark-card selection matches the brief's main-first rule.
+- **Task 1b (design)** — the "delete-with-undo as app-scope coroutine" story + the "repository stays faithful to the backing data source, UI concepts live in a coordinator" layering story are both tidy architecture write-ups.

@@ -9,8 +9,11 @@ import com.elijah.fitness.data.model.GoalType
 import com.elijah.fitness.data.model.Workout
 import com.elijah.fitness.data.model.WorkoutCountGoal
 import com.elijah.fitness.data.remote.ApiResult
+import com.elijah.fitness.data.repository.GoalDeleteCoordinator
 import com.elijah.fitness.data.repository.GoalRepository
 import com.elijah.fitness.data.repository.WorkoutRepository
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -76,6 +79,43 @@ class GoalsViewModelTest {
         assertEquals("2 in progress", (items[1] as GoalListItem.SectionHeader).countPill)
         assertTrue(items[2] is GoalListItem.Active)
         assertTrue(items[3] is GoalListItem.Active)
+    }
+
+    @Test
+    fun `Featured prefers the main goal when it is active`() = runTest {
+        val base = startDate.atStartOfDay(ZoneOffset.UTC).toInstant()
+        val urgent = DistanceGoal(
+            id = "urgent", title = "u", activityType = ActivityType.RUNNING,
+            targetValue = 20.0, startDate = startDate, durationDays = 3, createdAt = base,
+        )
+        val main = DistanceGoal(
+            id = "main", title = "m", activityType = ActivityType.RUNNING,
+            targetValue = 20.0, startDate = startDate, durationDays = 30, createdAt = base,
+            isMain = true,
+        )
+        val vm = viewModelWith(goals = listOf(urgent, main), workouts = emptyList())
+        val items = collectItems(vm)
+        val featured = items.first() as GoalListItem.Featured
+        assertEquals("main", featured.goal.goal.id)
+    }
+
+    @Test
+    fun `Featured falls back to fewest-daysLeft when the main goal is ended`() = runTest {
+        val base = startDate.atStartOfDay(ZoneOffset.UTC).toInstant()
+        val pastMain = DistanceGoal(
+            id = "past", title = "p", activityType = ActivityType.RUNNING,
+            targetValue = 20.0, startDate = LocalDate.parse("2026-08-01"),
+            durationDays = 7, createdAt = Instant.parse("2026-08-01T00:00:00Z"),
+            isMain = true,
+        )
+        val active = DistanceGoal(
+            id = "active", title = "a", activityType = ActivityType.RUNNING,
+            targetValue = 20.0, startDate = startDate, durationDays = 30, createdAt = base,
+        )
+        val vm = viewModelWith(goals = listOf(pastMain, active), workouts = emptyList())
+        val items = collectItems(vm)
+        val featured = items.first() as GoalListItem.Featured
+        assertEquals("active", featured.goal.goal.id)
     }
 
     @Test
@@ -281,7 +321,7 @@ class GoalsViewModelTest {
         val goalRepo = FakeGoalRepo(goalsFlow)
         val workoutRepo = FakeWorkoutRepo(workoutsFlow)
         val calc = GoalProgressCalculator(goalRepo, workoutRepo, clock, ZoneOffset.UTC)
-        return GoalsViewModel(goalRepo, calc)
+        return GoalsViewModel(goalRepo, calc, newDeleteCoordinator(goalRepo))
     }
 
     private fun buildWith(
@@ -291,8 +331,11 @@ class GoalsViewModelTest {
     ): GoalsViewModel {
         val workoutRepo = FakeWorkoutRepo(workouts)
         val calc = GoalProgressCalculator(repo, workoutRepo, clock, ZoneOffset.UTC)
-        return GoalsViewModel(repo, calc)
+        return GoalsViewModel(repo, calc, newDeleteCoordinator(repo))
     }
+
+    private fun newDeleteCoordinator(repo: GoalRepository): GoalDeleteCoordinator =
+        GoalDeleteCoordinator(repo, CoroutineScope(SupervisorJob() + dispatcher), delayMs = 50L)
 
     private class FakeGoalRepo(
         private val flow: MutableStateFlow<List<Goal>>,

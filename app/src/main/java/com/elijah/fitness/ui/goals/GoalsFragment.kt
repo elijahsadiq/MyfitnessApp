@@ -107,7 +107,7 @@ class GoalsFragment : BaseFragment<FragmentGoalsBinding>() {
             when (event) {
                 is GoalsViewModel.ErrorEvent.Network -> showRetrySnackbar(event.messageRes)
                 is GoalsViewModel.ErrorEvent.Generic -> showRetrySnackbar(event.messageRes)
-                is GoalsViewModel.ErrorEvent.DeletedWithUndo -> showUndoSnackbar(event.snapshot)
+                is GoalsViewModel.ErrorEvent.DeletedWithUndo -> showUndoSnackbar(event.goalId)
                 is GoalsViewModel.ErrorEvent.GoalCompleted -> showCompletionSnackbar(event.title)
             }
         }
@@ -141,9 +141,9 @@ class GoalsFragment : BaseFragment<FragmentGoalsBinding>() {
             }
             .firstOrNull { it.id == id }
 
-    private fun showUndoSnackbar(snapshot: GoalsViewModel.GoalSnapshot) {
+    private fun showUndoSnackbar(goalId: String) {
         Snackbar.make(binding.root, R.string.goals_deleted_snackbar, Snackbar.LENGTH_LONG)
-            .setAction(R.string.goals_deleted_undo) { viewModel.undoDelete(snapshot) }
+            .setAction(R.string.goals_deleted_undo) { viewModel.undoDelete(goalId) }
             .show()
     }
 
