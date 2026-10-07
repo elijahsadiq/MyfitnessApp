@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Goals v2 main goal card. Dark #1C1F1A surface with a 26dp radius. Two
+  pills row (Main goal · activity · days-left), title row with the big
+  current value + "/ target unit", and the 108dp progress ring on the
+  right with "N%" + "DONE" caption underneath.
+
+  Rendered as the first scrollable row in the Goals list; `goalMainCard`
+  is the ripple-root the fragment binds a click listener to.
+-->
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/goalMainCard"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginHorizontal="@dimen/screen_margin"
+    android:layout_marginTop="@dimen/space_xl"
+    android:background="?attr/selectableItemBackground"
+    app:cardBackgroundColor="@color/goal_main_card"
+    app:cardCornerRadius="@dimen/goal_main_card_radius"
+    app:cardElevation="0dp"
+    app:contentPadding="@dimen/card_padding_lg">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <!-- Top pill row: left "Main goal · <activity>", right "N days left". -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <LinearLayout
+                android:id="@+id/goalMainPillActivity"
+                android:layout_width="wrap_content"
+                android:layout_height="28dp"
+                android:background="@drawable/bg_goal_main_pill"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingHorizontal="12dp">
+
+                <ImageView
+                    android:id="@+id/goalMainPillActivityIcon"
+                    android:layout_width="15dp"
+                    android:layout_height="15dp"
+                    android:contentDescription="@null"
+                    android:src="@drawable/ic_run_24"
+                    app:tint="@color/lime_accent" />
+
+                <TextView
+                    android:id="@+id/goalMainPillActivityLabel"
+                    style="@style/TextAppearance.Fitness.LabelMd"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="6dp"
+                    android:textAllCaps="false"
+                    android:textColor="@color/lime_accent"
+                    android:textStyle="bold"
+                    tools:text="Main goal · Running" />
+            </LinearLayout>
+
+            <Space
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:layout_weight="1" />
+
+            <LinearLayout
+                android:id="@+id/goalMainPillDaysLeft"
+                android:layout_width="wrap_content"
+                android:layout_height="28dp"
+                android:background="@drawable/bg_goal_main_pill"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingHorizontal="12dp">
+
+                <ImageView
+                    android:layout_width="14dp"
+                    android:layout_height="14dp"
+                    android:contentDescription="@null"
+                    android:src="@drawable/ic_history_24"
+                    app:tint="@color/text_on_dark_muted" />
+
+                <TextView
+                    android:id="@+id/goalMainPillDaysLeftLabel"
+                    style="@style/TextAppearance.Fitness.LabelMd"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="6dp"
+                    android:textAllCaps="false"
+                    android:textColor="@color/text_on_dark_muted"
+                    tools:text="12 days left" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Title + value on the left, 108dp progress ring on the right. -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_lg"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/goalMainTitle"
+                    style="@style/TextAppearance.Fitness.HeadlineSm"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/text_on_dark"
+                    tools:text="Run 50 km in 30 days" />
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:baselineAligned="true"
+                    android:gravity="bottom"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/goalMainValue"
+                        style="@style/TextAppearance.Fitness.DisplayMetric"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textColor="@color/text_on_dark"
+                        tools:text="32" />
+
+                    <TextView
+                        android:id="@+id/goalMainValueSuffix"
+                        style="@style/TextAppearance.Fitness.BodyLg"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="6dp"
+                        android:layout_marginBottom="6dp"
+                        android:textColor="@color/goal_main_muted"
+                        tools:text="/ 50 km" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <FrameLayout
+                android:layout_width="@dimen/goal_main_ring_size"
+                android:layout_height="@dimen/goal_main_ring_size"
+                android:layout_marginStart="@dimen/space_md">
+
+                <com.elijah.fitness.ui.dashboard.ProgressRingView
+                    android:id="@+id/goalMainProgressRing"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:contentDescription="@string/goals_featured_icon_content_description"
+                    app:ringArcColor="@color/lime_accent"
+                    app:ringStrokeWidth="@dimen/goal_main_ring_stroke"
+                    app:ringTrackColor="@color/goal_main_ring_track" />
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:gravity="center_horizontal"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/goalMainProgressRingPercent"
+                        style="@style/TextAppearance.Fitness.HeadlineSm"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textColor="@color/lime_accent"
+                        android:textStyle="bold"
+                        tools:text="64%" />
+
+                    <TextView
+                        style="@style/TextAppearance.Fitness.LabelSm"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:text="@string/goals_main_done_caption"
+                        android:textColor="@color/goal_main_muted" />
+                </LinearLayout>
+            </FrameLayout>
+        </LinearLayout>
+    </LinearLayout>
+</com.google.android.material.card.MaterialCardView>

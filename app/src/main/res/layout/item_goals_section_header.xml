@@ -1,12 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  Section header row for the Goals v2 list. Uppercase label on the left,
+  compact count pill on the right. The pill is visible only when the
+  view model supplies a non-null `countPill` string.
+-->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginHorizontal="@dimen/screen_margin"
-    android:layout_marginTop="@dimen/section_gap"
-    android:layout_marginBottom="@dimen/space_sm"
+    android:layout_marginTop="@dimen/space_xl"
+    android:layout_marginBottom="@dimen/space_md"
     android:gravity="center_vertical"
     android:orientation="horizontal">
 
@@ -21,14 +26,15 @@
 
     <TextView
         android:id="@+id/goalsSectionCountPill"
-        style="@style/TextAppearance.Fitness.LabelSm"
+        style="@style/TextAppearance.Fitness.LabelMd"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_height="24dp"
         android:background="@drawable/bg_section_summary_pill"
+        android:gravity="center_vertical"
         android:paddingHorizontal="10dp"
-        android:paddingVertical="4dp"
         android:textAllCaps="false"
         android:textColor="@color/text_secondary"
+        android:textStyle="bold"
         android:visibility="gone"
         tools:text="3 in progress"
         tools:visibility="visible" />

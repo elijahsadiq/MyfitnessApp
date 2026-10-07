@@ -1,41 +1,53 @@
 package com.elijah.fitness.ui.goals
 
+import android.content.Context
 import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.elijah.fitness.R
 import com.elijah.fitness.data.model.ActivityType
+import com.elijah.fitness.data.model.GoalType
 import com.elijah.fitness.data.model.GoalWithProgress
 import com.elijah.fitness.data.remote.mapper.goalType
 import com.elijah.fitness.databinding.ItemGoalActiveBinding
 import com.elijah.fitness.databinding.ItemGoalCompletedBinding
-import com.elijah.fitness.databinding.ItemGoalFeaturedBinding
+import com.elijah.fitness.databinding.ItemGoalEndedBinding
+import com.elijah.fitness.databinding.ItemGoalMainCardBinding
+import com.elijah.fitness.databinding.ItemGoalsHeaderBinding
 import com.elijah.fitness.databinding.ItemGoalsSectionHeaderBinding
 import com.elijah.fitness.ui.base.BaseViewHolder
-import com.elijah.fitness.data.model.GoalType
+import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 /**
- * RecyclerView adapter for the Goals screen. Four view types are
- * dispatched polymorphically off the sealed [GoalListItem]:
- *   - [GoalListItem.Featured] → dark hero card with a progress ring
- *   - [GoalListItem.SectionHeader] → section title + optional count pill
- *   - [GoalListItem.Active] → row with icon, title, thin progress bar
- *   - [GoalListItem.Completed] → row with lime check badge
+ * RecyclerView adapter for the Goals screen (Phase 8b redesign).
  *
- * Every view holder extends the existing [BaseViewHolder] — reusing the
- * hierarchy that the History adapter established (Task 5b, inheritance
- * example #3).
+ * Five view types dispatched polymorphically off the sealed
+ * [GoalListItem]:
+ *   - [GoalListItem.Header] → title + eyebrow + "+ New goal" pill
+ *   - [GoalListItem.MainGoalCard] → dark 26dp hero card
+ *   - [GoalListItem.SectionHeader] → uppercase label + optional count pill
+ *   - [GoalListItem.Active] → icon tile + title/value row + 8dp progress bar
+ *   - [GoalListItem.Completed] → icon tile + "Finished …" + lime check
+ *   - [GoalListItem.Ended] → dashed border + "Try again" white pill
+ *
+ * Every view holder extends [BaseViewHolder], reusing the inheritance
+ * hierarchy that the History adapter established (hierarchy #3 in the
+ * report).
  */
 class GoalsAdapter(
     private val onGoalTap: (GoalWithProgress) -> Unit,
+    private val onNewGoalTap: () -> Unit,
+    private val onTryAgainTap: (GoalWithProgress) -> Unit,
 ) : ListAdapter<GoalListItem, RecyclerView.ViewHolder>(GoalListItemDiff) {
 
     override fun getItemViewType(position: Int): Int = when (getItem(position)) {
-        is GoalListItem.Featured -> VIEW_TYPE_FEATURED
-        is GoalListItem.SectionHeader -> VIEW_TYPE_HEADER
+        is GoalListItem.Header -> VIEW_TYPE_HEADER
+        is GoalListItem.MainGoalCard -> VIEW_TYPE_MAIN_CARD
+        is GoalListItem.SectionHeader -> VIEW_TYPE_SECTION_HEADER
         is GoalListItem.Active -> VIEW_TYPE_ACTIVE
         is GoalListItem.Completed -> VIEW_TYPE_COMPLETED
         is GoalListItem.Ended -> VIEW_TYPE_ENDED
@@ -47,11 +59,16 @@ class GoalsAdapter(
     ): RecyclerView.ViewHolder {
         val inflater = LayoutInflater.from(parent.context)
         return when (viewType) {
-            VIEW_TYPE_FEATURED -> FeaturedGoalViewHolder(
-                ItemGoalFeaturedBinding.inflate(inflater, parent, false), onGoalTap,
+            VIEW_TYPE_HEADER -> GoalsHeaderViewHolder(
+                ItemGoalsHeaderBinding.inflate(inflater, parent, false),
+                onNewGoalTap,
             )
-            VIEW_TYPE_HEADER -> GoalsSectionHeaderViewHolder(
-                ItemGoalsSectionHeaderBinding.inflate(inflater, parent, false)
+            VIEW_TYPE_MAIN_CARD -> MainGoalCardViewHolder(
+                ItemGoalMainCardBinding.inflate(inflater, parent, false),
+                onGoalTap,
+            )
+            VIEW_TYPE_SECTION_HEADER -> GoalsSectionHeaderViewHolder(
+                ItemGoalsSectionHeaderBinding.inflate(inflater, parent, false),
             )
             VIEW_TYPE_ACTIVE -> ActiveGoalViewHolder(
                 ItemGoalActiveBinding.inflate(inflater, parent, false), onGoalTap,
@@ -60,7 +77,7 @@ class GoalsAdapter(
                 ItemGoalCompletedBinding.inflate(inflater, parent, false), onGoalTap,
             )
             VIEW_TYPE_ENDED -> EndedGoalViewHolder(
-                ItemGoalCompletedBinding.inflate(inflater, parent, false), onGoalTap,
+                ItemGoalEndedBinding.inflate(inflater, parent, false), onGoalTap, onTryAgainTap,
             )
             else -> error("Unknown view type $viewType")
         }
@@ -68,7 +85,8 @@ class GoalsAdapter(
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         when (val item = getItem(position)) {
-            is GoalListItem.Featured -> (holder as FeaturedGoalViewHolder).bind(item)
+            is GoalListItem.Header -> (holder as GoalsHeaderViewHolder).bind(item)
+            is GoalListItem.MainGoalCard -> (holder as MainGoalCardViewHolder).bind(item)
             is GoalListItem.SectionHeader -> (holder as GoalsSectionHeaderViewHolder).bind(item)
             is GoalListItem.Active -> (holder as ActiveGoalViewHolder).bind(item)
             is GoalListItem.Completed -> (holder as CompletedGoalViewHolder).bind(item)
@@ -77,19 +95,21 @@ class GoalsAdapter(
     }
 
     companion object {
-        private const val VIEW_TYPE_FEATURED = 0
-        private const val VIEW_TYPE_HEADER = 1
-        private const val VIEW_TYPE_ACTIVE = 2
-        private const val VIEW_TYPE_COMPLETED = 3
-        private const val VIEW_TYPE_ENDED = 4
+        private const val VIEW_TYPE_HEADER = 0
+        private const val VIEW_TYPE_MAIN_CARD = 1
+        private const val VIEW_TYPE_SECTION_HEADER = 2
+        private const val VIEW_TYPE_ACTIVE = 3
+        private const val VIEW_TYPE_COMPLETED = 4
+        private const val VIEW_TYPE_ENDED = 5
     }
 }
 
-/** Diff by id for goal rows; by label for headers. */
+/** Diff by stable id for goal rows; headers compare by content. */
 private object GoalListItemDiff : DiffUtil.ItemCallback<GoalListItem>() {
     override fun areItemsTheSame(oldItem: GoalListItem, newItem: GoalListItem): Boolean =
         when {
-            oldItem is GoalListItem.Featured && newItem is GoalListItem.Featured ->
+            oldItem is GoalListItem.Header && newItem is GoalListItem.Header -> true
+            oldItem is GoalListItem.MainGoalCard && newItem is GoalListItem.MainGoalCard ->
                 oldItem.goal.goal.id == newItem.goal.goal.id
             oldItem is GoalListItem.Active && newItem is GoalListItem.Active ->
                 oldItem.goal.goal.id == newItem.goal.goal.id
@@ -110,6 +130,28 @@ private object GoalListItemDiff : DiffUtil.ItemCallback<GoalListItem>() {
 // View holders
 // ---------------------------------------------------------------------
 
+class GoalsHeaderViewHolder(
+    private val binding: ItemGoalsHeaderBinding,
+    private val onNewGoalTap: () -> Unit,
+) : BaseViewHolder<GoalListItem.Header>(binding) {
+    override fun bind(item: GoalListItem.Header) {
+        val ctx = binding.root.context
+        binding.goalsHeaderEyebrow.text = formatEyebrow(ctx, item)
+        binding.goalsHeaderNewButton.setOnClickListener { onNewGoalTap() }
+    }
+
+    private fun formatEyebrow(ctx: Context, item: GoalListItem.Header): CharSequence {
+        val a = item.activeCount
+        val c = item.completedCount
+        return when {
+            a > 0 && c > 0 -> ctx.getString(R.string.goals_header_eyebrow_both, a, c)
+            a > 0 -> ctx.getString(R.string.goals_header_eyebrow_active_only, a)
+            c > 0 -> ctx.getString(R.string.goals_header_eyebrow_completed_only, c)
+            else -> ctx.getString(R.string.goals_header_eyebrow_empty)
+        }
+    }
+}
+
 class GoalsSectionHeaderViewHolder(
     private val binding: ItemGoalsSectionHeaderBinding,
 ) : BaseViewHolder<GoalListItem.SectionHeader>(binding) {
@@ -117,42 +159,65 @@ class GoalsSectionHeaderViewHolder(
         binding.goalsSectionTitle.setText(item.labelRes)
         if (item.countPill != null) {
             binding.goalsSectionCountPill.text = item.countPill
-            binding.goalsSectionCountPill.visibility = android.view.View.VISIBLE
+            binding.goalsSectionCountPill.visibility = View.VISIBLE
         } else {
-            binding.goalsSectionCountPill.visibility = android.view.View.GONE
+            binding.goalsSectionCountPill.visibility = View.GONE
         }
     }
 }
 
-class FeaturedGoalViewHolder(
-    private val binding: ItemGoalFeaturedBinding,
+class MainGoalCardViewHolder(
+    private val binding: ItemGoalMainCardBinding,
     private val onGoalTap: (GoalWithProgress) -> Unit,
-) : BaseViewHolder<GoalListItem.Featured>(binding) {
-    override fun bind(item: GoalListItem.Featured) {
+) : BaseViewHolder<GoalListItem.MainGoalCard>(binding) {
+    override fun bind(item: GoalListItem.MainGoalCard) {
         val ctx = binding.root.context
         val gwp = item.goal
         val goal = gwp.goal
+        val type = goal.goalType()
 
-        // Phase-8b: period eyebrow is being replaced by the Main / activity
-        // pill in Step 5's redesign. Hold a neutral copy until then.
-        binding.featuredEyebrow.setText(R.string.goals_eyebrow_week)
-        binding.featuredTitle.text = goal.title
-        binding.featuredValue.text = GoalFormatters.formatValue(gwp.currentValue, goal.goalType())
-        binding.featuredValueSuffix.text = ctx.getString(
+        // Activity pill: icon + "Main goal · <Activity>" (or "Any activity").
+        binding.goalMainPillActivityIcon.setImageResource(
+            GoalFormatters.iconRes(goal.activityType, type)
+        )
+        binding.goalMainPillActivityLabel.text = formatMainPill(ctx, goal.activityType)
+
+        // Days-left pill (same wording as the active row's small pill).
+        binding.goalMainPillDaysLeftLabel.text =
+            GoalFormatters.formatTimeRemaining(ctx, gwp.daysLeft)
+
+        binding.goalMainTitle.text = goal.title
+
+        // Big current value + "/ target unit" suffix.
+        binding.goalMainValue.text = GoalFormatters.formatValue(gwp.currentValue, type)
+        binding.goalMainValueSuffix.text = ctx.getString(
             R.string.goal_value_over_target_decimal,
             "",
-            GoalFormatters.formatValue(goal.targetValue, goal.goalType()),
-            GoalFormatters.unitLabel(ctx, goal.goalType()),
+            GoalFormatters.formatValue(goal.targetValue, type),
+            GoalFormatters.unitLabel(ctx, type),
         ).trimStart(' ', '/').let { "/ $it" }
-        binding.featuredTimeRemaining.text = GoalFormatters.formatTimeRemaining(ctx, gwp.daysLeft)
-        binding.featuredProgressRing.progress = gwp.progressFraction.toFloat()
-        binding.featuredProgressRingLabel.text = ctx.getString(
+
+        // Progress ring + percent + "DONE" caption underneath.
+        binding.goalMainProgressRing.progress = gwp.progressFraction.toFloat()
+        binding.goalMainProgressRingPercent.text = ctx.getString(
             R.string.home_progress_ring_label,
             (gwp.progressFraction * 100).toInt(),
         )
 
-        binding.featuredCard.setOnClickListener { onGoalTap(gwp) }
+        binding.goalMainCard.setOnClickListener { onGoalTap(gwp) }
+        binding.goalMainCard.contentDescription = ctx.getString(
+            R.string.goals_main_card_content_description,
+            goal.title,
+            (gwp.progressFraction * 100).toInt(),
+        )
     }
+
+    private fun formatMainPill(ctx: Context, activity: ActivityType?): String =
+        if (activity == null) ctx.getString(R.string.goals_main_pill_any_activity)
+        else ctx.getString(
+            R.string.goals_main_pill_with_activity,
+            GoalFormatters.activityLabel(ctx, activity),
+        )
 }
 
 class ActiveGoalViewHolder(
@@ -163,18 +228,18 @@ class ActiveGoalViewHolder(
         val ctx = binding.root.context
         val gwp = item.goal
         val goal = gwp.goal
+        val type = goal.goalType()
 
-        binding.activeIcon.setImageResource(GoalFormatters.iconRes(goal.activityType, goal.goalType()))
+        binding.activeIcon.setImageResource(GoalFormatters.iconRes(goal.activityType, type))
         binding.activeTitle.text = goal.title
         binding.activeValue.text = ctx.getString(
             R.string.goal_value_over_target_decimal,
-            GoalFormatters.formatValue(gwp.currentValue, goal.goalType()),
-            GoalFormatters.formatValue(goal.targetValue, goal.goalType()),
-            GoalFormatters.unitLabel(ctx, goal.goalType()),
+            GoalFormatters.formatValue(gwp.currentValue, type),
+            GoalFormatters.formatValue(goal.targetValue, type),
+            GoalFormatters.unitLabel(ctx, type),
         )
         binding.activeProgressBar.progress = (gwp.progressFraction * 100).toInt()
         binding.activeTimeRemaining.text = GoalFormatters.formatTimeRemaining(ctx, gwp.daysLeft)
-
         binding.activeCard.setOnClickListener { onGoalTap(gwp) }
     }
 }
@@ -187,67 +252,80 @@ class CompletedGoalViewHolder(
         val ctx = binding.root.context
         val gwp = item.goal
         val goal = gwp.goal
+        val type = goal.goalType()
 
+        binding.completedIcon.setImageResource(GoalFormatters.iconRes(goal.activityType, type))
         binding.completedTitle.text = goal.title
+        // Phase-8b: we don't persist the exact completion date yet, so the
+        // row shows the goal's `lastDay` as the "Finished …" date. The
+        // actual value is the user's current measured total (which, for
+        // completed goals, is >= target).
         binding.completedCaption.text = ctx.getString(
-            R.string.goal_value_over_target_decimal,
-            GoalFormatters.formatValue(goal.targetValue, goal.goalType()),
-            GoalFormatters.formatValue(goal.targetValue, goal.goalType()),
-            GoalFormatters.unitLabel(ctx, goal.goalType()),
+            R.string.goal_completed_caption,
+            GoalFormatters.formatDate(goal.lastDay),
+            GoalFormatters.formatValue(gwp.currentValue, type),
+            GoalFormatters.unitLabel(ctx, type),
         )
         binding.completedCard.setOnClickListener { onGoalTap(gwp) }
     }
 }
 
-/**
- * Ended = period passed with the target unmet. Uses the Completed row's
- * layout but binds the *actual* final value against the target — the
- * user still sees how close they got.
- */
 class EndedGoalViewHolder(
-    private val binding: ItemGoalCompletedBinding,
+    private val binding: ItemGoalEndedBinding,
     private val onGoalTap: (GoalWithProgress) -> Unit,
+    private val onTryAgainTap: (GoalWithProgress) -> Unit,
 ) : BaseViewHolder<GoalListItem.Ended>(binding) {
     override fun bind(item: GoalListItem.Ended) {
         val ctx = binding.root.context
         val gwp = item.goal
         val goal = gwp.goal
+        val type = goal.goalType()
 
-        binding.completedTitle.text = goal.title
-        binding.completedCaption.text = ctx.getString(
-            R.string.goal_ended_caption,
-            GoalFormatters.formatValue(gwp.currentValue, goal.goalType()),
-            GoalFormatters.formatValue(goal.targetValue, goal.goalType()),
-            GoalFormatters.unitLabel(ctx, goal.goalType()),
+        binding.endedIcon.setImageResource(GoalFormatters.iconRes(goal.activityType, type))
+        binding.endedTitle.text = goal.title
+        binding.endedCaption.text = ctx.getString(
+            R.string.goal_ended_date_caption,
+            GoalFormatters.formatDate(goal.lastDay),
+            GoalFormatters.formatValue(gwp.currentValue, type),
+            GoalFormatters.formatValue(goal.targetValue, type),
+            GoalFormatters.unitLabel(ctx, type),
         )
-        binding.completedCard.setOnClickListener { onGoalTap(gwp) }
+        binding.endedCard.setOnClickListener { onGoalTap(gwp) }
+        binding.endedTryAgain.setOnClickListener { onTryAgainTap(gwp) }
     }
 }
 
 // ---------------------------------------------------------------------
 // Formatting helpers (kept alongside the adapter so the renders stay in
-// one file — Java-side of the design system already lives in Formatters).
+// one file).
 // ---------------------------------------------------------------------
 
 private object GoalFormatters {
 
+    private val DATE_FORMAT: DateTimeFormatter =
+        DateTimeFormatter.ofPattern("EEE d MMM", Locale.getDefault())
+
     fun formatValue(value: Double, type: GoalType): String = when (type) {
-        // Counts and minutes are integers; km + kg one decimal.
         GoalType.COUNT, GoalType.DURATION ->
             value.toLong().toString()
         GoalType.DISTANCE, GoalType.VOLUME ->
             String.format(Locale.getDefault(), "%.1f", value)
     }
 
-    fun unitLabel(ctx: android.content.Context, type: GoalType): String = when (type) {
+    fun unitLabel(ctx: Context, type: GoalType): String = when (type) {
         GoalType.DISTANCE -> ctx.getString(R.string.goal_unit_km)
         GoalType.COUNT -> ctx.getString(R.string.goal_unit_workouts)
         GoalType.DURATION -> ctx.getString(R.string.goal_unit_min)
         GoalType.VOLUME -> ctx.getString(R.string.goal_unit_kg)
     }
 
+    fun activityLabel(ctx: Context, activity: ActivityType): String = when (activity) {
+        ActivityType.RUNNING -> ctx.getString(R.string.activity_type_running)
+        ActivityType.CYCLING -> ctx.getString(R.string.activity_type_cycling)
+        ActivityType.WEIGHTLIFTING -> ctx.getString(R.string.activity_type_weightlifting)
+    }
+
     fun iconRes(activityType: ActivityType?, goalType: GoalType): Int {
-        // Prefer activity icon; fall back to goal-type semantics for "any".
         return when (activityType) {
             ActivityType.RUNNING -> R.drawable.ic_run_24
             ActivityType.CYCLING -> R.drawable.ic_bike_24
@@ -261,14 +339,18 @@ private object GoalFormatters {
         }
     }
 
+    /** "Fri 2 Oct" — short-weekday + day + short-month, locale-aware. */
+    fun formatDate(date: java.time.LocalDate): String = date.format(DATE_FORMAT)
+
     /**
      * Phase-8b daysLeft semantics: 1 = "Last day" (today is `lastDay`),
      * larger = days remaining including today, ≤ 0 = ended.
      */
-    fun formatTimeRemaining(ctx: android.content.Context, daysLeft: Long): String = when {
+    fun formatTimeRemaining(ctx: Context, daysLeft: Long): String = when {
         daysLeft <= 0L -> ctx.getString(R.string.goal_expired, "${-daysLeft + 1}d ago")
         daysLeft == 1L -> ctx.getString(R.string.goal_last_day)
         daysLeft == 2L -> ctx.getString(R.string.goal_one_day_remaining)
         else -> ctx.getString(R.string.goal_days_remaining, (daysLeft - 1).toInt())
     }
 }
+

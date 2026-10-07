@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- One completed goal row: lime check badge + title + "Completed" caption. -->
+<!--
+  One completed goal row (Goals v2 redesign). Activity icon tile on the
+  left · title + "Finished <date> · N unit" caption · lime circular check
+  badge on the right.
+-->
 <com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
@@ -25,15 +29,16 @@
         <FrameLayout
             android:layout_width="@dimen/icon_tile_size"
             android:layout_height="@dimen/icon_tile_size"
-            android:background="@drawable/bg_goal_check_badge">
+            android:background="@drawable/bg_icon_tile">
 
             <ImageView
-                android:layout_width="24dp"
-                android:layout_height="24dp"
+                android:id="@+id/completedIcon"
+                android:layout_width="22dp"
+                android:layout_height="22dp"
                 android:layout_gravity="center"
-                android:contentDescription="@string/goals_completed_title"
-                android:src="@drawable/ic_check_24"
-                app:tint="@color/text_on_lime" />
+                android:contentDescription="@string/goals_row_icon_content_description"
+                app:tint="@color/text_primary"
+                tools:src="@drawable/ic_bike_24" />
         </FrameLayout>
 
         <LinearLayout
@@ -52,16 +57,32 @@
                 android:maxLines="1"
                 android:textColor="@color/text_primary"
                 android:textStyle="bold"
-                tools:text="Weekly workouts done" />
+                tools:text="Ride 40 km in 7 days" />
 
             <TextView
                 android:id="@+id/completedCaption"
                 style="@style/TextAppearance.Fitness.LabelMd"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/space_xs"
+                android:layout_marginTop="2dp"
+                android:textAllCaps="false"
                 android:textColor="@color/text_secondary"
-                tools:text="Completed" />
+                tools:text="Finished Fri 2 Oct · 46 km" />
         </LinearLayout>
+
+        <FrameLayout
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_marginStart="@dimen/space_sm"
+            android:background="@drawable/bg_goal_check_badge">
+
+            <ImageView
+                android:layout_width="17dp"
+                android:layout_height="17dp"
+                android:layout_gravity="center"
+                android:contentDescription="@string/goals_completed_title"
+                android:src="@drawable/ic_check_24"
+                app:tint="@color/text_on_lime" />
+        </FrameLayout>
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>

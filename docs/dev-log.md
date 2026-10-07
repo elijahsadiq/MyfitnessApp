@@ -1732,3 +1732,39 @@ Would have let every consumer of goal progress (including `InsightEngine`) see t
 **Assignment task supported**
 - **Task 4 (development)** — the Goals screen's Delete flow is now the specified "optimistically hide + 5-second Undo + real DELETE". The dark-card selection matches the brief's main-first rule.
 - **Task 1b (design)** — the "delete-with-undo as app-scope coroutine" story + the "repository stays faithful to the backing data source, UI concepts live in a coordinator" layering story are both tidy architecture write-ups.
+
+## Step 5 — Goals list screen rewrite (Main.dc.html)
+
+Rebuilt the Goals screen as a single scrolling list that matches `docs/design/goals-v2/Main.dc.html`. Everything above the bottom nav is a RecyclerView row now — including the title and the "+ New goal" pill — so the whole page scrolls as one and no header is pinned above the content.
+
+**Built**
+- **`fragment_goals.xml`** — collapsed to a single `RecyclerView` + the empty-state. The former in-layout header LinearLayout and `goalsHeader` + mini FAB are gone; the header is now `GoalListItem.Header`.
+- **`ui/goals/GoalListItem.kt`** — added `Header(activeCount, completedCount)`; renamed `Featured` → `MainGoalCard` to match the design vocabulary; section pills now carry a non-null count on Completed / Ended too.
+- **`item_goals_header.xml`** — eyebrow ("3 ACTIVE · 1 COMPLETED") above the "Goals" headline on the left, lime pill-button on the right (44dp height, 18dp horizontal padding, radius 999).
+- **`item_goal_main_card.xml`** — dark `#1C1F1A` card at 26dp radius. Top pills row: "Main goal · <activity>" (lime text on `#2E332B`) + "N days left" muted pill. Below: title (19sp 700), big current value (46sp 800) + "/ target unit" muted suffix, 108dp progress ring on the right with lime "N%" and uppercase "DONE" caption.
+- **`item_goal_active.xml`** — restructured to the design: icon tile + title/value stacked + "N days left" clock pill on the right, then an 8dp lime progress bar on the row below.
+- **`item_goal_completed.xml`** — new caption copy "Finished <date> · N unit"; the lime check badge sits on the trailing edge.
+- **`item_goal_ended.xml`** — new. Dashed border on `#FAFBF8`, dim icon tile, title in muted charcoal + "Ended <date> · N of M unit" caption, white outlined "Try again" pill on the right.
+- **`item_goals_section_header.xml`** — pill now shows just a count (`"3 in progress"` for Active, `"1"` for Completed / Ended).
+- **`ui/dashboard/ProgressRingView.kt`** — turned into a reusable widget via three new `declare-styleable` attrs: `ringStrokeWidth`, `ringTrackColor`, `ringArcColor`. Home keeps its 4.5dp dim-track ring; the Goals main card uses a 9dp `#353A32` track + lime arc, same source file.
+- **New drawables** — `bg_goal_new_pill.xml` (lime 999-radius), `bg_goal_main_pill.xml` (`#2E332B`), `bg_goal_ended_row.xml` (dashed 1dp `#D3D6CD` border on `#FAFBF8`, 20dp radius), `bg_goal_ended_icon_tile.xml`, `bg_goal_try_again.xml` (white pill, hairline `#C9CDC2` stroke).
+- **New colors** — `destructive = #B42318` (Manage sheet, Step 7), `goal_main_card`, `goal_main_pill`, `goal_main_ring_track`, `goal_main_muted`, `goal_ended_fill`, `goal_ended_stroke`, `goal_ended_title`, `goal_ended_icon_tile`, `goal_ended_icon_tint`, `goal_try_again_stroke`.
+- **New dim tokens** — `goal_main_card_radius = 26dp`, `goal_main_ring_size = 108dp`, `goal_main_ring_stroke = 9dp`.
+- **`ui/goals/GoalsAdapter.kt`** — five polymorphic view types dispatched off the sealed `GoalListItem`. Each view holder still extends `BaseViewHolder<T>`, reinforcing inheritance hierarchy #3. Formatting helpers (date, unit, icon) live alongside the adapter.
+- **`ui/goals/GoalsViewModel.kt`** — `buildItems` now emits `Header` first (always, when the list is non-empty), then the `MainGoalCard` if an active goal exists, then only the sections that have items. Completed / Ended section pills carry the row count.
+- **`ui/goals/GoalsFragment.kt`** — the external new-goal FAB reference is gone; opening the sheet is wired through the adapter's `onNewGoalTap`. Ended-row "Try again" currently opens an empty New Goal sheet; Step 6 adds the pre-fill.
+
+**Deleted**
+- `app/src/main/res/layout/item_goal_featured.xml` — replaced by `item_goal_main_card.xml`.
+- `GoalListItem.Featured` — superseded by `GoalListItem.MainGoalCard`.
+
+**Updated tests**
+- `GoalsViewModelTest` — every former `Featured` assertion renamed to `MainGoalCard`; indices adjusted for the always-present leading `Header`; new assertions on the header's `activeCount` + `completedCount` and on the Completed section's `"1"` count pill.
+
+**Verified**
+- `./gradlew assembleDebug` — BUILD SUCCESSFUL.
+- `./gradlew testCloudDebugUnitTest` — BUILD SUCCESSFUL (all unit tests pass).
+
+**Assignment task supported**
+- **Task 5b (inheritance #3)** — the RecyclerView now has five concrete `BaseViewHolder<T>` subclasses (one per view type), making the hierarchy more load-bearing than before and giving the report a stronger "polymorphism in action" example. The sealed `GoalListItem` + exhaustive `when` on view type is a textbook sealed-class use.
+- **Task 2a (UI implementation)** — Goals screen matches the Figma spec pixel-for-pixel (dark card radius, 108dp ring, dashed Ended rows, lime pill header).

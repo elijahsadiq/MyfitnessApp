@@ -174,8 +174,12 @@ class GoalsViewModel(
         val ended = all.filter { it.isEnded }
 
         val out = mutableListOf<GoalListItem>()
+        out += GoalListItem.Header(
+            activeCount = active.size,
+            completedCount = completed.size,
+        )
 
-        // Dark-card (Featured) selection — Phase 8b Step 4:
+        // Dark-card (MainGoalCard) selection — Phase 8b:
         //   1. The user's main goal if it's active.
         //   2. Otherwise the active goal with the fewest days left,
         //      tie-breaking on higher progress then earlier createdAt.
@@ -188,7 +192,7 @@ class GoalsViewModel(
                     .thenBy { it.goal.createdAt }
             )
         if (featured != null) {
-            out += GoalListItem.Featured(featured)
+            out += GoalListItem.MainGoalCard(featured)
         }
 
         val otherActive = active.filter { it !== featured }
@@ -200,11 +204,17 @@ class GoalsViewModel(
             otherActive.forEach { out += GoalListItem.Active(it) }
         }
         if (completed.isNotEmpty()) {
-            out += GoalListItem.SectionHeader(labelRes = R.string.goals_completed_title)
+            out += GoalListItem.SectionHeader(
+                labelRes = R.string.goals_completed_title,
+                countPill = completed.size.toString(),
+            )
             completed.forEach { out += GoalListItem.Completed(it) }
         }
         if (ended.isNotEmpty()) {
-            out += GoalListItem.SectionHeader(labelRes = R.string.goals_ended_title)
+            out += GoalListItem.SectionHeader(
+                labelRes = R.string.goals_ended_title,
+                countPill = ended.size.toString(),
+            )
             ended.forEach { out += GoalListItem.Ended(it) }
         }
         return out

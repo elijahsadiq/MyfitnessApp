@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  One ended goal row (Goals v2). Dashed border on #FAFBF8, dim icon tile,
+  title in muted charcoal + "Ended <date> · N of M unit" caption, white
+  outlined "Try again" pill on the right.
+
+  Try-again opens the New Goal sheet pre-filled with this goal's
+  activity/type/target/duration (wired by GoalsFragment).
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/endedCard"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginHorizontal="@dimen/screen_margin"
+    android:layout_marginBottom="@dimen/space_sm"
+    android:background="@drawable/bg_goal_ended_row"
+    android:clickable="true"
+    android:focusable="true"
+    android:foreground="?attr/selectableItemBackground"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:paddingHorizontal="@dimen/card_padding"
+    android:paddingVertical="14dp">
+
+    <FrameLayout
+        android:layout_width="@dimen/icon_tile_size"
+        android:layout_height="@dimen/icon_tile_size"
+        android:background="@drawable/bg_goal_ended_icon_tile">
+
+        <ImageView
+            android:id="@+id/endedIcon"
+            android:layout_width="22dp"
+            android:layout_height="22dp"
+            android:layout_gravity="center"
+            android:contentDescription="@string/goals_row_icon_content_description"
+            app:tint="@color/goal_ended_icon_tint"
+            tools:src="@drawable/ic_run_24" />
+    </FrameLayout>
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="@dimen/space_md"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/endedTitle"
+            style="@style/TextAppearance.Fitness.BodyLg"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:textColor="@color/goal_ended_title"
+            android:textStyle="bold"
+            tools:text="Run 20 km in 14 days" />
+
+        <TextView
+            android:id="@+id/endedCaption"
+            style="@style/TextAppearance.Fitness.LabelMd"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:textAllCaps="false"
+            android:textColor="@color/text_secondary"
+            tools:text="Ended Mon 28 Sep · 16 of 20 km" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/endedTryAgain"
+        style="@style/TextAppearance.Fitness.LabelMd"
+        android:layout_width="wrap_content"
+        android:layout_height="36dp"
+        android:layout_marginStart="@dimen/space_sm"
+        android:background="@drawable/bg_goal_try_again"
+        android:clickable="true"
+        android:focusable="true"
+        android:foreground="?attr/selectableItemBackground"
+        android:gravity="center_vertical"
+        android:paddingHorizontal="14dp"
+        android:text="@string/goals_try_again"
+        android:textAllCaps="false"
+        android:textColor="@color/text_primary"
+        android:textStyle="bold" />
+</LinearLayout>

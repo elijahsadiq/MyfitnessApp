@@ -35,6 +35,11 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
 
+/**
+ * Phase 8b: the top of the list is always a Header row carrying the
+ * active/completed counts, followed (optionally) by the MainGoalCard,
+ * then grouped sections. Sections with no items are omitted entirely.
+ */
 @OptIn(ExperimentalCoroutinesApi::class)
 class GoalsViewModelTest {
 
@@ -55,34 +60,39 @@ class GoalsViewModelTest {
     }
 
     @Test
-    fun `single incomplete goal becomes a Featured with no section header`() = runTest {
+    fun `single incomplete goal becomes Header + MainGoalCard, no section`() = runTest {
         val g = distanceGoal("g1", target = 10.0, createdAt = startDate.atStartOfDay(ZoneOffset.UTC).toInstant())
         val vm = viewModelWith(goals = listOf(g), workouts = emptyList())
         val items = collectItems(vm)
-        assertEquals(1, items.size)
-        assertTrue(items[0] is GoalListItem.Featured)
+        assertEquals(2, items.size)
+        assertTrue(items[0] is GoalListItem.Header)
+        val header = items[0] as GoalListItem.Header
+        assertEquals(1, header.activeCount)
+        assertEquals(0, header.completedCount)
+        assertTrue(items[1] is GoalListItem.MainGoalCard)
     }
 
     @Test
-    fun `multiple incompletes produce Featured plus Active section`() = runTest {
+    fun `multiple incompletes produce Header + MainGoalCard + Active section`() = runTest {
         val base = startDate.atStartOfDay(ZoneOffset.UTC).toInstant()
         val a = distanceGoal("a", target = 10.0, createdAt = base)
         val b = distanceGoal("b", target = 20.0, createdAt = base.plusSeconds(60))
         val c = distanceGoal("c", target = 30.0, createdAt = base.plusSeconds(120))
         val vm = viewModelWith(goals = listOf(a, b, c), workouts = emptyList())
         val items = collectItems(vm)
-        // Featured + Section header + 2 Active rows
-        assertEquals(4, items.size)
-        assertTrue(items[0] is GoalListItem.Featured)
-        assertTrue(items[1] is GoalListItem.SectionHeader)
-        assertEquals(R.string.goals_active_title, (items[1] as GoalListItem.SectionHeader).labelRes)
-        assertEquals("2 in progress", (items[1] as GoalListItem.SectionHeader).countPill)
-        assertTrue(items[2] is GoalListItem.Active)
+        // Header + MainGoalCard + Section header + 2 Active rows
+        assertEquals(5, items.size)
+        assertTrue(items[0] is GoalListItem.Header)
+        assertTrue(items[1] is GoalListItem.MainGoalCard)
+        assertTrue(items[2] is GoalListItem.SectionHeader)
+        assertEquals(R.string.goals_active_title, (items[2] as GoalListItem.SectionHeader).labelRes)
+        assertEquals("2 in progress", (items[2] as GoalListItem.SectionHeader).countPill)
         assertTrue(items[3] is GoalListItem.Active)
+        assertTrue(items[4] is GoalListItem.Active)
     }
 
     @Test
-    fun `Featured prefers the main goal when it is active`() = runTest {
+    fun `MainGoalCard prefers the main goal when it is active`() = runTest {
         val base = startDate.atStartOfDay(ZoneOffset.UTC).toInstant()
         val urgent = DistanceGoal(
             id = "urgent", title = "u", activityType = ActivityType.RUNNING,
@@ -95,12 +105,12 @@ class GoalsViewModelTest {
         )
         val vm = viewModelWith(goals = listOf(urgent, main), workouts = emptyList())
         val items = collectItems(vm)
-        val featured = items.first() as GoalListItem.Featured
-        assertEquals("main", featured.goal.goal.id)
+        val card = items.filterIsInstance<GoalListItem.MainGoalCard>().single()
+        assertEquals("main", card.goal.goal.id)
     }
 
     @Test
-    fun `Featured falls back to fewest-daysLeft when the main goal is ended`() = runTest {
+    fun `MainGoalCard falls back to fewest-daysLeft when the main goal is ended`() = runTest {
         val base = startDate.atStartOfDay(ZoneOffset.UTC).toInstant()
         val pastMain = DistanceGoal(
             id = "past", title = "p", activityType = ActivityType.RUNNING,
@@ -114,12 +124,12 @@ class GoalsViewModelTest {
         )
         val vm = viewModelWith(goals = listOf(pastMain, active), workouts = emptyList())
         val items = collectItems(vm)
-        val featured = items.first() as GoalListItem.Featured
-        assertEquals("active", featured.goal.goal.id)
+        val card = items.filterIsInstance<GoalListItem.MainGoalCard>().single()
+        assertEquals("active", card.goal.goal.id)
     }
 
     @Test
-    fun `Featured picks the goal with fewest daysLeft`() = runTest {
+    fun `MainGoalCard picks the goal with fewest daysLeft`() = runTest {
         val base = startDate.atStartOfDay(ZoneOffset.UTC).toInstant()
         val soon = DistanceGoal(
             id = "soon", title = "soon", activityType = ActivityType.RUNNING,
@@ -131,12 +141,12 @@ class GoalsViewModelTest {
         )
         val vm = viewModelWith(goals = listOf(later, soon), workouts = emptyList())
         val items = collectItems(vm)
-        val featured = items.first() as GoalListItem.Featured
-        assertEquals("soon", featured.goal.goal.id)
+        val card = items.filterIsInstance<GoalListItem.MainGoalCard>().single()
+        assertEquals("soon", card.goal.goal.id)
     }
 
     @Test
-    fun `completed goals go under a Completed section, none featured if all done`() = runTest {
+    fun `completed goals go under a Completed section, no MainGoalCard when none are active`() = runTest {
         val g = WorkoutCountGoal(
             id = "done", title = "done", activityType = null,
             targetValue = 1.0, startDate = startDate, durationDays = 7, createdAt = startDate.atStartOfDay(ZoneOffset.UTC).toInstant(),
@@ -147,14 +157,19 @@ class GoalsViewModelTest {
         )
         val vm = viewModelWith(goals = listOf(g), workouts = listOf(w))
         val items = collectItems(vm)
-        assertEquals(2, items.size)
-        assertTrue(items[0] is GoalListItem.SectionHeader)
-        assertEquals(R.string.goals_completed_title, (items[0] as GoalListItem.SectionHeader).labelRes)
-        assertTrue(items[1] is GoalListItem.Completed)
+        // Header + Section header + 1 Completed row
+        assertEquals(3, items.size)
+        assertTrue(items[0] is GoalListItem.Header)
+        assertEquals(0, (items[0] as GoalListItem.Header).activeCount)
+        assertEquals(1, (items[0] as GoalListItem.Header).completedCount)
+        assertTrue(items[1] is GoalListItem.SectionHeader)
+        assertEquals(R.string.goals_completed_title, (items[1] as GoalListItem.SectionHeader).labelRes)
+        assertEquals("1", (items[1] as GoalListItem.SectionHeader).countPill)
+        assertTrue(items[2] is GoalListItem.Completed)
     }
 
     @Test
-    fun `expired goals land in Ended, not Active, and are never featured`() = runTest {
+    fun `expired goals land in Ended, not Active, and are never MainGoalCard`() = runTest {
         val lastWeekStart = LocalDate.parse("2026-09-07")
         val base = startDate.atStartOfDay(ZoneOffset.UTC).toInstant()
         val lastWeekBase = lastWeekStart.atStartOfDay(ZoneOffset.UTC).toInstant()
@@ -187,9 +202,9 @@ class GoalsViewModelTest {
         )
         val items = collectItems(vm)
 
-        val featured = items.filterIsInstance<GoalListItem.Featured>().singleOrNull()
-        assertTrue("expected one Featured item, got $featured", featured != null)
-        assertEquals("active", featured!!.goal.goal.id)
+        val card = items.filterIsInstance<GoalListItem.MainGoalCard>().singleOrNull()
+        assertTrue("expected one MainGoalCard, got $card", card != null)
+        assertEquals("active", card!!.goal.goal.id)
 
         val headers = items.filterIsInstance<GoalListItem.SectionHeader>().map { it.labelRes }
         assertEquals(listOf(R.string.goals_completed_title, R.string.goals_ended_title), headers)

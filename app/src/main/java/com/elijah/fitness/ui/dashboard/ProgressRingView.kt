@@ -11,9 +11,13 @@ import androidx.core.content.ContextCompat
 import com.elijah.fitness.R
 
 /**
- * Circular progress ring used in the Home "This week" hero card.
- * A dim track (`#2A2E28` per the design) plus a lime arc that starts at
- * 12 o'clock and sweeps clockwise proportional to [progress] (0f..1f).
+ * Circular progress ring. Dim track + lime arc that sweeps clockwise
+ * from 12 o'clock proportional to [progress] (0f..1f).
+ *
+ * Shared by the Home "This week" hero (4.5dp stroke, dark track) and the
+ * Goals main-card ring (9dp stroke, `#353A32` track). Stroke width and
+ * colours are set via `app:ringStrokeWidth` / `app:ringTrackColor` /
+ * `app:ringArcColor` so the same view class renders both.
  */
 class ProgressRingView @JvmOverloads constructor(
     context: Context,
@@ -21,17 +25,12 @@ class ProgressRingView @JvmOverloads constructor(
     defStyleAttr: Int = 0,
 ) : View(context, attrs, defStyleAttr) {
 
-    private val strokePx = dpToPx(4.5f)
     private val trackPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.STROKE
-        strokeWidth = strokePx
-        color = 0xFF2A2E28.toInt()
     }
     private val ringPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.STROKE
-        strokeWidth = strokePx
         strokeCap = Paint.Cap.ROUND
-        color = ContextCompat.getColor(context, R.color.lime_accent)
     }
     private val rect = RectF()
 
@@ -42,9 +41,34 @@ class ProgressRingView @JvmOverloads constructor(
             invalidate()
         }
 
+    init {
+        val defaultStroke = dpToPx(4.5f)
+        val defaultTrack = 0xFF2A2E28.toInt()
+        val defaultArc = ContextCompat.getColor(context, R.color.lime_accent)
+        if (attrs != null) {
+            val ta = context.obtainStyledAttributes(attrs, R.styleable.ProgressRingView)
+            try {
+                trackPaint.strokeWidth = ta.getDimension(
+                    R.styleable.ProgressRingView_ringStrokeWidth, defaultStroke)
+                ringPaint.strokeWidth = trackPaint.strokeWidth
+                trackPaint.color = ta.getColor(
+                    R.styleable.ProgressRingView_ringTrackColor, defaultTrack)
+                ringPaint.color = ta.getColor(
+                    R.styleable.ProgressRingView_ringArcColor, defaultArc)
+            } finally {
+                ta.recycle()
+            }
+        } else {
+            trackPaint.strokeWidth = defaultStroke
+            ringPaint.strokeWidth = defaultStroke
+            trackPaint.color = defaultTrack
+            ringPaint.color = defaultArc
+        }
+    }
+
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
-        val inset = strokePx / 2f
+        val inset = trackPaint.strokeWidth / 2f
         rect.set(inset, inset, width - inset, height - inset)
         canvas.drawArc(rect, 0f, 360f, false, trackPaint)
         if (progress > 0f) {

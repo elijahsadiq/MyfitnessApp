@@ -22,6 +22,11 @@
     <dimen name="radius_text_field">16dp</dimen>
     <dimen name="radius_icon_tile">14dp</dimen>
     <dimen name="radius_bottom_sheet_top">28dp</dimen>
+    <!-- Goals v2 main-card radius (26dp per Main.dc.html). -->
+    <dimen name="goal_main_card_radius">26dp</dimen>
+    <!-- Goals v2 main-card progress ring (108x108, 9dp stroke). -->
+    <dimen name="goal_main_ring_size">108dp</dimen>
+    <dimen name="goal_main_ring_stroke">9dp</dimen>
 
     <!-- Touch targets -->
     <dimen name="touch_target_min">48dp</dimen>

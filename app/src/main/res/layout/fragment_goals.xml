@@ -1,4 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  Goals screen (phase 8b redesign). A single RecyclerView fills the
+  screen; the title header, main-goal card and all section rows are view
+  types inside the list, so the entire page scrolls as one.
+-->
 <androidx.constraintlayout.widget.ConstraintLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
@@ -19,36 +24,6 @@
         app:trackColor="@color/surface_container_high"
         tools:visibility="visible" />
 
-    <!-- Header: title + mini "+" FAB. Kept outside the list so it stays
-         pinned while the list scrolls. -->
-    <LinearLayout
-        android:id="@+id/goalsHeader"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginHorizontal="@dimen/screen_margin"
-        android:layout_marginTop="@dimen/space_2xl"
-        android:gravity="center_vertical"
-        android:orientation="horizontal"
-        app:layout_constraintTop_toBottomOf="@id/goalsLoadingBar">
-
-        <TextView
-            android:id="@+id/goalsHeadline"
-            style="@style/TextAppearance.Fitness.HeadlineLg"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="@string/goals_headline" />
-
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/newGoalButton"
-            style="@style/Widget.Fitness.FAB"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:contentDescription="@string/goals_new_goal_button"
-            android:src="@drawable/ic_add_24"
-            app:fabSize="mini" />
-    </LinearLayout>
-
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/goalsList"
         android:layout_width="match_parent"
@@ -56,14 +31,11 @@
         android:clipToPadding="false"
         android:paddingBottom="@dimen/fab_margin_bottom"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/goalsHeader"
+        app:layout_constraintTop_toBottomOf="@id/goalsLoadingBar"
         tools:listitem="@layout/item_goal_active" />
 
-    <!-- Empty state. Centered in the viewport above the bottom nav so the
-         primary CTA sits where the user's thumb naturally rests.
-         Phase 8 defect 11: the parent fragment already lives above the
-         bottom-nav rail, so a `marginBottom=bottom_nav_height` here was
-         double-counting. Removed. -->
+    <!-- Empty state. Rendered when the list has no items (see Step 8 for
+         the Quick Start redesign). -->
     <LinearLayout
         android:id="@+id/goalsEmptyState"
         android:layout_width="match_parent"
@@ -74,7 +46,7 @@
         android:padding="@dimen/space_xl"
         android:visibility="gone"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/goalsHeader"
+        app:layout_constraintTop_toBottomOf="@id/goalsLoadingBar"
         tools:visibility="visible">
 
         <ImageView

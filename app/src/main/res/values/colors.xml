@@ -43,6 +43,21 @@
     <!-- Functional validation -->
     <color name="error_red">#D64545</color>                <!-- form validation per DESIGN.md prose -->
     <color name="error_material">#BA1A1A</color>           <!-- M3 colorError role -->
+    <color name="destructive">#B42318</color>              <!-- Delete button on Manage sheet (Goals v2 Step 7) -->
+
+    <!-- Goals v2 — main-card chrome (Main.dc.html). -->
+    <color name="goal_main_card">#1C1F1A</color>           <!-- 26dp dark card -->
+    <color name="goal_main_pill">#2E332B</color>           <!-- "Main goal" + days-left pills -->
+    <color name="goal_main_ring_track">#353A32</color>     <!-- 108dp ring track -->
+    <color name="goal_main_muted">#B4B9AE</color>          <!-- "/ 50 km" + "DONE" caption -->
+    <!-- Goals v2 — ended-row chrome (dashed border, lighter fill). -->
+    <color name="goal_ended_fill">#FAFBF8</color>
+    <color name="goal_ended_stroke">#D3D6CD</color>
+    <color name="goal_ended_title">#3A3F36</color>
+    <color name="goal_ended_icon_tile">#EEF0E9</color>
+    <color name="goal_ended_icon_tint">#5D6257</color>
+    <!-- Goals v2 — try-again outlined pill. -->
+    <color name="goal_try_again_stroke">#C9CDC2</color>
     <color name="on_error">#FFFFFF</color>
     <color name="error_container">#FFDAD6</color>
     <color name="on_error_container">#93000A</color>

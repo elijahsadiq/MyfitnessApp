@@ -1,5 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- One active (incomplete) goal row: icon tile, title, value + thin progress bar. -->
+<!--
+  One active (incomplete) goal row (Goals v2 redesign).
+
+  Top row: icon tile · [title + "N / M unit"] · "N days left" clock pill.
+  Below: an 8dp lime progress bar.
+-->
 <com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
@@ -7,7 +12,7 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginHorizontal="@dimen/screen_margin"
-    android:layout_marginBottom="@dimen/space_sm"
+    android:layout_marginBottom="10dp"
     android:background="?attr/selectableItemBackground"
     app:cardBackgroundColor="@color/surface_white"
     app:cardCornerRadius="@dimen/radius_row"
@@ -19,74 +24,97 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:gravity="center_vertical"
-        android:orientation="horizontal">
-
-        <ImageView
-            android:id="@+id/activeIcon"
-            android:layout_width="@dimen/icon_tile_size"
-            android:layout_height="@dimen/icon_tile_size"
-            android:background="@drawable/bg_icon_tile"
-            android:contentDescription="@string/goals_row_icon_content_description"
-            android:padding="10dp"
-            app:tint="@color/text_primary"
-            tools:src="@drawable/ic_run_24" />
+        android:orientation="vertical">
 
         <LinearLayout
-            android:layout_width="0dp"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginStart="@dimen/space_md"
-            android:layout_weight="1"
-            android:orientation="vertical">
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <FrameLayout
+                android:layout_width="@dimen/icon_tile_size"
+                android:layout_height="@dimen/icon_tile_size"
+                android:background="@drawable/bg_icon_tile">
+
+                <ImageView
+                    android:id="@+id/activeIcon"
+                    android:layout_width="22dp"
+                    android:layout_height="22dp"
+                    android:layout_gravity="center"
+                    android:contentDescription="@string/goals_row_icon_content_description"
+                    app:tint="@color/text_primary"
+                    tools:src="@drawable/ic_run_24" />
+            </FrameLayout>
 
             <LinearLayout
-                android:layout_width="match_parent"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:baselineAligned="true"
-                android:orientation="horizontal">
+                android:layout_marginStart="@dimen/space_md"
+                android:layout_weight="1"
+                android:orientation="vertical">
 
                 <TextView
                     android:id="@+id/activeTitle"
                     style="@style/TextAppearance.Fitness.BodyLg"
-                    android:layout_width="0dp"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
                     android:ellipsize="end"
                     android:maxLines="1"
                     android:textColor="@color/text_primary"
                     android:textStyle="bold"
-                    tools:text="Ride 100 km in September" />
+                    tools:text="Ride 100 km in 30 days" />
 
                 <TextView
                     android:id="@+id/activeValue"
                     style="@style/TextAppearance.Fitness.LabelMd"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="@dimen/space_sm"
+                    android:layout_marginTop="2dp"
+                    android:textAllCaps="false"
                     android:textColor="@color/text_secondary"
                     tools:text="58 / 100 km" />
             </LinearLayout>
 
-            <com.google.android.material.progressindicator.LinearProgressIndicator
-                android:id="@+id/activeProgressBar"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/space_xs"
-                app:indicatorColor="@color/lime_accent"
-                app:trackColor="@color/surface_container_high"
-                app:trackCornerRadius="3dp"
-                app:trackThickness="6dp"
-                tools:progress="58" />
-
-            <TextView
-                android:id="@+id/activeTimeRemaining"
-                style="@style/TextAppearance.Fitness.LabelSm"
+            <LinearLayout
+                android:id="@+id/activeDaysPill"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/space_xs"
-                android:textAllCaps="false"
-                android:textColor="@color/text_secondary"
-                tools:text="12 days left" />
+                android:layout_height="26dp"
+                android:layout_marginStart="@dimen/space_sm"
+                android:background="@drawable/bg_section_summary_pill"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingHorizontal="10dp">
+
+                <ImageView
+                    android:layout_width="13dp"
+                    android:layout_height="13dp"
+                    android:contentDescription="@null"
+                    android:src="@drawable/ic_history_24"
+                    app:tint="@color/text_secondary" />
+
+                <TextView
+                    android:id="@+id/activeTimeRemaining"
+                    style="@style/TextAppearance.Fitness.LabelMd"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="5dp"
+                    android:textAllCaps="false"
+                    android:textColor="@color/text_secondary"
+                    android:textStyle="bold"
+                    tools:text="12 days left" />
+            </LinearLayout>
         </LinearLayout>
+
+        <com.google.android.material.progressindicator.LinearProgressIndicator
+            android:id="@+id/activeProgressBar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="14dp"
+            app:indicatorColor="@color/lime_accent"
+            app:trackColor="@color/surface_container_high"
+            app:trackCornerRadius="4dp"
+            app:trackThickness="8dp"
+            tools:progress="58" />
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>

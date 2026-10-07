@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Icon tile for the Ended-goal row — slightly dimmer than the active tile. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="@color/goal_ended_icon_tile" />
+    <corners android:radius="@dimen/radius_icon_tile" />
+</shape>

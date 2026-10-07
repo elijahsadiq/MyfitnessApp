@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Dark-card inner pill — "Main goal · Running" + "12 days left". -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="@color/goal_main_pill" />
+    <corners android:radius="999dp" />
+</shape>

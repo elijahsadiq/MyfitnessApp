@@ -145,18 +145,36 @@
     <string name="auth_error_generic">Something went wrong. Please try again.</string>
     <string name="auth_retry">Retry</string>
 
-    <!-- Goals screen (phase 7 step 4) -->
-    <string name="goals_headline">Your Goals</string>
+    <!-- Goals screen (phase 8b: redesigned header + main-card list) -->
+    <string name="goals_headline">Goals</string>
     <string name="goals_new_goal_button">New goal</string>
+    <!-- Pre-8b eyebrows no longer used, kept so legacy references compile. -->
     <string name="goals_eyebrow_week">Weekly target</string>
     <string name="goals_eyebrow_month">Monthly target</string>
+    <!-- Header eyebrow: "3 active · 1 completed" — count placeholders. -->
+    <string name="goals_header_eyebrow_both">%1$d active · %2$d completed</string>
+    <string name="goals_header_eyebrow_active_only">%1$d active</string>
+    <string name="goals_header_eyebrow_completed_only">%1$d completed</string>
+    <string name="goals_header_eyebrow_empty">No goals yet</string>
     <string name="goals_featured_icon_content_description">Progress ring</string>
-    <string name="goals_active_title">ACTIVE GOALS</string>
+    <string name="goals_active_title">Active goals</string>
     <string name="goals_active_count_pill">%1$d in progress</string>
-    <string name="goals_completed_title">COMPLETED</string>
-    <string name="goals_ended_title">ENDED</string>
+    <string name="goals_completed_title">Completed</string>
+    <string name="goals_ended_title">Ended</string>
+    <string name="goals_section_count_pill">%1$d</string>
     <string name="goal_ended_caption">%1$s / %2$s %3$s</string>
+    <!-- Completed row caption: "Finished Fri 2 Oct · 46 km". -->
+    <string name="goal_completed_caption">Finished %1$s · %2$s %3$s</string>
+    <!-- Ended row caption: "Ended Mon 28 Sep · 16 of 20 km". -->
+    <string name="goal_ended_date_caption">Ended %1$s · %2$s of %3$s %4$s</string>
     <string name="goals_row_icon_content_description">Goal type icon</string>
+    <!-- Main-goal card: "Main goal · Running" / "Main goal · Any activity" -->
+    <string name="goals_main_pill_with_activity">Main goal · %1$s</string>
+    <string name="goals_main_pill_any_activity">Main goal · Any activity</string>
+    <string name="goals_main_completed_pill">Completed</string>
+    <string name="goals_main_card_content_description">Main goal: %1$s, %2$d percent done. Tap to manage.</string>
+    <string name="goals_main_done_caption">Done</string>
+    <string name="goals_try_again">Try again</string>
 
     <!-- Goal unit labels + value formatters -->
     <string name="goal_unit_km">km</string>

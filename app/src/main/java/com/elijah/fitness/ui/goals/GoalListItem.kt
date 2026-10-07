@@ -7,10 +7,22 @@ import com.elijah.fitness.data.model.GoalWithProgress
  * One row of the goals RecyclerView. A sealed hierarchy so the adapter's
  * `when` is exhaustive and the DiffUtil callback can compare by variant.
  *
- * The featured card is a full-width variant of a "row" so it participates
- * in the same list scroll — no need for a header adapter concat.
+ * Phase-8b (Main.dc.html) sections:
+ *   Header → optional MainGoalCard → section header + active rows →
+ *   section header + completed rows → section header + ended rows.
+ *
+ * Sections with no items are omitted entirely.
  */
 sealed interface GoalListItem {
+
+    /**
+     * Title row at the top of the screen: eyebrow ("3 active · 1
+     * completed"), "Goals" headline, and the lime "+ New goal" pill.
+     */
+    data class Header(
+        val activeCount: Int,
+        val completedCount: Int,
+    ) : GoalListItem
 
     /** Section title (with optional count pill) between groups of rows. */
     data class SectionHeader(
@@ -18,10 +30,13 @@ sealed interface GoalListItem {
         val countPill: String? = null,
     ) : GoalListItem
 
-    /** The single most-urgent incomplete goal, rendered as the dark hero card. */
-    data class Featured(val goal: GoalWithProgress) : GoalListItem
+    /**
+     * The user's main goal — if there is one — rendered as the dark card
+     * directly below the header. The screen shows at most one of these.
+     */
+    data class MainGoalCard(val goal: GoalWithProgress) : GoalListItem
 
-    /** An active (incomplete) non-featured goal. */
+    /** An active (incomplete) non-main goal. */
     data class Active(val goal: GoalWithProgress) : GoalListItem
 
     /** A completed goal (progressFraction == 1.0). */
@@ -30,7 +45,7 @@ sealed interface GoalListItem {
     /**
      * A goal whose period has passed with the target unmet. Rendered in
      * its own section below Completed; the final value is shown as
-     * `X / Y units` so the user still sees how close they got.
+     * `N of M units` so the user still sees how close they got.
      */
     data class Ended(val goal: GoalWithProgress) : GoalListItem
 }

@@ -19,14 +19,11 @@ import com.elijah.fitness.ui.base.BaseFragment
 import com.google.android.material.snackbar.Snackbar
 
 /**
- * Goals tab (phase 7 step 4). Rebuilt from the Stitch design: header
- * with title + "New goal" pill, a featured card for the most urgent
- * active goal, a list of other active goals, and a Completed section.
- * Tapping a row opens the actions sheet (Edit / Delete); delete shows
- * a Snackbar with Undo.
- *
- * The new-goal + edit flows are wired to placeholder Snackbars until
- * Step 5 delivers the bottom sheet.
+ * Goals tab (phase 8b redesign). The whole screen is a single
+ * RecyclerView: the header, main-goal card, section headers and all
+ * goal rows are view types in the list. Tapping a goal opens the
+ * Manage actions sheet; "Try again" on an ended row opens the New Goal
+ * sheet. Delete fires a 5s Snackbar with Undo.
  */
 class GoalsFragment : BaseFragment<FragmentGoalsBinding>() {
 
@@ -34,7 +31,11 @@ class GoalsFragment : BaseFragment<FragmentGoalsBinding>() {
         GoalsViewModel.factory((requireContext().applicationContext as FitnessApp).container)
     }
 
-    private val adapter = GoalsAdapter(::onGoalTap)
+    private val adapter = GoalsAdapter(
+        onGoalTap = ::onGoalTap,
+        onNewGoalTap = ::openNewGoalSheet,
+        onTryAgainTap = ::onTryAgainTap,
+    )
 
     override fun inflateBinding(
         inflater: LayoutInflater,
@@ -45,14 +46,11 @@ class GoalsFragment : BaseFragment<FragmentGoalsBinding>() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        // Status-bar inset lives on the fragment root (no shared toolbar
-        // on this destination); nav-bar inset is applied to the list so
-        // it clears the bottom-nav rail without a hardcoded padding.
-        //
-        // Both listeners preserve the view's XML padding and ADD the
-        // inset values on top — using `updatePadding` with a straight
-        // assignment would wipe out the list's `paddingBottom =
-        // fab_margin_bottom` AND accumulate space on re-dispatch.
+        // Status-bar inset lives on the fragment root; nav-bar inset is
+        // applied to the list so it clears the bottom-nav rail without a
+        // hardcoded padding. Preserve the list's XML `paddingBottom =
+        // fab_margin_bottom` and ADD the inset on top (straight assignment
+        // would wipe + accumulate across re-dispatch).
         applySystemBarInsets(target = binding.root, applyBottom = false)
         val listBaseBottom = binding.goalsList.paddingBottom
         ViewCompat.setOnApplyWindowInsetsListener(binding.goalsList) { v, insets ->
@@ -65,11 +63,7 @@ class GoalsFragment : BaseFragment<FragmentGoalsBinding>() {
         binding.goalsList.layoutManager = LinearLayoutManager(requireContext())
         binding.goalsList.adapter = adapter
 
-        val openNewGoalSheet: (View) -> Unit = {
-            NewGoalBottomSheet.forCreate().show(parentFragmentManager, "new_goal")
-        }
-        binding.newGoalButton.setOnClickListener(openNewGoalSheet)
-        binding.newGoalEmptyButton.setOnClickListener(openNewGoalSheet)
+        binding.newGoalEmptyButton.setOnClickListener { openNewGoalSheet() }
 
         parentFragmentManager.setFragmentResultListener(
             GoalActionsBottomSheet.FRAGMENT_RESULT_KEY, viewLifecycleOwner,
@@ -113,9 +107,20 @@ class GoalsFragment : BaseFragment<FragmentGoalsBinding>() {
         }
     }
 
+    private fun openNewGoalSheet() {
+        NewGoalBottomSheet.forCreate().show(parentFragmentManager, "new_goal")
+    }
+
     private fun onGoalTap(goal: GoalWithProgress) {
         GoalActionsBottomSheet.newInstance(goal.goal.id)
             .show(parentFragmentManager, "goal_actions")
+    }
+
+    private fun onTryAgainTap(goal: GoalWithProgress) {
+        // Phase-8b Step 6 adds pre-fill support; for now the New Goal
+        // sheet opens blank — the user can still re-enter the same
+        // target in a few taps.
+        openNewGoalSheet()
     }
 
     private fun onEditRequested(goalId: String) {
@@ -132,7 +137,7 @@ class GoalsFragment : BaseFragment<FragmentGoalsBinding>() {
             .asSequence()
             .mapNotNull { item ->
                 when (item) {
-                    is GoalListItem.Featured -> item.goal.goal
+                    is GoalListItem.MainGoalCard -> item.goal.goal
                     is GoalListItem.Active -> item.goal.goal
                     is GoalListItem.Completed -> item.goal.goal
                     is GoalListItem.Ended -> item.goal.goal
