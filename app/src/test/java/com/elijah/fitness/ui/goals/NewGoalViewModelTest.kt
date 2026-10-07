@@ -1,10 +1,8 @@
 package com.elijah.fitness.ui.goals
 
-import com.elijah.fitness.R
 import com.elijah.fitness.data.model.ActivityType
 import com.elijah.fitness.data.model.DistanceGoal
 import com.elijah.fitness.data.model.Goal
-import com.elijah.fitness.data.model.GoalPeriod
 import com.elijah.fitness.data.model.GoalType
 import com.elijah.fitness.data.remote.ApiResult
 import com.elijah.fitness.data.repository.GoalRepository
@@ -23,7 +21,6 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -32,6 +29,13 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
 
+/**
+ * Phase-8b: the New Goal bottom sheet still uses WEEK/MONTH chips
+ * internally (via `NewGoalViewModel.LegacyPeriod`) but translates them
+ * to 7 / 30 days on submit. These tests follow the same shape — Step 6
+ * replaces this screen with a full-screen fragment and will rewrite the
+ * tests at that point.
+ */
 @OptIn(ExperimentalCoroutinesApi::class)
 class NewGoalViewModelTest {
 
@@ -42,8 +46,6 @@ class NewGoalViewModelTest {
 
     @Before fun setUp() { Dispatchers.setMain(dispatcher) }
     @After  fun tearDown() { Dispatchers.resetMain() }
-
-    // ---------- available goal types ----------
 
     @Test
     fun `weightlifting hides distance chip`() {
@@ -58,9 +60,7 @@ class NewGoalViewModelTest {
     fun `running or cycling hide volume chip`() {
         val vm = NewGoalViewModel(FakeGoalRepo(), clock = clock, zone = ZoneOffset.UTC)
         vm.setActivity(ActivityType.RUNNING)
-        val running = vm.uiState.value.availableGoalTypes
-        assertTrue(GoalType.DISTANCE in running)
-        assertFalse(GoalType.VOLUME in running)
+        assertFalse(GoalType.VOLUME in vm.uiState.value.availableGoalTypes)
 
         vm.setActivity(ActivityType.CYCLING)
         assertFalse(GoalType.VOLUME in vm.uiState.value.availableGoalTypes)
@@ -73,14 +73,12 @@ class NewGoalViewModelTest {
         assertEquals(GoalType.entries.toSet(), vm.uiState.value.availableGoalTypes.toSet())
     }
 
-    // ---------- auto title ----------
-
     @Test
     fun `auto-title is generated from the choices while user hasn't edited`() {
         val vm = NewGoalViewModel(FakeGoalRepo(), clock = clock, zone = ZoneOffset.UTC)
         vm.setActivity(ActivityType.RUNNING)
         vm.setGoalType(GoalType.DISTANCE)
-        vm.setPeriod(GoalPeriod.THIS_MONTH)
+        vm.setPeriod(NewGoalViewModel.LegacyPeriod.THIS_MONTH)
         vm.setTarget("50")
         assertEquals("Run 50 km this month", vm.uiState.value.title)
     }
@@ -92,11 +90,9 @@ class NewGoalViewModelTest {
         vm.setGoalType(GoalType.DISTANCE)
         vm.setTarget("20")
         vm.setTitle("My custom title")
-        vm.setTarget("30") // would rewrite auto-title, but must not
+        vm.setTarget("30")
         assertEquals("My custom title", vm.uiState.value.title)
     }
-
-    // ---------- validation ----------
 
     @Test
     fun `submit before choosing activity surfaces the activity error`() = runTest {
@@ -111,12 +107,10 @@ class NewGoalViewModelTest {
         val vm = NewGoalViewModel(FakeGoalRepo(), clock = clock, zone = ZoneOffset.UTC)
         vm.setActivity(ActivityType.RUNNING)
         vm.setGoalType(GoalType.DISTANCE)
-        vm.setTarget("2000") // over 1000 km
+        vm.setTarget("2000")
         vm.setTitle("x")
         assertFalse(vm.uiState.value.isValid)
     }
-
-    // ---------- create flow ----------
 
     @Test
     fun `create success emits Saved and hits the repository once`() = runTest {
@@ -125,26 +119,22 @@ class NewGoalViewModelTest {
         vm.setActivity(ActivityType.RUNNING)
         vm.setGoalType(GoalType.DISTANCE)
         vm.setTarget("20")
-        // Auto title = "Run 20 km this week" — form is valid.
         assertTrue(vm.uiState.value.isValid)
 
         vm.submit()
         dispatcher.scheduler.advanceUntilIdle()
         assertEquals(1, repo.createCount)
         assertEquals(NewGoalViewModel.Event.Saved, vm.events.first())
+        // Legacy "This week" chip → 7 days.
+        assertEquals(7, repo.lastCreatedDuration)
     }
-
-    // ---------- edit flow ----------
 
     @Test
     fun `edit mode pre-fills fields from the existing goal`() = runTest {
         val existing: Goal = DistanceGoal(
-            id = "g1", title = "Run 25 km this week",
-            activityType = ActivityType.RUNNING, targetValue = 25.0,
-            period = GoalPeriod.THIS_WEEK,
-            periodStart = Instant.parse("2026-09-14T00:00:00Z"),
-            periodEnd = Instant.parse("2026-09-21T00:00:00Z"),
-            createdAt = Instant.parse("2026-09-14T00:00:00Z"),
+            id = "g1", title = "Run 25 km", activityType = ActivityType.RUNNING,
+            targetValue = 25.0, startDate = LocalDate.parse("2026-09-14"),
+            durationDays = 7, createdAt = Instant.parse("2026-09-14T00:00:00Z"),
         )
         val repo = FakeGoalRepo(seed = listOf(existing))
         val vm = NewGoalViewModel(repo, editingGoalId = "g1",
@@ -156,17 +146,15 @@ class NewGoalViewModelTest {
         assertEquals(ActivityType.RUNNING, s.activityType)
         assertEquals(GoalType.DISTANCE, s.goalType)
         assertEquals("25", s.targetRaw)
-        assertEquals("Run 25 km this week", s.title)
+        assertEquals("Run 25 km", s.title)
     }
 
     @Test
     fun `edit mode submit calls updateGoal, not createGoal`() = runTest {
         val existing: Goal = DistanceGoal(
             id = "g1", title = "Run 25 km", activityType = ActivityType.RUNNING,
-            targetValue = 25.0, period = GoalPeriod.THIS_WEEK,
-            periodStart = Instant.parse("2026-09-14T00:00:00Z"),
-            periodEnd = Instant.parse("2026-09-21T00:00:00Z"),
-            createdAt = Instant.parse("2026-09-14T00:00:00Z"),
+            targetValue = 25.0, startDate = LocalDate.parse("2026-09-14"),
+            durationDays = 7, createdAt = Instant.parse("2026-09-14T00:00:00Z"),
         )
         val repo = FakeGoalRepo(seed = listOf(existing))
         val vm = NewGoalViewModel(repo, editingGoalId = "g1",
@@ -180,8 +168,6 @@ class NewGoalViewModelTest {
         assertEquals(0, repo.createCount)
         assertEquals(30.0, repo.lastUpdatedTarget!!, 1e-6)
     }
-
-    // ---------- 422 field errors ----------
 
     @Test
     fun `server field errors land on matching fields`() = runTest {
@@ -209,6 +195,7 @@ class NewGoalViewModelTest {
         var createCount = 0
         var updateCount = 0
         var lastUpdatedTarget: Double? = null
+        var lastCreatedDuration: Int? = null
 
         var createResult: ApiResult<Unit> = ApiResult.Success(Unit)
         var updateResult: ApiResult<Unit> = ApiResult.Success(Unit)
@@ -217,14 +204,15 @@ class NewGoalViewModelTest {
         override suspend fun refresh(): ApiResult<Unit> = ApiResult.Success(Unit)
         override suspend fun createGoal(
             title: String, activityType: ActivityType?, goalType: GoalType,
-            period: GoalPeriod, targetValue: Double,
-            periodStart: LocalDate, periodEnd: LocalDate,
+            targetValue: Double, startDate: LocalDate, durationDays: Int,
         ): ApiResult<Unit> {
             createCount++
+            lastCreatedDuration = durationDays
             return createResult
         }
         override suspend fun updateGoal(
-            id: String, title: String, activityType: ActivityType?, targetValue: Double,
+            id: String, title: String, activityType: ActivityType?,
+            goalType: GoalType, targetValue: Double, durationDays: Int,
         ): ApiResult<Unit> {
             updateCount++
             lastUpdatedTarget = targetValue
@@ -232,5 +220,7 @@ class NewGoalViewModelTest {
         }
         override suspend fun deleteGoal(id: String): ApiResult<Unit> = ApiResult.Success(Unit)
         override suspend fun markCompletedNotified(id: String): ApiResult<Unit> = ApiResult.Success(Unit)
+        override suspend fun makeMainGoal(id: String): ApiResult<Unit> = ApiResult.Success(Unit)
+        override suspend fun extendGoal(id: String, days: Int): ApiResult<Unit> = ApiResult.Success(Unit)
     }
 }

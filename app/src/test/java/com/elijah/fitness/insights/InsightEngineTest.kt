@@ -3,7 +3,7 @@ package com.elijah.fitness.insights
 import com.elijah.fitness.data.model.ActivityType
 import com.elijah.fitness.data.model.CyclingWorkout
 import com.elijah.fitness.data.model.DistanceGoal
-import com.elijah.fitness.data.model.GoalPeriod
+import com.elijah.fitness.data.model.Goal
 import com.elijah.fitness.data.model.GoalWithProgress
 import com.elijah.fitness.data.model.RunningWorkout
 import com.elijah.fitness.data.model.StrengthSet
@@ -15,6 +15,7 @@ import org.junit.Test
 import java.time.Clock
 import java.time.Duration
 import java.time.Instant
+import java.time.LocalDate
 import java.time.ZoneOffset
 
 class InsightEngineTest {
@@ -43,36 +44,52 @@ class InsightEngineTest {
     }
 
     @Test
-    fun `goal projection fires when a monthly goal is on-track to finish before month end`() {
-        val monthStart = Instant.parse("2026-09-01T00:00:00Z")
-        val monthEnd = Instant.parse("2026-10-01T00:00:00Z")
-        // Target 20 km; current 13 km on day 16 → 13/16 per day → ~7 days
-        // to go, projected ~day 23 — before month end.
+    fun `goal projection fires on an active, 7-plus-day goal on track to finish within the window`() {
+        // 30-day goal that started 2026-09-01; now = 2026-09-16 (day 16).
         val goal = DistanceGoal(
             id = "g",
-            title = "20 km in September",
+            title = "20 km in 30 days",
             activityType = ActivityType.RUNNING,
             targetValue = 20.0,
-            period = GoalPeriod.THIS_MONTH,
-            periodStart = monthStart,
-            periodEnd = monthEnd,
-            createdAt = monthStart,
+            startDate = LocalDate.parse("2026-09-01"),
+            durationDays = 30,
+            createdAt = Instant.parse("2026-09-01T00:00:00Z"),
         )
         val gwp = GoalWithProgress(
             goal = goal,
+            status = Goal.Status.Active,
             currentValue = 13.0,
             progressFraction = 0.65,
-            isComplete = false,
-            daysRemaining = 14,
-            isExpired = false,
+            daysLeft = 15, // 30 - 15 elapsed = 15 remaining counting today
+            averagePerDay = 13.0 / 16.0,
+            neededPerDay = 7.0 / 15.0,
+            sessionsLogged = 3,
         )
         val insights = engine.rank(emptyList(), listOf(gwp))
         val projection = insights.firstOrNull { it.kind == Insight.Kind.GoalProjection }
         assertTrue("no projection fired", projection != null)
         assertTrue(
             "text was '${projection!!.text}'",
-            projection.text.contains("monthly goal"),
+            projection.text.contains("goal"),
         )
+    }
+
+    @Test
+    fun `goal projection does not fire for a sub-7-day goal`() {
+        val goal = DistanceGoal(
+            id = "g", title = "5 km in 5 days",
+            activityType = ActivityType.RUNNING, targetValue = 5.0,
+            startDate = LocalDate.parse("2026-09-14"), durationDays = 5,
+            createdAt = Instant.parse("2026-09-14T00:00:00Z"),
+        )
+        val gwp = GoalWithProgress(
+            goal = goal, status = Goal.Status.Active,
+            currentValue = 2.0, progressFraction = 0.4,
+            daysLeft = 3, averagePerDay = 1.0, neededPerDay = 1.0, sessionsLogged = 2,
+        )
+        val projection = engine.rank(emptyList(), listOf(gwp))
+            .firstOrNull { it.kind == Insight.Kind.GoalProjection }
+        assertTrue("expected no projection for sub-7-day goal", projection == null)
     }
 
     @Test

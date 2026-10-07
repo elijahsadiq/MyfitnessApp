@@ -14,8 +14,6 @@ import androidx.lifecycle.repeatOnLifecycle
 import com.elijah.fitness.FitnessApp
 import com.elijah.fitness.R
 import com.elijah.fitness.data.model.ActivityType
-import com.elijah.fitness.data.model.GoalPeriod
-import com.elijah.fitness.data.model.GoalPeriodResolver
 import com.elijah.fitness.data.model.GoalType
 import com.elijah.fitness.databinding.BottomSheetNewGoalBinding
 import com.elijah.fitness.ui.auth.FieldError
@@ -86,8 +84,8 @@ class NewGoalBottomSheet : BottomSheetDialogFragment() {
 
         binding.periodChips.setOnCheckedStateChangeListener { _, checked ->
             val id = checked.firstOrNull() ?: return@setOnCheckedStateChangeListener
-            val period = if (id == R.id.chipPeriodMonth) GoalPeriod.THIS_MONTH
-            else GoalPeriod.THIS_WEEK
+            val period = if (id == R.id.chipPeriodMonth) NewGoalViewModel.LegacyPeriod.THIS_MONTH
+            else NewGoalViewModel.LegacyPeriod.THIS_WEEK
             viewModel.setPeriod(period)
         }
 
@@ -171,8 +169,8 @@ class NewGoalBottomSheet : BottomSheetDialogFragment() {
         syncChip(binding.chipTypeDuration, state.goalType == GoalType.DURATION)
         syncChip(binding.chipTypeVolume, state.goalType == GoalType.VOLUME)
 
-        syncChip(binding.chipPeriodWeek, state.period == GoalPeriod.THIS_WEEK)
-        syncChip(binding.chipPeriodMonth, state.period == GoalPeriod.THIS_MONTH)
+        syncChip(binding.chipPeriodWeek, state.period == NewGoalViewModel.LegacyPeriod.THIS_WEEK)
+        syncChip(binding.chipPeriodMonth, state.period == NewGoalViewModel.LegacyPeriod.THIS_MONTH)
 
         // Suffix tracks the picked goal type.
         binding.targetFieldLayout.suffixText = getString(unitLabelResFor(state.goalType))
@@ -213,12 +211,12 @@ class NewGoalBottomSheet : BottomSheetDialogFragment() {
 
     private fun previewLineFor(state: NewGoalViewModel.UiState): String? {
         if (!state.isValid) return null
-        val zone = ZoneId.systemDefault()
-        val bounds = GoalPeriodResolver.bounds(state.period, zone)
-        val start = LocalDate.ofInstant(bounds.start, zone)
-        // endExclusive is the day AFTER the goal window — for the preview
-        // we display the last valid day (start of endExclusive - 1 day).
-        val displayEnd = LocalDate.ofInstant(bounds.endExclusive, zone).minusDays(1)
+        val durationDays = when (state.period) {
+            NewGoalViewModel.LegacyPeriod.THIS_WEEK -> 7L
+            NewGoalViewModel.LegacyPeriod.THIS_MONTH -> 30L
+        }
+        val start = LocalDate.now(ZoneId.systemDefault())
+        val displayEnd = start.plusDays(durationDays - 1)
         val formatter = DateTimeFormatter.ofPattern("d MMMM")
         return getString(
             R.string.new_goal_preview,

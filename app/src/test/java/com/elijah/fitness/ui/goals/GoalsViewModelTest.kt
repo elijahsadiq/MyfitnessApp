@@ -4,9 +4,8 @@ import com.elijah.fitness.R
 import com.elijah.fitness.data.model.ActivityType
 import com.elijah.fitness.data.model.DistanceGoal
 import com.elijah.fitness.data.model.Goal
-import com.elijah.fitness.data.model.GoalPeriod
 import com.elijah.fitness.data.model.GoalProgressCalculator
-import com.elijah.fitness.data.model.GoalWithProgress
+import com.elijah.fitness.data.model.GoalType
 import com.elijah.fitness.data.model.Workout
 import com.elijah.fitness.data.model.WorkoutCountGoal
 import com.elijah.fitness.data.remote.ApiResult
@@ -41,9 +40,9 @@ class GoalsViewModelTest {
     @Before fun setUp() { Dispatchers.setMain(dispatcher) }
     @After  fun tearDown() { Dispatchers.resetMain() }
 
-    private val periodStart = Instant.parse("2026-09-14T00:00:00Z")
-    private val periodEnd   = Instant.parse("2026-09-21T00:00:00Z")
-    private val now         = Instant.parse("2026-09-16T09:00:00Z")
+    private val startDate = LocalDate.parse("2026-09-14") // Monday
+    private val durationDays = 7
+    private val now = Instant.parse("2026-09-16T09:00:00Z") // Wed
     private val clock = Clock.fixed(now, ZoneOffset.UTC)
 
     @Test
@@ -54,7 +53,7 @@ class GoalsViewModelTest {
 
     @Test
     fun `single incomplete goal becomes a Featured with no section header`() = runTest {
-        val g = distanceGoal("g1", target = 10.0, createdAt = periodStart)
+        val g = distanceGoal("g1", target = 10.0, createdAt = startDate.atStartOfDay(ZoneOffset.UTC).toInstant())
         val vm = viewModelWith(goals = listOf(g), workouts = emptyList())
         val items = collectItems(vm)
         assertEquals(1, items.size)
@@ -63,9 +62,10 @@ class GoalsViewModelTest {
 
     @Test
     fun `multiple incompletes produce Featured plus Active section`() = runTest {
-        val a = distanceGoal("a", target = 10.0, createdAt = periodStart)
-        val b = distanceGoal("b", target = 20.0, createdAt = periodStart.plusSeconds(60))
-        val c = distanceGoal("c", target = 30.0, createdAt = periodStart.plusSeconds(120))
+        val base = startDate.atStartOfDay(ZoneOffset.UTC).toInstant()
+        val a = distanceGoal("a", target = 10.0, createdAt = base)
+        val b = distanceGoal("b", target = 20.0, createdAt = base.plusSeconds(60))
+        val c = distanceGoal("c", target = 30.0, createdAt = base.plusSeconds(120))
         val vm = viewModelWith(goals = listOf(a, b, c), workouts = emptyList())
         val items = collectItems(vm)
         // Featured + Section header + 2 Active rows
@@ -79,19 +79,15 @@ class GoalsViewModelTest {
     }
 
     @Test
-    fun `Featured picks the most urgent (smallest daysRemaining)`() = runTest {
-        // Two goals — same target — but different periodEnd. The nearer one wins.
+    fun `Featured picks the goal with fewest daysLeft`() = runTest {
+        val base = startDate.atStartOfDay(ZoneOffset.UTC).toInstant()
         val soon = DistanceGoal(
             id = "soon", title = "soon", activityType = ActivityType.RUNNING,
-            targetValue = 20.0, period = GoalPeriod.THIS_WEEK,
-            periodStart = periodStart, periodEnd = Instant.parse("2026-09-18T00:00:00Z"),
-            createdAt = periodStart,
+            targetValue = 20.0, startDate = startDate, durationDays = 3, createdAt = base,
         )
         val later = DistanceGoal(
             id = "later", title = "later", activityType = ActivityType.RUNNING,
-            targetValue = 20.0, period = GoalPeriod.THIS_WEEK,
-            periodStart = periodStart, periodEnd = Instant.parse("2026-09-30T00:00:00Z"),
-            createdAt = periodStart,
+            targetValue = 20.0, startDate = startDate, durationDays = 30, createdAt = base,
         )
         val vm = viewModelWith(goals = listOf(later, soon), workouts = emptyList())
         val items = collectItems(vm)
@@ -101,11 +97,9 @@ class GoalsViewModelTest {
 
     @Test
     fun `completed goals go under a Completed section, none featured if all done`() = runTest {
-        // Small target + a workout that exceeds it → complete.
         val g = WorkoutCountGoal(
             id = "done", title = "done", activityType = null,
-            targetValue = 1.0, period = GoalPeriod.THIS_WEEK,
-            periodStart = periodStart, periodEnd = periodEnd, createdAt = periodStart,
+            targetValue = 1.0, startDate = startDate, durationDays = 7, createdAt = startDate.atStartOfDay(ZoneOffset.UTC).toInstant(),
         )
         val w = com.elijah.fitness.data.model.RunningWorkout(
             id = "w1", startTime = Instant.parse("2026-09-15T10:00:00Z"),
@@ -119,33 +113,24 @@ class GoalsViewModelTest {
         assertTrue(items[1] is GoalListItem.Completed)
     }
 
-    // ---------- Amendment A: three-section partition ----------
-
     @Test
     fun `expired goals land in Ended, not Active, and are never featured`() = runTest {
-        // Build four goals around the fixed `now` (Wed 16 Sep 09Z):
-        //  - active: this-week, incomplete → should go to Featured
-        //  - completed-current: this-week, hit the target → Completed section
-        //  - ended-unmet: last-week period, incomplete → Ended section
-        //  - ended-but-complete: last-week period, hit target → Completed (completion wins)
-        val lastWeekStart = Instant.parse("2026-09-07T00:00:00Z")
-        val lastWeekEnd   = Instant.parse("2026-09-14T00:00:00Z")
+        val lastWeekStart = LocalDate.parse("2026-09-07")
+        val base = startDate.atStartOfDay(ZoneOffset.UTC).toInstant()
+        val lastWeekBase = lastWeekStart.atStartOfDay(ZoneOffset.UTC).toInstant()
 
-        val active = distanceGoal("active", target = 10.0, createdAt = periodStart)
+        val active = distanceGoal("active", target = 10.0, createdAt = base)
         val completedCurrent = WorkoutCountGoal(
             id = "comp-current", title = "comp-current", activityType = null,
-            targetValue = 1.0, period = GoalPeriod.THIS_WEEK,
-            periodStart = periodStart, periodEnd = periodEnd, createdAt = periodStart,
+            targetValue = 1.0, startDate = startDate, durationDays = 7, createdAt = base,
         )
         val endedUnmet = WorkoutCountGoal(
             id = "ended-unmet", title = "ended-unmet", activityType = null,
-            targetValue = 5.0, period = GoalPeriod.THIS_WEEK,
-            periodStart = lastWeekStart, periodEnd = lastWeekEnd, createdAt = lastWeekStart,
+            targetValue = 5.0, startDate = lastWeekStart, durationDays = 7, createdAt = lastWeekBase,
         )
         val endedComplete = WorkoutCountGoal(
             id = "ended-comp", title = "ended-comp", activityType = null,
-            targetValue = 1.0, period = GoalPeriod.THIS_WEEK,
-            periodStart = lastWeekStart, periodEnd = lastWeekEnd, createdAt = lastWeekStart,
+            targetValue = 1.0, startDate = lastWeekStart, durationDays = 7, createdAt = lastWeekBase,
         )
         val workoutInCompleted = com.elijah.fitness.data.model.RunningWorkout(
             id = "w1", startTime = Instant.parse("2026-09-15T10:00:00Z"),
@@ -162,82 +147,29 @@ class GoalsViewModelTest {
         )
         val items = collectItems(vm)
 
-        // Featured must be the one active goal.
         val featured = items.filterIsInstance<GoalListItem.Featured>().singleOrNull()
         assertTrue("expected one Featured item, got $featured", featured != null)
         assertEquals("active", featured!!.goal.goal.id)
 
-        // Section headers in order: no Active header (featured is the only active),
-        // then Completed, then Ended.
-        val headers = items.filterIsInstance<GoalListItem.SectionHeader>()
-            .map { it.labelRes }
+        val headers = items.filterIsInstance<GoalListItem.SectionHeader>().map { it.labelRes }
         assertEquals(listOf(R.string.goals_completed_title, R.string.goals_ended_title), headers)
 
-        // Completed section carries both the current-complete AND the past-complete.
         val completed = items.filterIsInstance<GoalListItem.Completed>().map { it.goal.goal.id }
         assertTrue("ended-comp belongs in Completed, got $completed", "ended-comp" in completed)
         assertTrue("comp-current belongs in Completed, got $completed", "comp-current" in completed)
 
-        // Ended section only carries the unmet past goal.
         val ended = items.filterIsInstance<GoalListItem.Ended>().map { it.goal.goal.id }
         assertEquals(listOf("ended-unmet"), ended)
     }
 
-    // ---------- helpers ----------
-
-    /**
-     * The ViewModel exposes `items` via `stateIn(WhileSubscribed)` so the
-     * upstream doesn't run until something is actually subscribed. In a
-     * test we start a background collector, spin the scheduler, then take
-     * the latest value.
-     */
-    private suspend fun collectItems(vm: GoalsViewModel): List<GoalListItem> {
-        val latest = MutableStateFlow<List<GoalListItem>>(emptyList())
-        val job = kotlinx.coroutines.CoroutineScope(dispatcher).launch {
-            vm.items.collect { latest.value = it }
-        }
-        dispatcher.scheduler.advanceUntilIdle()
-        val out = latest.value
-        job.cancel()
-        return out
-    }
-
-    private fun distanceGoal(id: String, target: Double, createdAt: Instant): Goal =
-        DistanceGoal(
-            id = id, title = "goal $id", activityType = ActivityType.RUNNING,
-            targetValue = target, period = GoalPeriod.THIS_WEEK,
-            periodStart = periodStart, periodEnd = periodEnd, createdAt = createdAt,
-        )
-
-    private fun viewModelWith(goals: List<Goal>, workouts: List<Workout>): GoalsViewModel {
-        val goalsFlow = MutableStateFlow(goals)
-        val workoutsFlow = MutableStateFlow(workouts)
-        val goalRepo = FakeGoalRepo(goalsFlow)
-        val workoutRepo = FakeWorkoutRepo(workoutsFlow)
-        val calc = GoalProgressCalculator(goalRepo, workoutRepo, clock, ZoneOffset.UTC)
-        return GoalsViewModel(goalRepo, calc)
-    }
-
-    private fun buildWith(
-        goals: MutableStateFlow<List<Goal>>,
-        workouts: MutableStateFlow<List<Workout>>,
-        repo: FakeGoalRepo = FakeGoalRepo(goals),
-    ): GoalsViewModel {
-        val workoutRepo = FakeWorkoutRepo(workouts)
-        val calc = GoalProgressCalculator(repo, workoutRepo, clock, ZoneOffset.UTC)
-        return GoalsViewModel(repo, calc)
-    }
-
-    // ---- completion Snackbar ----
+    // ---------- completion Snackbar ----------
 
     @Test
     fun `no celebration when the seed pass finds a goal already notified`() = runTest {
-        // Goal is complete AND its completedNotified flag is already true —
-        // that's history, don't fire again.
         val g = WorkoutCountGoal(
             id = "done", title = "done", activityType = null,
-            targetValue = 1.0, period = GoalPeriod.THIS_WEEK,
-            periodStart = periodStart, periodEnd = periodEnd, createdAt = periodStart,
+            targetValue = 1.0, startDate = startDate, durationDays = 7,
+            createdAt = startDate.atStartOfDay(ZoneOffset.UTC).toInstant(),
             completedNotified = true,
         )
         val w = com.elijah.fitness.data.model.RunningWorkout(
@@ -256,12 +188,10 @@ class GoalsViewModelTest {
 
     @Test
     fun `celebrate on seed pass when the goal is complete but not yet notified`() = runTest {
-        // A past session completed this goal but never had the chance to
-        // fire — the app was closed before the Snackbar. Now it should fire.
         val g = WorkoutCountGoal(
             id = "pending", title = "pending", activityType = null,
-            targetValue = 1.0, period = GoalPeriod.THIS_WEEK,
-            periodStart = periodStart, periodEnd = periodEnd, createdAt = periodStart,
+            targetValue = 1.0, startDate = startDate, durationDays = 7,
+            createdAt = startDate.atStartOfDay(ZoneOffset.UTC).toInstant(),
             completedNotified = false,
         )
         val w = com.elijah.fitness.data.model.RunningWorkout(
@@ -284,8 +214,8 @@ class GoalsViewModelTest {
     fun `celebrate on transition from incomplete to complete during the session`() = runTest {
         val g = WorkoutCountGoal(
             id = "grow", title = "grow", activityType = null,
-            targetValue = 1.0, period = GoalPeriod.THIS_WEEK,
-            periodStart = periodStart, periodEnd = periodEnd, createdAt = periodStart,
+            targetValue = 1.0, startDate = startDate, durationDays = 7,
+            createdAt = startDate.atStartOfDay(ZoneOffset.UTC).toInstant(),
             completedNotified = false,
         )
         val goalsFlow = MutableStateFlow<List<Goal>>(listOf(g))
@@ -293,17 +223,13 @@ class GoalsViewModelTest {
         val repo = FakeGoalRepo(goalsFlow)
         val vm = buildWith(goalsFlow, workoutsFlow, repo)
 
-        // Persistent collector — kept alive across both state changes.
         val events = mutableListOf<GoalsViewModel.ErrorEvent>()
         val job = kotlinx.coroutines.CoroutineScope(dispatcher).launch {
             vm.errorEvents.collect { events.add(it) }
         }
         dispatcher.scheduler.advanceUntilIdle()
-
-        // Seed pass: goal is incomplete (no workouts) — no celebration yet.
         assertTrue(events.filterIsInstance<GoalsViewModel.ErrorEvent.GoalCompleted>().isEmpty())
 
-        // Log a workout → count goal ticks over its target.
         workoutsFlow.value = listOf(
             com.elijah.fitness.data.model.RunningWorkout(
                 id = "w1", startTime = Instant.parse("2026-09-15T10:00:00Z"),
@@ -319,7 +245,19 @@ class GoalsViewModelTest {
         assertEquals(1, repo.markNotifiedCallCount)
     }
 
-    /** Collect every event emitted so far into a list. */
+    // ---------- helpers ----------
+
+    private suspend fun collectItems(vm: GoalsViewModel): List<GoalListItem> {
+        val latest = MutableStateFlow<List<GoalListItem>>(emptyList())
+        val job = kotlinx.coroutines.CoroutineScope(dispatcher).launch {
+            vm.items.collect { latest.value = it }
+        }
+        dispatcher.scheduler.advanceUntilIdle()
+        val out = latest.value
+        job.cancel()
+        return out
+    }
+
     private suspend fun collectEvents(vm: GoalsViewModel): MutableList<GoalsViewModel.ErrorEvent> {
         val bag = mutableListOf<GoalsViewModel.ErrorEvent>()
         val job = kotlinx.coroutines.CoroutineScope(dispatcher).launch {
@@ -330,6 +268,32 @@ class GoalsViewModelTest {
         return bag
     }
 
+    private fun distanceGoal(id: String, target: Double, createdAt: Instant): Goal =
+        DistanceGoal(
+            id = id, title = "goal $id", activityType = ActivityType.RUNNING,
+            targetValue = target, startDate = startDate, durationDays = durationDays,
+            createdAt = createdAt,
+        )
+
+    private fun viewModelWith(goals: List<Goal>, workouts: List<Workout>): GoalsViewModel {
+        val goalsFlow = MutableStateFlow(goals)
+        val workoutsFlow = MutableStateFlow(workouts)
+        val goalRepo = FakeGoalRepo(goalsFlow)
+        val workoutRepo = FakeWorkoutRepo(workoutsFlow)
+        val calc = GoalProgressCalculator(goalRepo, workoutRepo, clock, ZoneOffset.UTC)
+        return GoalsViewModel(goalRepo, calc)
+    }
+
+    private fun buildWith(
+        goals: MutableStateFlow<List<Goal>>,
+        workouts: MutableStateFlow<List<Workout>>,
+        repo: FakeGoalRepo = FakeGoalRepo(goals),
+    ): GoalsViewModel {
+        val workoutRepo = FakeWorkoutRepo(workouts)
+        val calc = GoalProgressCalculator(repo, workoutRepo, clock, ZoneOffset.UTC)
+        return GoalsViewModel(repo, calc)
+    }
+
     private class FakeGoalRepo(
         private val flow: MutableStateFlow<List<Goal>>,
     ) : GoalRepository {
@@ -337,19 +301,20 @@ class GoalsViewModelTest {
         override fun observeGoals(): Flow<List<Goal>> = flow.asStateFlow()
         override suspend fun refresh(): ApiResult<Unit> = ApiResult.Success(Unit)
         override suspend fun createGoal(
-            title: String, activityType: ActivityType?,
-            goalType: com.elijah.fitness.data.model.GoalType,
-            period: GoalPeriod, targetValue: Double,
-            periodStart: LocalDate, periodEnd: LocalDate,
+            title: String, activityType: ActivityType?, goalType: GoalType,
+            targetValue: Double, startDate: LocalDate, durationDays: Int,
         ): ApiResult<Unit> = ApiResult.Success(Unit)
         override suspend fun updateGoal(
-            id: String, title: String, activityType: ActivityType?, targetValue: Double,
+            id: String, title: String, activityType: ActivityType?,
+            goalType: GoalType, targetValue: Double, durationDays: Int,
         ): ApiResult<Unit> = ApiResult.Success(Unit)
         override suspend fun deleteGoal(id: String): ApiResult<Unit> = ApiResult.Success(Unit)
         override suspend fun markCompletedNotified(id: String): ApiResult<Unit> {
             markNotifiedCallCount++
             return ApiResult.Success(Unit)
         }
+        override suspend fun makeMainGoal(id: String): ApiResult<Unit> = ApiResult.Success(Unit)
+        override suspend fun extendGoal(id: String, days: Int): ApiResult<Unit> = ApiResult.Success(Unit)
     }
 
     private class FakeWorkoutRepo(
@@ -359,7 +324,7 @@ class GoalsViewModelTest {
         override suspend fun refresh(): ApiResult<Unit> = ApiResult.Success(Unit)
         override suspend fun addWorkout(workout: Workout, routePoints: List<com.elijah.fitness.tracking.TrackPoint>): ApiResult<Unit> = ApiResult.Success(Unit)
         override suspend fun getWorkout(id: String): Workout? = flow.value.firstOrNull { it.id == id }
-        override suspend fun getWorkoutDetail(clientUuid: String): com.elijah.fitness.data.remote.ApiResult<com.elijah.fitness.data.model.WorkoutDetail> =
-            com.elijah.fitness.data.remote.ApiResult.Error("not supported in test fake", 404, emptyMap())
+        override suspend fun getWorkoutDetail(clientUuid: String): ApiResult<com.elijah.fitness.data.model.WorkoutDetail> =
+            ApiResult.Error("not supported in test fake", 404, emptyMap())
     }
 }

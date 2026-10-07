@@ -4,7 +4,6 @@ import com.elijah.fitness.data.model.ActivityType
 import com.elijah.fitness.data.model.DistanceGoal
 import com.elijah.fitness.data.model.DurationGoal
 import com.elijah.fitness.data.model.Goal
-import com.elijah.fitness.data.model.GoalPeriod
 import com.elijah.fitness.data.model.GoalType
 import com.elijah.fitness.data.model.StrengthVolumeGoal
 import com.elijah.fitness.data.model.WorkoutCountGoal
@@ -13,13 +12,11 @@ import com.elijah.fitness.data.remote.dto.GoalDto
 import com.elijah.fitness.data.remote.dto.UpdateGoalRequestDto
 import java.time.Instant
 import java.time.LocalDate
-import java.time.ZoneId
 
 /**
- * Server DTO → domain [Goal]. The concrete subclass is picked from
- * [GoalDto.goalType]; `periodStart` / `periodEnd` DATE strings are
- * interpreted as midnight in [zone] so a mid-day workout at the same
- * date falls inside the window.
+ * Server DTO → domain [Goal] (phase-8b shape). The concrete subclass is
+ * picked from [GoalDto.goalType]; `startDate` is parsed as a `LocalDate`
+ * directly — the window is day-granularity on both sides.
  *
  * The server assigns numeric ids; the Kotlin model uses `String` (same
  * shape as [com.elijah.fitness.data.model.Workout.id]), so `.toString()`
@@ -27,75 +24,72 @@ import java.time.ZoneId
  * lets the subclass `init { require(...) }` throw if the server sent a
  * nonsense combination like distance-on-weightlifting.
  */
-fun GoalDto.toDomain(zone: ZoneId = ZoneId.systemDefault()): Goal {
-    val period = GoalPeriod.valueOf(period.uppercase().let { if (it == "WEEK") "THIS_WEEK" else "THIS_MONTH" })
-    val start = LocalDate.parse(periodStart).atStartOfDay(zone).toInstant()
-    val end   = LocalDate.parse(periodEnd).atStartOfDay(zone).toInstant()
+fun GoalDto.toDomain(): Goal {
+    val start = LocalDate.parse(startDate)
     val activity = activityType?.let { ActivityType.valueOf(it) }
     val created = Instant.parse(createdAt)
 
     return when (GoalType.fromWire(goalType)) {
         GoalType.DISTANCE -> DistanceGoal(
             id = id.toString(), title = title, activityType = activity,
-            targetValue = targetValue, period = period,
-            periodStart = start, periodEnd = end, createdAt = created,
-            completedNotified = completedNotified,
+            targetValue = targetValue, startDate = start, durationDays = durationDays,
+            createdAt = created,
+            completedNotified = completedNotified, isMain = isMain,
         )
         GoalType.COUNT -> WorkoutCountGoal(
             id = id.toString(), title = title, activityType = activity,
-            targetValue = targetValue, period = period,
-            periodStart = start, periodEnd = end, createdAt = created,
-            completedNotified = completedNotified,
+            targetValue = targetValue, startDate = start, durationDays = durationDays,
+            createdAt = created,
+            completedNotified = completedNotified, isMain = isMain,
         )
         GoalType.DURATION -> DurationGoal(
             id = id.toString(), title = title, activityType = activity,
-            targetValue = targetValue, period = period,
-            periodStart = start, periodEnd = end, createdAt = created,
-            completedNotified = completedNotified,
+            targetValue = targetValue, startDate = start, durationDays = durationDays,
+            createdAt = created,
+            completedNotified = completedNotified, isMain = isMain,
         )
         GoalType.VOLUME -> StrengthVolumeGoal(
             id = id.toString(), title = title, activityType = activity,
-            targetValue = targetValue, period = period,
-            periodStart = start, periodEnd = end, createdAt = created,
-            completedNotified = completedNotified,
+            targetValue = targetValue, startDate = start, durationDays = durationDays,
+            createdAt = created,
+            completedNotified = completedNotified, isMain = isMain,
         )
     }
 }
 
 /**
  * Build the create-request payload from the raw fields the user picked
- * in the "New goal" bottom sheet (step 5). We can't derive it from an
- * already-constructed [Goal] because the server assigns the id.
+ * in the "New goal" screen. The client supplies its local `startDate`
+ * and the server validates it's within ±1 day of the server's today.
  */
 fun buildCreateGoalRequest(
     title: String,
     activityType: ActivityType?,
     goalType: GoalType,
-    period: GoalPeriod,
     targetValue: Double,
-    periodStart: LocalDate,
-    periodEnd: LocalDate,
+    startDate: LocalDate,
+    durationDays: Int,
 ): CreateGoalRequestDto = CreateGoalRequestDto(
     title = title,
     activityType = activityType?.name,
     goalType = goalType.wire(),
-    period = when (period) {
-        GoalPeriod.THIS_WEEK -> "WEEK"
-        GoalPeriod.THIS_MONTH -> "MONTH"
-    },
     targetValue = targetValue,
-    periodStart = periodStart.toString(),
-    periodEnd = periodEnd.toString(),
+    startDate = startDate.toString(),
+    durationDays = durationDays,
 )
 
 fun buildUpdateGoalRequest(
     title: String,
     activityType: ActivityType?,
+    goalType: GoalType,
     targetValue: Double,
+    durationDays: Int,
 ): UpdateGoalRequestDto = UpdateGoalRequestDto(
     title = title,
     activityType = activityType?.name,
+    goalType = goalType.wire(),
     targetValue = targetValue,
+    durationDays = durationDays,
 )
 
 /** Concrete [Goal] subclass → wire enum value. Handy for the calculator + UI. */

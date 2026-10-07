@@ -4,7 +4,6 @@ import com.elijah.fitness.data.model.ActivityType
 import com.elijah.fitness.data.model.CyclingWorkout
 import com.elijah.fitness.data.model.DistanceWorkout
 import com.elijah.fitness.data.model.Goal
-import com.elijah.fitness.data.model.GoalPeriod
 import com.elijah.fitness.data.model.GoalWithProgress
 import com.elijah.fitness.data.model.RunningWorkout
 import com.elijah.fitness.data.model.StrengthWorkout
@@ -96,31 +95,36 @@ class InsightEngine(
 
     // -----------------------------------------------------------------
     // Rule 2 — goal projection
+    //
+    // Phase-8b: goals no longer carry a WEEK/MONTH period, so the old
+    // "monthly goal only" filter is dropped in favour of "any active
+    // goal with at least 7 days of total duration". That matches the
+    // spirit of the original rule — projections are only interesting
+    // when the window is long enough for a meaningful per-day rate.
     // -----------------------------------------------------------------
     private fun goalProjectionInsight(goals: List<GoalWithProgress>): List<Insight> {
         val target = goals.firstOrNull { candidate ->
-            !candidate.isComplete && !candidate.isExpired &&
-                candidate.progressFraction in 0.3..0.95 &&
-                candidate.goal.period == GoalPeriod.THIS_MONTH
+            candidate.isActive &&
+                candidate.goal.durationDays >= 7 &&
+                candidate.progressFraction in 0.3..0.95
         } ?: return emptyList()
 
         val today = LocalDate.ofInstant(clock.instant(), zone)
         val remainingValue = target.goal.targetValue - target.currentValue
         if (remainingValue <= 0.0) return emptyList()
 
-        val periodStart = LocalDate.ofInstant(target.goal.periodStart, zone)
-        val daysElapsed = ChronoUnit.DAYS.between(periodStart, today).coerceAtLeast(1L)
+        val daysElapsed = ChronoUnit.DAYS.between(target.goal.startDate, today)
+            .coerceAtLeast(1L)
         val perDayRate = target.currentValue / daysElapsed.toDouble()
         if (perDayRate <= 0.0) return emptyList()
         val daysNeeded = (remainingValue / perDayRate).roundToInt().coerceAtLeast(1)
         val projected = today.plusDays(daysNeeded.toLong())
-        val lastDay = LocalDate.ofInstant(target.goal.periodEnd.minusNanos(1), zone)
 
-        if (projected.isAfter(lastDay)) return emptyList()
+        if (projected.isAfter(target.goal.lastDay)) return emptyList()
 
         return listOf(
             Insight(
-                text = "At this rate you'll reach your monthly goal by the ${ordinal(projected.dayOfMonth)}.",
+                text = "At this rate you'll reach your goal by the ${ordinal(projected.dayOfMonth)}.",
                 priority = 20,
                 kind = Insight.Kind.GoalProjection,
             )

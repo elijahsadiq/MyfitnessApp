@@ -1623,3 +1623,66 @@ The Android client's `GoalDto` / `CreateGoalRequestDto` / `UpdateGoalRequestDto`
 **Assignment task supported**
 - **Task 4 (development)** — the backend half of the Goals redesign.
 - **Task 1b (design)** — the "authoritative schema + migrations folder" split, the "server validates ±1 day on startDate" time-zone story, and the transactional single-main invariant are all tidy architectural write-ups.
+
+## Step 3 — Domain model (goals redesigned around days)
+**Built**
+- **`Goal.kt` rewritten**. The abstract base now takes `startDate: LocalDate` + `durationDays: Int` instead of `period: GoalPeriod` + `periodStart/periodEnd: Instant`. The inherited "filter on base, measure in each subclass" shape is preserved exactly — reports can still cite it as inheritance example #4. New on the base:
+  - `lastDay: LocalDate` — derived `startDate + durationDays - 1` (inclusive).
+  - `daysLeft(today: LocalDate): Long` — counts today, so Monday→Sunday returns 7, Sunday returns 1 (the "Last day" trigger), the day after returns 0, further returns negative.
+  - `status(workouts, today, zone): Status` — `Completed` wins once the target is met (even once `lastDay` has passed); `Ended` once today is past `lastDay` and the target wasn't met; `Active` otherwise.
+  - `averagePerDay / neededPerDay` — stat-tile fodder for the Step-7 Manage sheet. Both guard against division by zero (days-elapsed clamped to a minimum of 1); `neededPerDay` returns 0 once complete OR once ended.
+  - `sessionsLogged(workouts, zone): Int` — relevant-workout count.
+  - `relevantWorkouts(workouts, zone)` filters by `LocalDate.ofInstant(w.startTime, zone)` falling in `[startDate, lastDay]` inclusive — so the brief's "workout at 23:59 on the last day counts, 00:00 the next day doesn't" case drops out of the type system.
+  - `isMain: Boolean = false` on the constructor; the dark card in Step 5 reads it.
+  - A `require(durationDays in 1..365)` on `init` so bad data fails fast.
+- **Phase-8b activity×goalType matrix enforced on `init`**: `DistanceGoal` now requires RUNNING or CYCLING (no more null-allowed); `StrengthVolumeGoal` requires WEIGHTLIFTING (no more null-allowed). The server already enforces this; now the Kotlin side will throw at mapper time if the server ever sent a nonsense combination.
+- **`GoalPeriod` enum + `GoalPeriodResolver` + `GoalPeriodResolverTest` deleted.** `GoalWithProgress.isExpired` + `daysRemaining` removed in favour of the new `status + daysLeft` pair.
+- **`GoalWithProgress`** rewritten to carry everything the list AND the Manage sheet need: `status, currentValue, progressFraction, daysLeft, averagePerDay, neededPerDay, sessionsLogged`. Convenience `isActive/isCompleted/isEnded/isMain` getters so the UI doesn't have to spell out `status == ...` repeatedly.
+- **`GoalProgressCalculator`** now takes a `zone` and feeds the base-class helpers with it — one place in the whole codebase owns the "which workouts count on which day" decision.
+- **DTOs** (`GoalDto`, `CreateGoalRequestDto`, `UpdateGoalRequestDto`, new `ExtendGoalRequestDto`) rewritten for the new wire shape: `durationDays`, `startDate`, `lastDay`, `isMain`.
+- **`GoalMapper`** rewritten — `GoalDto.toDomain()` now works purely on `LocalDate` strings (no more `Instant` conversion for window boundaries). `buildCreateGoalRequest(startDate, durationDays)` and `buildUpdateGoalRequest(goalType, durationDays, …)` replace the period-based builders.
+- **`GoalApi`** gained `makeMain(id)` and `extend(id, body)` endpoints.
+- **`GoalRepository` interface + both implementations** reshape `createGoal/updateGoal` to the day-based signature and add `makeMainGoal(id)` + `extendGoal(id, days)`. The `RemoteGoalRepository` locally clears `isMain` on every other row of the user's list after a `makeMain` succeeds so the single-main invariant is reflected in the flow before a `refresh()` lands. `FakeGoalRepository` mirrors that behaviour for tests.
+- **UI shims (temporary — Step 5-6 rewrites these entirely)**:
+  - `GoalsAdapter`: eyebrow text uses the neutral `goals_eyebrow_week` string pending Step 5's main / activity pill. `formatTimeRemaining` adjusted for the new `daysLeft` semantics (1 = Last day, ≤ 0 = ended).
+  - `GoalsViewModel`: three-section partition now reads `GoalWithProgress.status` directly; `GoalSnapshot` carries `startDate + durationDays` (Undo re-creates the goal).
+  - `NewGoalBottomSheet` + `NewGoalViewModel`: the WEEK/MONTH chips are mapped to `durationDays = 7 / 30` on submit; `startDate = clock.today`. Both get fully rewritten in Step 6.
+- **`InsightEngine.goalProjectionInsight` rule swap** — per the agreement, the previous `period == THIS_MONTH` filter is replaced by "any active goal with `durationDays >= 7`". The projection fires more often now (e.g. 14-day running goals qualify), which is a better match for the brief's "advanced analytics" aim. Dev-log cite: shorter 1–6 day goals produce too few sample points to project meaningfully.
+
+**Tests — rewritten**
+- **`GoalProgressCalculatorTest`** — 9 new boundary tests per the brief:
+  - status on first day, mid-week, last day, day-after-last
+  - "goal completed early stays Completed even after lastDay"
+  - workout at 23:59 on last day counts, 00:00 next day doesn't
+  - `averagePerDay` on day 1 divides by 1
+  - `neededPerDay` on day 1 is `target / durationDays`
+  - `neededPerDay` returns 0 once completed OR ended.
+- **`GoalTest`** rewritten — per-subclass measurements with the new activity×goalType matrix (null-activity is now rejected for Distance + StrengthVolume), window boundary filter, `progressFraction` clamping, `durationDays` bounds check (0 and 366 throw).
+- **`GoalMapperTest`** rewritten for the new DTO fields, including `isMain` round-trip.
+- **`FakeGoalRepositoryTest`** rewritten — exercises create / update / delete / make-main / extend. The make-main test asserts the single-main invariant across a 2-goal fixture; extend-cap test asserts the fake coerces to 365 just like the server.
+- **`RemoteGoalRepositoryTest`** rewritten — tests the new wire shape of create/update, plus the new `makeMainGoal` (asserts the local clear-siblings behaviour) and `extendGoal` paths.
+- **`InsightEngineTest`** — goal-projection test rewritten with a `durationDays = 30` goal and the `>= 7` filter; added "no projection for sub-7-day goal" case.
+- **`GoalsViewModelTest`** rewritten — fixtures use `startDate / durationDays`; status comes from the calculator rather than `isComplete`/`isExpired` fields.
+- **`NewGoalViewModelTest`** rewritten for the `LegacyPeriod` + `durationDays` translation; new assertion checks "WEEK chip → createGoal called with 7 days".
+- **`GoalPeriodResolverTest`** deleted.
+
+**Key design decision — keep the UI running in degraded mode**
+The brief separates Step 3 (domain) from Step 5-7 (UI rewrites). Rather than ship a broken build, the current ChooseActivity / Goals / NewGoal sheets get minimal shims that keep them compiling against the new domain. Users opening the New Goal sheet still get a working form — it just translates the two legacy "This week / This month" chips to 7/30-day windows on submit. Steps 5-7 replace these screens wholesale.
+
+**Rejected alternative — rewrite the UI in this step too**
+Would have made the single commit twice as big and conflated two concerns the brief kept separate. Doing it in stages leaves a clean seam for the design-doc narrative.
+
+**Rejected alternative — delete the UI code temporarily, rebuild in Step 5**
+Would have left the app booting into a broken Goals tab for several commits. Shimming is cheap (<100 lines of changes across three UI files) and keeps emulator-testing possible between every step.
+
+**Kotlin/Android concepts** *(for my notes)*
+- `LocalDate.ofInstant(instant, zone)` — the standard primitive for "which day did this timestamp fall on, in this zone". Lets a single filter work for both a workout logged at 23:59 local and the midnight-after.
+- `ChronoUnit.DAYS.between(startDate, lastDay)` — strictly calendar-day arithmetic, no zone surprises.
+
+**Verified**
+- `./gradlew assembleLocalDebug` — BUILD SUCCESSFUL.
+- `./gradlew testLocalDebugUnitTest` — **253 tests, 0 failures**. (Count dropped from 264 because the deleted `GoalPeriodResolverTest` had 7 tests and some of the per-subclass tests were consolidated during the rewrite.)
+
+**Assignment task supported**
+- **Task 4 (development)** — the day-based goals feature is now plumbed through the domain and data layers; Steps 5-7 wire the new UI screens on top.
+- **Task 5b (hierarchies)** — the `Goal` inheritance hierarchy stays intact (filter on base, measure in subclass) with updated KDoc. New per-subclass `init { require(...) }` checks strengthen the "subclasses own their invariants" story.

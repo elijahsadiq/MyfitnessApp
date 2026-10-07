@@ -11,22 +11,11 @@ import com.elijah.fitness.R
 import com.elijah.fitness.data.model.ActivityType
 import com.elijah.fitness.databinding.BottomSheetChooseActivityBinding
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
-
-/**
- * Two-step chooser. Running/Cycling land on a second screen offering
- * **Track with GPS** or **Enter manually**; Weightlifting bypasses the
- * second step and routes straight to the strength-log form.
- *
- * Note: this fragment can't extend `BaseFragment` because it has to extend
- * `BottomSheetDialogFragment`. It handles binding lifecycle inline —
- * short enough to justify duplicating the pattern.
- */
 class ChooseActivityBottomSheet : BottomSheetDialogFragment() {
 
     private var _binding: BottomSheetChooseActivityBinding? = null
     private val binding get() = _binding!!
 
-    /** Null while on step 1, set to RUNNING/CYCLING once step 2 is shown. */
     private var pendingDistance: ActivityType? = null
 
     override fun onCreateView(

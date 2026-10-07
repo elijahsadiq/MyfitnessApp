@@ -10,7 +10,6 @@ import com.elijah.fitness.AppContainer
 import com.elijah.fitness.R
 import com.elijah.fitness.data.model.ActivityType
 import com.elijah.fitness.data.model.Goal
-import com.elijah.fitness.data.model.GoalPeriod
 import com.elijah.fitness.data.model.GoalProgressCalculator
 import com.elijah.fitness.data.model.GoalType
 import com.elijah.fitness.data.model.GoalWithProgress
@@ -113,12 +112,9 @@ class GoalsViewModel(
                 title = goal.title,
                 activityType = goal.activityType,
                 goalType = goal.goalType(),
-                period = goal.period,
                 targetValue = goal.targetValue,
-                periodStart = LocalDate.ofInstant(goal.periodStart,
-                    java.time.ZoneId.systemDefault()),
-                periodEnd = LocalDate.ofInstant(goal.periodEnd,
-                    java.time.ZoneId.systemDefault()),
+                startDate = goal.startDate,
+                durationDays = goal.durationDays,
             )
             when (goalRepository.deleteGoal(goal.id)) {
                 is ApiResult.Success ->
@@ -144,17 +140,17 @@ class GoalsViewModel(
             // notified are just history. Goals that are complete but not
             // yet notified belong to a past session that never got to
             // fire the Snackbar — celebrate them now.
-            snapshots.filter { it.isComplete && !it.goal.completedNotified }
+            snapshots.filter { it.isCompleted && !it.goal.completedNotified }
                 .forEach { announceCompletion(it) }
             // Seed the "already celebrated" set with everything currently
             // complete, so we don't double-fire on the next emission when
             // markCompletedNotified() writes back through the flow.
-            snapshots.filter { it.isComplete }.forEach { celebratedThisSession.add(it.goal.id) }
+            snapshots.filter { it.isCompleted }.forEach { celebratedThisSession.add(it.goal.id) }
             completionsSeeded = true
             return
         }
         snapshots.filter {
-            it.isComplete && it.goal.id !in celebratedThisSession
+            it.isCompleted && it.goal.id !in celebratedThisSession
         }.forEach { announceCompletion(it) }
     }
 
@@ -175,10 +171,9 @@ class GoalsViewModel(
                 title = snapshot.title,
                 activityType = snapshot.activityType,
                 goalType = snapshot.goalType,
-                period = snapshot.period,
                 targetValue = snapshot.targetValue,
-                periodStart = snapshot.periodStart,
-                periodEnd = snapshot.periodEnd,
+                startDate = snapshot.startDate,
+                durationDays = snapshot.durationDays,
             )
         }
     }
@@ -186,21 +181,19 @@ class GoalsViewModel(
     private fun buildItems(all: List<GoalWithProgress>): List<GoalListItem> {
         if (all.isEmpty()) return emptyList()
 
-        // Three states, mutually exclusive: Active (period current + not
-        // yet complete), Completed, Ended (period past + target unmet).
-        // The order of the checks matters — a goal that is both complete
-        // AND expired is treated as Completed (the achievement wins).
-        val active = all.filter { !it.isComplete && !it.isExpired }
-        val completed = all.filter { it.isComplete }
-        val ended = all.filter { !it.isComplete && it.isExpired }
+        // Three states already partitioned by GoalWithProgress.status:
+        // Active (window current + target unmet), Completed, Ended.
+        val active = all.filter { it.isActive }
+        val completed = all.filter { it.isCompleted }
+        val ended = all.filter { it.isEnded }
 
         val out = mutableListOf<GoalListItem>()
 
-        // "Most urgent" = smallest daysRemaining, ties broken by higher
-        // progress fraction (closer to completion) then earlier createdAt.
-        // Only active goals are eligible — never completed, never expired.
+        // "Most urgent" = fewest days left; ties go to higher progress
+        // fraction (closer to completion), then earlier createdAt.
+        // Only active goals are eligible — never completed, never ended.
         val featured = active.minWithOrNull(
-            compareBy<GoalWithProgress> { it.daysRemaining }
+            compareBy<GoalWithProgress> { it.daysLeft }
                 .thenByDescending { it.progressFraction }
                 .thenBy { it.goal.createdAt }
         )
@@ -232,10 +225,9 @@ class GoalsViewModel(
         val title: String,
         val activityType: ActivityType?,
         val goalType: GoalType,
-        val period: GoalPeriod,
         val targetValue: Double,
-        val periodStart: LocalDate,
-        val periodEnd: LocalDate,
+        val startDate: LocalDate,
+        val durationDays: Int,
     )
 
     sealed interface ErrorEvent {

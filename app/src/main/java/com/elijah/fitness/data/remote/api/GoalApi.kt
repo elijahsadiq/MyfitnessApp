@@ -2,6 +2,7 @@ package com.elijah.fitness.data.remote.api
 
 import com.elijah.fitness.data.remote.dto.ApiEnvelope
 import com.elijah.fitness.data.remote.dto.CreateGoalRequestDto
+import com.elijah.fitness.data.remote.dto.ExtendGoalRequestDto
 import com.elijah.fitness.data.remote.dto.GoalDto
 import com.elijah.fitness.data.remote.dto.UpdateGoalRequestDto
 import retrofit2.Response
@@ -35,4 +36,15 @@ interface GoalApi {
      */
     @POST("goals/{id}/notified")
     suspend fun markNotified(@Path("id") id: Long): Response<ApiEnvelope<GoalDto>>
+
+    /** Make this goal the user's main goal (transactional on the server). */
+    @POST("goals/{id}/main")
+    suspend fun makeMain(@Path("id") id: Long): Response<ApiEnvelope<GoalDto>>
+
+    /** Add [ExtendGoalRequestDto.days] days to an active goal. */
+    @POST("goals/{id}/extend")
+    suspend fun extend(
+        @Path("id") id: Long,
+        @Body body: ExtendGoalRequestDto,
+    ): Response<ApiEnvelope<GoalDto>>
 }

@@ -3,12 +3,12 @@ package com.elijah.fitness.data.remote.dto
 import kotlinx.serialization.Serializable
 
 /**
- * Server representation of a goal. Matches `GoalController::toDto` on the
- * PHP side one-for-one.
+ * Server representation of a goal (phase-8b shape). Matches
+ * `GoalController::toDto` on the PHP side one-for-one.
  *
- * `periodStart` / `periodEnd` are DATE strings (`YYYY-MM-DD`) interpreted
- * as midnight in the device's local zone; the mapper converts them to
- * `java.time.Instant` for the domain layer.
+ * `startDate` / `lastDay` are DATE strings (`YYYY-MM-DD`) in the device's
+ * local zone — the mapper parses them to `LocalDate` for the domain
+ * layer. `lastDay` is INCLUSIVE (the last day the window covers).
  */
 @Serializable
 data class GoalDto(
@@ -17,11 +17,11 @@ data class GoalDto(
     val activityType: String? = null,
     /** `"distance"`, `"count"`, `"duration"`, `"volume"`. */
     val goalType: String,
-    /** `"WEEK"` or `"MONTH"`. */
-    val period: String,
     val targetValue: Double,
-    val periodStart: String,
-    val periodEnd: String,
+    val startDate: String,
+    val lastDay: String,
+    val durationDays: Int,
+    val isMain: Boolean = false,
     val completedNotified: Boolean = false,
     val createdAt: String,
     val updatedAt: String,
@@ -33,20 +33,27 @@ data class CreateGoalRequestDto(
     val title: String,
     val activityType: String? = null,
     val goalType: String,
-    val period: String,
     val targetValue: Double,
-    val periodStart: String,
-    val periodEnd: String,
+    val startDate: String,
+    val durationDays: Int,
 )
 
 /**
- * Request body for `PUT /goals/{id}`. The controller only edits these
- * three fields; period + dates are immutable so historical progress
- * stays meaningful.
+ * Request body for `PUT /goals/{id}`. The server merges unchanged fields
+ * from the current row, so clients can send only what's changing; this
+ * DTO carries all four editable fields.
  */
 @Serializable
 data class UpdateGoalRequestDto(
     val title: String,
     val activityType: String? = null,
+    val goalType: String,
     val targetValue: Double,
+    val durationDays: Int,
+)
+
+/** Request body for `POST /goals/{id}/extend`. */
+@Serializable
+data class ExtendGoalRequestDto(
+    val days: Int,
 )

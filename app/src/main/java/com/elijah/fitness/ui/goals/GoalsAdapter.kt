@@ -7,7 +7,6 @@ import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.elijah.fitness.R
 import com.elijah.fitness.data.model.ActivityType
-import com.elijah.fitness.data.model.GoalPeriod
 import com.elijah.fitness.data.model.GoalWithProgress
 import com.elijah.fitness.data.remote.mapper.goalType
 import com.elijah.fitness.databinding.ItemGoalActiveBinding
@@ -134,10 +133,9 @@ class FeaturedGoalViewHolder(
         val gwp = item.goal
         val goal = gwp.goal
 
-        binding.featuredEyebrow.setText(
-            if (goal.period == GoalPeriod.THIS_WEEK) R.string.goals_eyebrow_week
-            else R.string.goals_eyebrow_month
-        )
+        // Phase-8b: period eyebrow is being replaced by the Main / activity
+        // pill in Step 5's redesign. Hold a neutral copy until then.
+        binding.featuredEyebrow.setText(R.string.goals_eyebrow_week)
         binding.featuredTitle.text = goal.title
         binding.featuredValue.text = GoalFormatters.formatValue(gwp.currentValue, goal.goalType())
         binding.featuredValueSuffix.text = ctx.getString(
@@ -146,7 +144,7 @@ class FeaturedGoalViewHolder(
             GoalFormatters.formatValue(goal.targetValue, goal.goalType()),
             GoalFormatters.unitLabel(ctx, goal.goalType()),
         ).trimStart(' ', '/').let { "/ $it" }
-        binding.featuredTimeRemaining.text = GoalFormatters.formatTimeRemaining(ctx, gwp.daysRemaining)
+        binding.featuredTimeRemaining.text = GoalFormatters.formatTimeRemaining(ctx, gwp.daysLeft)
         binding.featuredProgressRing.progress = gwp.progressFraction.toFloat()
         binding.featuredProgressRingLabel.text = ctx.getString(
             R.string.home_progress_ring_label,
@@ -175,7 +173,7 @@ class ActiveGoalViewHolder(
             GoalFormatters.unitLabel(ctx, goal.goalType()),
         )
         binding.activeProgressBar.progress = (gwp.progressFraction * 100).toInt()
-        binding.activeTimeRemaining.text = GoalFormatters.formatTimeRemaining(ctx, gwp.daysRemaining)
+        binding.activeTimeRemaining.text = GoalFormatters.formatTimeRemaining(ctx, gwp.daysLeft)
 
         binding.activeCard.setOnClickListener { onGoalTap(gwp) }
     }
@@ -263,10 +261,14 @@ private object GoalFormatters {
         }
     }
 
-    fun formatTimeRemaining(ctx: android.content.Context, daysRemaining: Long): String = when {
-        daysRemaining < 0 -> ctx.getString(R.string.goal_expired, "${-daysRemaining}d ago")
-        daysRemaining == 0L -> ctx.getString(R.string.goal_last_day)
-        daysRemaining == 1L -> ctx.getString(R.string.goal_one_day_remaining)
-        else -> ctx.getString(R.string.goal_days_remaining, daysRemaining.toInt())
+    /**
+     * Phase-8b daysLeft semantics: 1 = "Last day" (today is `lastDay`),
+     * larger = days remaining including today, ≤ 0 = ended.
+     */
+    fun formatTimeRemaining(ctx: android.content.Context, daysLeft: Long): String = when {
+        daysLeft <= 0L -> ctx.getString(R.string.goal_expired, "${-daysLeft + 1}d ago")
+        daysLeft == 1L -> ctx.getString(R.string.goal_last_day)
+        daysLeft == 2L -> ctx.getString(R.string.goal_one_day_remaining)
+        else -> ctx.getString(R.string.goal_days_remaining, (daysLeft - 1).toInt())
     }
 }

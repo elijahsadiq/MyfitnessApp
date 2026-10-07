@@ -2,7 +2,6 @@ package com.elijah.fitness.data.repository
 
 import com.elijah.fitness.data.model.ActivityType
 import com.elijah.fitness.data.model.Goal
-import com.elijah.fitness.data.model.GoalPeriod
 import com.elijah.fitness.data.model.GoalType
 import com.elijah.fitness.data.remote.ApiResult
 import kotlinx.coroutines.flow.Flow
@@ -17,6 +16,12 @@ import java.time.LocalDate
  * The server assigns numeric ids; on the domain side [Goal.id] carries
  * the same value as a `String` (mirrors the workout repository's
  * clientUuid convention).
+ *
+ * Phase-8b additions:
+ *   - [makeMainGoal] moves the "main" flag to one goal (transactional
+ *     on the server, so sibling goals' `is_main` is cleared atomically).
+ *   - [extendGoal] adds days to an active goal (rejected server-side
+ *     for ended goals and for extensions that push past 365 days).
  */
 interface GoalRepository {
 
@@ -27,30 +32,34 @@ interface GoalRepository {
     suspend fun refresh(): ApiResult<Unit>
 
     /**
-     * Create a goal. The raw fields are what the "New goal" bottom sheet
-     * (Step 5) collects; the server assigns the id and returns a full
-     * [Goal] which is pushed into [observeGoals] on success.
+     * Create a goal. The raw fields are what the "New goal" screen
+     * collects; the server assigns the id and returns the full [Goal]
+     * which is pushed into [observeGoals] on success. The client supplies
+     * its local [startDate] — the server validates it's within ±1 day of
+     * the server's today.
      */
     suspend fun createGoal(
         title: String,
         activityType: ActivityType?,
         goalType: GoalType,
-        period: GoalPeriod,
         targetValue: Double,
-        periodStart: LocalDate,
-        periodEnd: LocalDate,
+        startDate: LocalDate,
+        durationDays: Int,
     ): ApiResult<Unit>
 
     /**
-     * Update the editable fields of an existing goal. Period + dates
-     * are immutable — changing them would invalidate the already-shown
-     * progress against the original window.
+     * Update the editable fields of an existing goal. [startDate] is
+     * immutable — changing it would invalidate already-shown progress
+     * against the original window — but [durationDays] can grow or
+     * shrink; the server recomputes `last_day` from the new span.
      */
     suspend fun updateGoal(
         id: String,
         title: String,
         activityType: ActivityType?,
+        goalType: GoalType,
         targetValue: Double,
+        durationDays: Int,
     ): ApiResult<Unit>
 
     suspend fun deleteGoal(id: String): ApiResult<Unit>
@@ -61,4 +70,10 @@ interface GoalRepository {
      * `completedNotified = true`. Idempotent — calling twice is fine.
      */
     suspend fun markCompletedNotified(id: String): ApiResult<Unit>
+
+    /** Make [id] the user's main goal, clearing is_main on every other goal. */
+    suspend fun makeMainGoal(id: String): ApiResult<Unit>
+
+    /** Add [days] to an active goal, up to the 365-day server-side cap. */
+    suspend fun extendGoal(id: String, days: Int): ApiResult<Unit>
 }
