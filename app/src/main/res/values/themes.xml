@@ -74,9 +74,17 @@
         <item name="colorErrorContainer">@color/error_container</item>
         <item name="colorOnErrorContainer">@color/on_error_container</item>
 
-        <!-- Status bar: warm canvas with dark icons. -->
-        <item name="android:statusBarColor">@color/background_warm</item>
-        <item name="android:windowLightStatusBar">true</item>
+        <!--
+          Phase 8c step 2 — the status bar is owned by the activity via
+          `enableEdgeToEdge()`. The pre-8c `android:statusBarColor` +
+          `windowLightStatusBar` attributes used to live here; both were
+          deprecated in SDK 35 and gave us the "white strip above the
+          tracking screen" bug. MainActivity + AuthActivity now flip
+          `WindowInsetsControllerCompat.isAppearanceLightStatusBars` per
+          destination so dark surfaces (live tracking, Step-3 full-
+          screen map, onboarding hero) get light icons and every other
+          screen keeps the dark icons that work on the warm canvas.
+        -->
 
         <!-- Type: applied via TextAppearance.Fitness.* per-widget. The
              theme-level family handles system components (Toolbar title,

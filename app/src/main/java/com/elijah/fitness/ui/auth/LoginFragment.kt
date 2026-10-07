@@ -38,6 +38,11 @@ class LoginFragment : BaseFragment<FragmentLoginBinding>() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        // Phase 8c step 2 — edge-to-edge. Push the headline below the
+        // (now transparent) status bar; AuthActivity's host already
+        // handles the bottom inset.
+        applySystemBarInsets(target = binding.root, applyBottom = false)
+
         binding.emailInput.doAfterTextChanged { viewModel.onEmailChanged() }
         binding.passwordInput.doAfterTextChanged { viewModel.onPasswordChanged() }
 

@@ -2,11 +2,17 @@ package com.elijah.fitness.ui.main
 
 import android.content.Intent
 import android.os.Bundle
+import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.core.view.isVisible
+import androidx.core.view.updatePadding
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import androidx.navigation.NavDestination
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.setupWithNavController
@@ -37,6 +43,12 @@ class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        // Phase 8c step 2 — enable edge-to-edge before the superclass so
+        // the window is already laid out behind the system bars by the
+        // time any view attaches. This replaces the pre-8c reliance on
+        // the theme's `android:statusBarColor` + `windowLightStatusBar`,
+        // both deprecated in SDK 35.
+        enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
@@ -58,14 +70,38 @@ class MainActivity : AppCompatActivity() {
         binding.toolbar.setupWithNavController(navController, topLevel)
         binding.bottomNavigation.setupWithNavController(navController)
 
+        // Push the BottomNavigationView above the 3-button-nav gesture
+        // bar on devices that have one. Edge-to-edge means the activity
+        // owns the inset — the view was previously below an opaque
+        // navigation bar from the theme.
+        val bottomNavBasePadding = binding.bottomNavigation.paddingBottom
+        ViewCompat.setOnApplyWindowInsetsListener(binding.bottomNavigation) { v, insets ->
+            val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            v.updatePadding(bottom = bottomNavBasePadding + bars.bottom)
+            insets
+        }
+
+        val insetsController = WindowInsetsControllerCompat(window, binding.root)
+
         navController.addOnDestinationChangedListener { _, destination, _ ->
             val isTopLevel = destination.id in TOP_LEVEL_DESTINATIONS
             val isImmersive = destination.id == R.id.liveTrackingFragment
             binding.bottomNavigation.isVisible = isTopLevel && !isImmersive
-            // Toolbar only for the log flow + standalone Profile; the live
-            // tracking screen draws its own close affordance.
+            // Toolbar only for the log flow; the standalone Profile and
+            // the workout-detail screen draw their own headers (phase 8c
+            // step 2 removes WorkoutDetail from this set — single header
+            // per screen).
             binding.appBarLayout.isVisible =
                 destination.id in CHROME_DESTINATIONS && !isImmersive
+
+            // Status-bar icon colour — the handful of destinations that
+            // draw a dark surface up under the status bar want *light*
+            // icons; every other screen keeps the dark icons that work
+            // on the warm canvas. Flipping it per destination (rather
+            // than per top-level-only destination) means the switch
+            // fires correctly however the user navigates in.
+            insetsController.isAppearanceLightStatusBars =
+                destination.id !in DARK_STATUS_DESTINATIONS
         }
 
         observeAuthEvents()
@@ -112,7 +148,19 @@ class MainActivity : AppCompatActivity() {
             R.id.logDistanceWorkoutFragment,
             R.id.logStrengthWorkoutFragment,
             R.id.profileFragment,
+            // Workout detail currently relies on this toolbar for its
+            // back arrow. Phase 8c step 7 ships a new layout with its
+            // own back arrow + title and this entry gets removed then.
             R.id.workoutDetailFragment,
+        )
+
+        /**
+         * Destinations whose top edge is a dark surface drawn behind the
+         * status bar. These need light status-bar icons for legibility.
+         * The full-screen map destination from step 3 will join the set.
+         */
+        val DARK_STATUS_DESTINATIONS: Set<Int> = setOf(
+            R.id.liveTrackingFragment,
         )
     }
 }

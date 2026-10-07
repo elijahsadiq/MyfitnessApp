@@ -54,6 +54,11 @@ class LogStrengthWorkoutFragment : BaseFragment<FragmentLogStrengthWorkoutBindin
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        // Phase 8c step 2 — edge-to-edge. Push the pinned Save button
+        // above the gesture bar and above the keyboard when a field is
+        // focused.
+        applyBottomNavInset(binding.saveButton)
+
         binding.setsList.adapter = setsAdapter
         binding.setsList.layoutManager = LinearLayoutManager(requireContext())
 

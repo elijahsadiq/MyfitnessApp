@@ -66,6 +66,14 @@ class LiveTrackingFragment : BaseFragment<FragmentLiveTrackingBinding>() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        // Phase 8c step 2 — edge-to-edge. The root CoordinatorLayout
+        // paints `surface_dark` behind the status bar + gesture bar;
+        // this listener pushes the actual content down below the
+        // status-bar inset and up above the gesture-bar inset so
+        // controls aren't clipped. MainActivity flips the status-bar
+        // icon colour via its `DARK_STATUS_DESTINATIONS` set.
+        applySystemBarInsets(target = binding.root)
+
         configureOsmdroid()
         setupMap()
 

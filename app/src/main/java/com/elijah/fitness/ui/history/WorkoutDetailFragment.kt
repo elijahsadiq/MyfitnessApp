@@ -60,6 +60,9 @@ class WorkoutDetailFragment : BaseFragment<FragmentWorkoutDetailBinding>() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        // Phase 8c step 2 — edge-to-edge. Shared toolbar handles the
+        // top inset; this clears the gesture bar at the bottom.
+        applyBottomNavInset(binding.root)
         configureOsmdroid()
         setupMap()
         collectOnStart(viewModel.state) { render(it) }

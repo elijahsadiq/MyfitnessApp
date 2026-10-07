@@ -1,11 +1,10 @@
 package com.elijah.fitness.ui.auth
 
 import android.content.Intent
-import android.graphics.Color
 import android.os.Bundle
+import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
-import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updatePadding
 import androidx.navigation.fragment.NavHostFragment
@@ -33,10 +32,12 @@ class AuthActivity : AppCompatActivity() {
     private lateinit var binding: ActivityAuthBinding
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        // Phase 8c step 2 — single androidx.activity call that replaces
+        // the three deprecated `window.*` setters below (Android 15 /
+        // SDK 35 marks `statusBarColor` + `navigationBarColor` as
+        // deprecated; `enableEdgeToEdge()` is the recommended path).
+        enableEdgeToEdge()
         super.onCreate(savedInstanceState)
-        WindowCompat.setDecorFitsSystemWindows(window, false)
-        window.statusBarColor = Color.TRANSPARENT
-        window.navigationBarColor = Color.TRANSPARENT
 
         binding = ActivityAuthBinding.inflate(layoutInflater)
         setContentView(binding.root)

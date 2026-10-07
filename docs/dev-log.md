@@ -2025,3 +2025,48 @@ Shoot them into `docs/screenshots/` with names like `theme-focused-input.png`, `
 **Assignment task supported**
 - **Task 4 (development)** — History `FloatingActionButton` is back on screen, so the brief's "visibly uses a FAB" requirement is unambiguously satisfied again.
 - **Task 2a (UI implementation)** — primary buttons now paint the design-system lime everywhere, with no olive leaks on buttons, focused inputs, date / time pickers or loading indicators.
+
+## Phase 8c — Step 2: Edge-to-edge (and the white strip above the tracking screen)
+
+**Built**
+- **`MainActivity.onCreate`** calls `enableEdgeToEdge()` from `androidx.activity` before `super.onCreate`. The pre-8c `window.statusBarColor` + `windowLightStatusBar` plumbing is gone — both are deprecated in SDK 35 and were the cause of the "white strip above the tracking screen" bug (the warm-white opaque status bar painted on top of the dark surface).
+- **`AuthActivity.onCreate`** swapped the manual `WindowCompat.setDecorFitsSystemWindows(window, false)` + `statusBarColor = TRANSPARENT` + `navigationBarColor = TRANSPARENT` triplet for the same single `enableEdgeToEdge()` call. Behaviour identical, API modern.
+- **`themes.xml`** — removed `android:statusBarColor` and `android:windowLightStatusBar`. A comment in their place points at the two activities' `enableEdgeToEdge()` + the `isAppearanceLightStatusBars` flip.
+- **Per-destination status-bar icon colour** on `MainActivity`:
+  - New `DARK_STATUS_DESTINATIONS` set holds destinations whose top edge is a dark surface (currently `R.id.liveTrackingFragment`; Step 3's full-screen map joins it).
+  - `addOnDestinationChangedListener` sets `WindowInsetsControllerCompat.isAppearanceLightStatusBars = destination.id !in DARK_STATUS_DESTINATIONS` on every transition. Flipping per destination (rather than only on top-level destinations) means the switch fires however the user navigates — back from live tracking to Home, Home to live tracking, deep-linked from the service notification, etc.
+- **`BottomNavigationView` inset handling** — new `OnApplyWindowInsetsListener` on the main bottom nav adds `systemBars.bottom` as padding so three-button-nav devices don't lose the nav icons behind the gesture bar. Baseline padding captured once so re-dispatch is idempotent.
+- **`fragment_live_tracking.xml`** — removed `android:fitsSystemWindows="true"` from the root. Edge-to-edge means the activity's window extends behind the system bars; the fragment no longer needs the attribute (which only worked when the status bar was opaque).
+- **`LiveTrackingFragment.onViewCreated`** — added `applySystemBarInsets(target = binding.root)` so the inner column respects both the top status-bar inset (keeps the GPS pill below the status bar) and the bottom gesture-bar inset (keeps the Pause / Stop controls above the gesture bar). The dark `surface_dark` background still draws under the status bar for a seamless look.
+- **`BaseFragment.applyBottomNavInset`** — broadened to include the IME inset, taking `max(systemBars.bottom, ime.bottom)` so pinned Save buttons stay above the keyboard when a field is focused. Zero-regression for existing scroll-view callers because IME is zero when the keyboard is dismissed.
+- **Chrome fragments** (`LogDistance`, `LogStrength`, `WorkoutDetail`, `Profile`) now call `applyBottomNavInset(…)` so their bottom-most content / pinned Save buttons clear the gesture bar in edge-to-edge mode. The shared toolbar's `AppBarLayout` already carries `fitsSystemWindows=true` and handles the top inset without extra work.
+- **Login + Register fragments** call `applySystemBarInsets(applyBottom = false)` so their headlines sit below the (now transparent) status bar; `AuthActivity`'s existing bottom-inset listener on the nav host still clears the gesture bar.
+
+**Key design decision — `enableEdgeToEdge()` first, per-destination icon flip second**
+The user's Step 0 note explicitly ruled out the deprecated `window.statusBarColor` path, pointing at `enableEdgeToEdge()`. Using it on both activities before `setContentView` means every window is edge-to-edge from frame zero, so there's no first-frame "status bar is warm, then flashes transparent" transition. The icon colour then switches per destination via a set — this is important because tracking → Home can be reached via Back, via the notification deep link, or via save-success-navigate, and a top-level-only flip would miss two of those paths.
+
+**Rejected alternative — set `android:windowLightStatusBar` per destination through theme overlays**
+Would have let the theme carry the icon-colour attribute instead of touching the controller imperatively. Rejected because `enableEdgeToEdge()` already drives both bar colours (edge-to-edge makes the bars translucent). Mixing theme-level light-status-bar attribute with controller-level `isAppearanceLightStatusBars` leaves two places to look when the icon colour is wrong — the controller flip wins (newer API), but a stale theme attribute confuses the next reader.
+
+**Rejected alternative — manage every bottom inset through a view-level `ApplyWindowInsetsListener` on the `BottomNavigationView` only**
+Would have let fragments stay inset-ignorant: the activity moves the bottom nav above the gesture bar, and fragments live above the bottom nav. Rejected because chrome destinations (log forms, profile, workout detail) hide the bottom nav — their fragments then sit at the window bottom and need their *own* inset handling. The hybrid picked here (activity handles the bottom nav; chrome fragments handle their own bottoms) ships correct behaviour for both cases.
+
+**Kotlin / Android concepts** *(for my notes)*
+- `enableEdgeToEdge()` (androidx.activity 1.8+): one call, applied before `super.onCreate`, sets `WindowCompat.setDecorFitsSystemWindows(false)` + translucent system bars with the right icon-mode defaults. Deprecated `window.statusBarColor` is bypassed entirely.
+- `WindowInsetsControllerCompat.isAppearanceLightStatusBars`: boolean toggle for status-bar icon colour. `true` = dark icons (light surface underneath); `false` = light icons (dark surface underneath). Fires immediately without a window redraw.
+- `WindowInsetsCompat.Type.ime()` vs `Type.systemBars()`: the former is the keyboard inset, the latter is the status + navigation bars. Taking `max` of their bottom values gives a correct "clear the biggest thing at the bottom" padding without double-counting on devices where the keyboard also covers the gesture bar.
+
+**Verified**
+- `./gradlew assembleDebug` — BUILD SUCCESSFUL.
+- `./gradlew testCloudDebugUnitTest` — BUILD SUCCESSFUL (all unit tests pass).
+- APK reinstalled on the emulator; `adb reverse tcp:8080 tcp:8080` still active.
+
+**Pending user action — screenshot the white-strip fix**
+Capture these two shots to confirm Step 2 landed:
+1. **Live tracking screen** — the top of the screen should be the dark map/surface with white status-bar icons, no warm-white strip above.
+2. **Any light screen** (Home / Goals / History) — the top should still be warm canvas with dark status-bar icons.
+
+Shoot them into `docs/screenshots/` as `edge2edge-tracking.png` and `edge2edge-home.png`.
+
+**Assignment task supported**
+- **Task 2a (UI implementation)** — the tracking screen now matches the design's full-bleed-dark intent, and every top-level screen draws correctly behind translucent system bars without clipping content.

@@ -57,6 +57,11 @@ class LogDistanceWorkoutFragment : BaseFragment<FragmentLogDistanceWorkoutBindin
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        // Phase 8c step 2 — edge-to-edge. The shared toolbar handles the
+        // top inset; this clears the gesture bar at the bottom AND the
+        // keyboard when a field is focused (both via `applyBottomNavInset`).
+        applyBottomNavInset(binding.root)
+
         binding.dateField.setOnClickListener { showDatePicker() }
         binding.timeField.setOnClickListener { showTimePicker() }
 

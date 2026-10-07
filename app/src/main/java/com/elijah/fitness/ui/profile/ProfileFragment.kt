@@ -62,6 +62,10 @@ class ProfileFragment : BaseFragment<FragmentProfileBinding>() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        // Phase 8c step 2 — edge-to-edge. The shared toolbar handles the
+        // top inset itself; this clears the gesture bar at the bottom.
+        applyBottomNavInset(binding.root)
+
         bindTileLabels()
 
         binding.avatarContainer.setOnClickListener { launchPhotoPicker() }

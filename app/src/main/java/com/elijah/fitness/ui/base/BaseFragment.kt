@@ -155,15 +155,27 @@ abstract class BaseFragment<VB : ViewBinding> : Fragment() {
     }
 
     /**
-     * Add just the system navigation-bar inset as additional bottom
-     * padding on [target]. Use this on the scrolling view of a top-level
-     * fragment so its content can scroll fully clear of both the app's
-     * `BottomNavigationView` (handled by a baseline `paddingBottom =
-     * bottom_nav_height_plus_breathing_room` in the layout) **and** the
-     * device's system nav bar on three-button-nav devices.
+     * Add bottom-system-bar inset — AND the keyboard (IME) inset when
+     * taller — as additional bottom padding on [target].
      *
-     * Preserves [target]'s XML padding and adds the inset on top, same
-     * as [applySystemBarInsets].
+     * Used on two kinds of view:
+     *
+     * - **Scrolling content** of a top-level fragment, so content can
+     *   scroll fully clear of both the app's `BottomNavigationView`
+     *   (handled by a baseline `paddingBottom =
+     *   bottom_nav_height_plus_breathing_room` in the layout) **and**
+     *   the device's system nav bar on three-button-nav devices.
+     *
+     * - **Pinned bottom bars** (e.g. the New Goal "Create goal" pill,
+     *   or the manual-log form's Save button). Phase 8c step 2 broadens
+     *   this helper to include the IME inset so a pinned Save button
+     *   stays visible above the keyboard when the field it saves is
+     *   focused.
+     *
+     * Preserves [target]'s XML padding and adds `max(ime.bottom,
+     * systemBars.bottom)` on top. Taking the max rather than summing
+     * them avoids double-counting on devices where the keyboard
+     * extends past the gesture-bar inset.
      */
     protected fun applyBottomNavInset(target: View) {
         val baseLeft = target.paddingLeft
@@ -172,7 +184,9 @@ abstract class BaseFragment<VB : ViewBinding> : Fragment() {
         val baseBottom = target.paddingBottom
         ViewCompat.setOnApplyWindowInsetsListener(target) { view, insets ->
             val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            view.setPadding(baseLeft, baseTop, baseRight, baseBottom + bars.bottom)
+            val ime = insets.getInsets(WindowInsetsCompat.Type.ime())
+            val extra = kotlin.math.max(bars.bottom, ime.bottom)
+            view.setPadding(baseLeft, baseTop, baseRight, baseBottom + extra)
             WindowInsetsCompat.CONSUMED
         }
         ViewCompat.requestApplyInsets(target)

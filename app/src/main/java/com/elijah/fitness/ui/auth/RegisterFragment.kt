@@ -37,6 +37,9 @@ class RegisterFragment : BaseFragment<FragmentRegisterBinding>() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        // Phase 8c step 2 — edge-to-edge.
+        applySystemBarInsets(target = binding.root, applyBottom = false)
+
         // Default toggle position matches the initial ViewModel state.
         binding.unitSystemToggle.check(R.id.unitMetric)
 
