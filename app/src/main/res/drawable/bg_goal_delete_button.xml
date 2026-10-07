@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Destructive-red pill — "Delete" button on the confirm dialog. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="@color/destructive" />
+    <corners android:radius="999dp" />
+</shape>

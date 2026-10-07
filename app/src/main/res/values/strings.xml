@@ -197,16 +197,48 @@
     <string name="goals_error_load_failed">Couldn\'t load your goals.</string>
     <string name="goals_retry">Retry</string>
 
-    <!-- Actions bottom sheet -->
-    <string name="goals_actions_title">Goal actions</string>
-    <string name="goals_action_edit">Edit</string>
-    <string name="goals_action_delete">Delete</string>
+    <!-- Manage goal bottom sheet (phase 8b step 7) -->
+    <string name="manage_goal_sheet_title">Manage goal</string>
+    <string name="manage_goal_close_content_description">Close</string>
+    <!-- Subtitle: "Cycling · Distance · started Thu 24 Sep" -->
+    <string name="manage_goal_subtitle">%1$s · %2$s · started %3$s</string>
+    <string name="manage_goal_subtitle_any">Any activity · %1$s · started %2$s</string>
+    <string name="manage_goal_progress_of">of %1$s %2$s</string>
+    <string name="manage_goal_stat_avg_per_day">Avg per day</string>
+    <string name="manage_goal_stat_needed_per_day">Needed per day</string>
+    <string name="manage_goal_stat_runs_logged">Runs logged</string>
+    <string name="manage_goal_stat_rides_logged">Rides logged</string>
+    <string name="manage_goal_stat_workouts_logged">Workouts logged</string>
+    <string name="manage_goal_stat_sessions_logged">Sessions logged</string>
+    <string name="manage_goal_stat_value_distance">%1$.1f km</string>
+    <string name="manage_goal_stat_value_time">%1$d min</string>
+    <string name="manage_goal_stat_value_volume">%1$s kg</string>
+    <string name="manage_goal_stat_value_count">%1$d</string>
+    <string name="manage_goal_stat_value_blank">—</string>
+    <!-- Action list rows. -->
+    <string name="manage_goal_action_edit">Edit goal</string>
+    <string name="manage_goal_action_make_main">Make main goal</string>
+    <string name="manage_goal_action_extend">Add 7 more days</string>
+    <string name="manage_goal_action_delete">Delete goal</string>
+
+    <!-- Delete confirm dialog (phase 8b step 7) -->
     <string name="goals_delete_confirm_title">Delete this goal?</string>
-    <string name="goals_delete_confirm_body">This can\'t be undone from here. You\'ll have a moment to tap Undo.</string>
+    <!-- Body "\"Ride 100 km in 30 days\" and its progress will be removed. Your rides stay in History." -->
+    <string name="goals_delete_confirm_body">\"%1$s\" and its progress will be removed. Your %2$s stay in History.</string>
     <string name="goals_delete_confirm_ok">Delete</string>
     <string name="goals_delete_confirm_cancel">Cancel</string>
+    <string name="goals_delete_badge_content_description">Delete icon</string>
+    <!-- Activity words for the body sentence. -->
+    <string name="goals_delete_activity_word_runs">runs</string>
+    <string name="goals_delete_activity_word_rides">rides</string>
+    <string name="goals_delete_activity_word_workouts">workouts</string>
+    <string name="goals_delete_activity_word_sessions">workouts</string>
+
+    <!-- Snackbars -->
     <string name="goals_deleted_snackbar">Goal deleted</string>
     <string name="goals_deleted_undo">Undo</string>
+    <string name="goals_main_updated_snackbar">Main goal updated</string>
+    <string name="goals_extended_snackbar">Added 7 days</string>
     <!-- Completion Snackbar (phase 7 step 7). TODO(future phase): once
          a notification channel exists, fire an achievement notification
          instead of an in-app Snackbar. -->

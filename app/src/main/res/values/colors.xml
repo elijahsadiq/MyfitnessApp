@@ -44,6 +44,7 @@
     <color name="error_red">#D64545</color>                <!-- form validation per DESIGN.md prose -->
     <color name="error_material">#BA1A1A</color>           <!-- M3 colorError role -->
     <color name="destructive">#B42318</color>              <!-- Delete button on Manage sheet (Goals v2 Step 7) -->
+    <color name="destructive_container">#FDECEA</color>    <!-- Pale pink behind the trash icon on the confirm dialog -->
 
     <!-- Goals v2 — main-card chrome (Main.dc.html). -->
     <color name="goal_main_card">#1C1F1A</color>           <!-- 26dp dark card -->

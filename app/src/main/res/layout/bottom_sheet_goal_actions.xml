@@ -1,40 +1,424 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<!--
+  Manage goal bottom sheet (phase 8b step 7). Opened from any active row
+  or the main-goal card. Shows a compact progress snapshot and the four
+  actions: Edit, Make main goal, Add 7 more days, Delete.
+
+  The sheet reads its data from `ManageGoalViewModel` keyed by the goal
+  id passed as an argument.
+-->
+<androidx.core.widget.NestedScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="vertical"
-    android:paddingHorizontal="@dimen/screen_margin"
-    android:paddingTop="@dimen/space_lg"
-    android:paddingBottom="@dimen/space_md">
+    android:background="@color/surface_white">
 
-    <TextView
-        android:id="@+id/actionsTitle"
-        style="@style/TextAppearance.Fitness.HeadlineSm"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="@string/goals_actions_title" />
+        android:orientation="vertical"
+        android:paddingHorizontal="@dimen/screen_margin"
+        android:paddingTop="10dp"
+        android:paddingBottom="@dimen/space_xl">
 
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/actionEdit"
-        style="@style/Widget.Material3.Button.TonalButton.Icon"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="@dimen/space_lg"
-        android:minHeight="@dimen/touch_target_min"
-        android:text="@string/goals_action_edit"
-        app:icon="@drawable/ic_add_24"
-        app:iconTint="@color/text_primary" />
+        <!-- Drag handle -->
+        <View
+            android:layout_width="40dp"
+            android:layout_height="4dp"
+            android:layout_gravity="center_horizontal"
+            android:background="@drawable/bg_goal_sheet_handle" />
 
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/actionDelete"
-        style="@style/Widget.Material3.Button.TonalButton.Icon"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="@dimen/space_sm"
-        android:minHeight="@dimen/touch_target_min"
-        android:text="@string/goals_action_delete"
-        app:icon="@drawable/ic_flag_24"
-        app:iconTint="@color/error_red"
-        android:textColor="@color/error_red" />
-</LinearLayout>
+        <!-- =========== Header: icon · title + subtitle · close =========== -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <FrameLayout
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="@drawable/bg_goal_header_icon">
+
+                <ImageView
+                    android:id="@+id/manageGoalIcon"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:layout_gravity="center"
+                    android:contentDescription="@string/goals_row_icon_content_description"
+                    app:tint="@color/text_primary"
+                    tools:src="@drawable/ic_bike_24" />
+            </FrameLayout>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/space_md"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/manageGoalTitle"
+                    style="@style/TextAppearance.Fitness.HeadlineSm"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:ellipsize="end"
+                    android:maxLines="2"
+                    android:textSize="18sp"
+                    tools:text="Ride 100 km in 30 days" />
+
+                <TextView
+                    android:id="@+id/manageGoalSubtitle"
+                    style="@style/TextAppearance.Fitness.LabelMd"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:textAllCaps="false"
+                    android:textColor="@color/text_secondary"
+                    tools:text="Cycling · Distance · started Thu 24 Sep" />
+            </LinearLayout>
+
+            <ImageView
+                android:id="@+id/manageGoalCloseButton"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:layout_marginStart="@dimen/space_sm"
+                android:background="@drawable/bg_goal_close_pill"
+                android:clickable="true"
+                android:contentDescription="@string/manage_goal_close_content_description"
+                android:focusable="true"
+                android:padding="12dp"
+                android:src="@drawable/ic_close_24"
+                app:tint="@color/text_primary" />
+        </LinearLayout>
+
+        <!-- =========== Progress =========== -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_lg"
+            android:baselineAligned="true"
+            android:orientation="horizontal">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:baselineAligned="true"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/manageGoalCurrentValue"
+                    style="@style/TextAppearance.Fitness.HeadlineLg"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/text_primary"
+                    android:textSize="26sp"
+                    tools:text="58" />
+
+                <TextView
+                    android:id="@+id/manageGoalOfTarget"
+                    style="@style/TextAppearance.Fitness.LabelMd"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="6dp"
+                    android:gravity="bottom"
+                    android:paddingBottom="4dp"
+                    android:textAllCaps="false"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="15sp"
+                    tools:text="of 100 km" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/manageGoalPercent"
+                style="@style/TextAppearance.Fitness.LabelMd"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="bottom"
+                android:paddingBottom="4dp"
+                android:textAllCaps="false"
+                android:textColor="@color/text_primary"
+                android:textSize="15sp"
+                android:textStyle="bold"
+                tools:text="58%" />
+        </LinearLayout>
+
+        <com.google.android.material.progressindicator.LinearProgressIndicator
+            android:id="@+id/manageGoalProgress"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            app:indicatorColor="@color/lime_accent"
+            app:trackColor="@color/surface_container_high"
+            app:trackCornerRadius="5dp"
+            app:trackThickness="10dp"
+            tools:progress="58" />
+
+        <!-- =========== Stat tiles =========== -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_lg"
+            android:baselineAligned="false"
+            android:orientation="horizontal">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:background="@drawable/bg_goal_stat_tile"
+                android:orientation="vertical"
+                android:padding="12dp">
+
+                <TextView
+                    style="@style/TextAppearance.Fitness.LabelMd"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/manage_goal_stat_avg_per_day"
+                    android:textAllCaps="false"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="12sp" />
+
+                <TextView
+                    android:id="@+id/manageGoalStatAvg"
+                    style="@style/TextAppearance.Fitness.LabelMd"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:textAllCaps="false"
+                    android:textColor="@color/text_primary"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    tools:text="4.8 km" />
+            </LinearLayout>
+
+            <Space
+                android:layout_width="@dimen/space_sm"
+                android:layout_height="match_parent" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:background="@drawable/bg_goal_stat_tile"
+                android:orientation="vertical"
+                android:padding="12dp">
+
+                <TextView
+                    style="@style/TextAppearance.Fitness.LabelMd"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/manage_goal_stat_needed_per_day"
+                    android:textAllCaps="false"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="12sp" />
+
+                <TextView
+                    android:id="@+id/manageGoalStatNeeded"
+                    style="@style/TextAppearance.Fitness.LabelMd"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:textAllCaps="false"
+                    android:textColor="@color/text_primary"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    tools:text="2.3 km" />
+            </LinearLayout>
+
+            <Space
+                android:layout_width="@dimen/space_sm"
+                android:layout_height="match_parent" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:background="@drawable/bg_goal_stat_tile"
+                android:orientation="vertical"
+                android:padding="12dp">
+
+                <TextView
+                    android:id="@+id/manageGoalStatSessionsLabel"
+                    style="@style/TextAppearance.Fitness.LabelMd"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textAllCaps="false"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="12sp"
+                    tools:text="Rides logged" />
+
+                <TextView
+                    android:id="@+id/manageGoalStatSessions"
+                    style="@style/TextAppearance.Fitness.LabelMd"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:textAllCaps="false"
+                    android:textColor="@color/text_primary"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    tools:text="9" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- =========== Action list =========== -->
+        <LinearLayout
+            android:id="@+id/manageGoalActionList"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_lg"
+            android:background="@drawable/bg_goal_action_list"
+            android:orientation="vertical">
+
+            <!-- Edit -->
+            <LinearLayout
+                android:id="@+id/manageGoalActionEdit"
+                android:layout_width="match_parent"
+                android:layout_height="58dp"
+                android:background="@drawable/bg_goal_action_row"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingHorizontal="16dp">
+
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:contentDescription="@null"
+                    android:src="@drawable/ic_edit_24"
+                    app:tint="@color/text_primary" />
+
+                <TextView
+                    style="@style/TextAppearance.Fitness.BodyLg"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="14dp"
+                    android:layout_weight="1"
+                    android:text="@string/manage_goal_action_edit"
+                    android:textColor="@color/text_primary"
+                    android:textStyle="bold" />
+
+                <ImageView
+                    android:layout_width="18dp"
+                    android:layout_height="18dp"
+                    android:contentDescription="@null"
+                    android:src="@drawable/ic_arrow_forward_24"
+                    app:tint="@color/text_secondary" />
+            </LinearLayout>
+
+            <View
+                android:id="@+id/manageGoalDividerAfterEdit"
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="@color/divider" />
+
+            <!-- Make main goal -->
+            <LinearLayout
+                android:id="@+id/manageGoalActionMakeMain"
+                android:layout_width="match_parent"
+                android:layout_height="58dp"
+                android:background="@drawable/bg_goal_action_row"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingHorizontal="16dp">
+
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:contentDescription="@null"
+                    android:src="@drawable/ic_trophy_24"
+                    app:tint="@color/text_primary" />
+
+                <TextView
+                    style="@style/TextAppearance.Fitness.BodyLg"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="14dp"
+                    android:layout_weight="1"
+                    android:text="@string/manage_goal_action_make_main"
+                    android:textColor="@color/text_primary"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <View
+                android:id="@+id/manageGoalDividerAfterMakeMain"
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="@color/divider" />
+
+            <!-- Add 7 more days -->
+            <LinearLayout
+                android:id="@+id/manageGoalActionExtend"
+                android:layout_width="match_parent"
+                android:layout_height="58dp"
+                android:background="@drawable/bg_goal_action_row"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingHorizontal="16dp">
+
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:contentDescription="@null"
+                    android:src="@drawable/ic_calendar_plus_24"
+                    app:tint="@color/text_primary" />
+
+                <TextView
+                    style="@style/TextAppearance.Fitness.BodyLg"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="14dp"
+                    android:layout_weight="1"
+                    android:text="@string/manage_goal_action_extend"
+                    android:textColor="@color/text_primary"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <View
+                android:id="@+id/manageGoalDividerAfterExtend"
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="@color/divider" />
+
+            <!-- Delete goal -->
+            <LinearLayout
+                android:id="@+id/manageGoalActionDelete"
+                android:layout_width="match_parent"
+                android:layout_height="58dp"
+                android:background="@drawable/bg_goal_action_row"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingHorizontal="16dp">
+
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:contentDescription="@null"
+                    android:src="@drawable/ic_delete_24"
+                    app:tint="@color/destructive" />
+
+                <TextView
+                    style="@style/TextAppearance.Fitness.BodyLg"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="14dp"
+                    android:layout_weight="1"
+                    android:text="@string/manage_goal_action_delete"
+                    android:textColor="@color/destructive"
+                    android:textStyle="bold" />
+            </LinearLayout>
+        </LinearLayout>
+    </LinearLayout>
+</androidx.core.widget.NestedScrollView>

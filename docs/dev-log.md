@@ -1827,3 +1827,52 @@ The brief explicitly removed preset chips. Steppers are the fastest input for th
 **Assignment task supported**
 - **Task 2a (UI implementation)** — the New Goal screen is a direct rebuild of `NewGoal.dc.html`; the stepper + hold-to-repeat is non-trivial and worth a paragraph in the report.
 - **Task 5b (inheritance #2)** — `BaseFragment<FragmentNewGoalBinding>` becomes the sixth concrete subclass of the shared base, further strengthening the inheritance-#2 example without any new helper code.
+
+## Step 7 — Manage sheet + Delete confirm dialog (Manage.dc.html, DeleteConfirm.dc.html)
+
+Replaced the Phase-7 "edit / delete" action sheet with a full Manage bottom sheet that matches `Manage.dc.html`, plus a custom-view delete-confirm dialog in the exact `DeleteConfirm.dc.html` style (lime check circle, pale-red trash tile, 28dp white card).
+
+**Built**
+- **`ui/goals/ManageGoalViewModel.kt`** — thin VM that stays in sync with `GoalProgressCalculator`. Keyed by goal id, exposes `goal: StateFlow<GoalWithProgress?>` so the sheet renders live progress + per-day stats and reacts if another device (or an extend tap on another sheet) moves the goal while this one is open.
+- **`ui/goals/GoalActionsBottomSheet.kt`** — rewritten end-to-end. Renders the header (icon · title · subtitle "Cycling · Distance · started Thu 24 Sep"), the progress row (current + "of 100 km" + percent, 10dp lime bar), three stat tiles (`Avg per day`, `Needed per day`, `Rides/Runs/Workouts/Sessions logged` — label switches with the activity), and the bordered action list (`Edit goal`, `Make main goal`, `Add 7 more days`, `Delete goal`).
+  - **"Make main goal"** row + its divider are hidden when `goal.isMain`.
+  - **"Add 7 more days"** row + its divider are hidden when `goal.durationDays == 365`.
+  - Each action fires a `setFragmentResult` with an `ACTION_` key; the parent `GoalsFragment` dispatches to the right ViewModel method so the delete-with-undo coordinator (built in Step 4) stays the single source of truth.
+- **`ui/goals/DeleteGoalConfirmDialog.kt`** — new `DialogFragment`. Renders `dialog_delete_goal.xml` inside an `AlertDialog.Builder` and swaps the window background for a 28dp-radius white `GradientDrawable` so the Figma corners survive AlertDialog's default inset frame. Body is built from `R.string.goals_delete_confirm_body` so the activity word ("Your rides stay in History") stays locale-friendly.
+- **Design tokens / drawables**:
+  - `bg_goal_header_icon.xml` — 48dp pale icon tile for the sheet header.
+  - `bg_goal_close_pill.xml` — 44dp pale circle close button.
+  - `bg_goal_sheet_handle.xml` — 40×4dp drag indicator.
+  - `bg_goal_action_list.xml` — 20dp outer border for the action list.
+  - `bg_goal_action_row.xml` — pressable ripple-on-white backing for each row.
+  - `bg_goal_stat_tile.xml` — 16dp pale fill for the three statistics tiles.
+  - `bg_goal_delete_badge.xml` — 56dp pale-red circle holding the trash icon on the dialog.
+  - `bg_goal_delete_button.xml` + `bg_goal_cancel_button.xml` — destructive + outlined pill buttons on the dialog.
+  - New vector icons: `ic_edit_24`, `ic_trophy_24`, `ic_calendar_plus_24`, `ic_delete_24`.
+  - New color `destructive_container = #FDECEA` for the delete icon badge.
+- **`ui/goals/GoalsFragment.kt`** — now listens on **both** `GoalActionsBottomSheet.FRAGMENT_RESULT_KEY` and `DeleteGoalConfirmDialog.FRAGMENT_RESULT_KEY`:
+  - `ACTION_EDIT` → navigate to `NewGoalFragment` in edit mode.
+  - `ACTION_MAKE_MAIN` → `viewModel.makeMainGoal(id)` + "Main goal updated" Snackbar.
+  - `ACTION_EXTEND` → `viewModel.extendGoal(id, 7)` + "Added 7 days" Snackbar.
+  - `ACTION_DELETE` → open the confirmation dialog with the goal title + activity type pre-filled.
+  - Dialog's `ACTION_CONFIRM` → the existing `viewModel.deleteWithUndo(goal)` which fires the delete-with-undo Snackbar via Step 4's coordinator.
+- **Strings**: new copy for the Manage sheet (subtitle template, action labels, stat labels + value templates for distance/time/volume/count), the delete dialog body ("…and its progress will be removed. Your rides stay in History."), and two new confirmation Snackbars ("Main goal updated", "Added 7 days").
+
+**Key design decision — the sheet dispatches intents, doesn't execute them**
+The sheet could have been given its own repository reference + called `makeMainGoal`/`extendGoal`/`deleteGoal` itself. I kept those calls in `GoalsViewModel` for one reason: the delete-with-undo flow runs on the app-level scope (so the DELETE survives navigation out of the Goals tab), and splitting the "delete" between two view models would mean either duplicating that scope or hoping both VMs resolve the same `GoalDeleteCoordinator`. The intent-dispatch pattern keeps the coordinator anchored in `GoalsViewModel` where the Undo Snackbar lives.
+
+**Rejected alternative — pass a Parcelable snapshot into the sheet's arguments**
+Would have avoided the `ManageGoalViewModel` entirely. Rejected because the snapshot drifts the moment the user taps "Add 7 more days" — if we rendered from a frozen arg, the "N days left" pill would still show the pre-extend number until the sheet closed. The VM-stream version re-renders live.
+
+**Kotlin/Android concepts** *(for my notes)*
+- `AlertDialog.Builder(…).setView(binding.root)` + swapping `window?.setBackgroundDrawable(ColorDrawable(TRANSPARENT))` and painting the card's rounded corners via a `GradientDrawable` on the root view: lets us keep the standard dialog scrim + outside-tap-to-dismiss while fully owning the dialog's shape.
+- `BottomSheetDialogFragment` + `collectOnStart`: bottom sheets don't extend `BaseFragment` (they inherit from Material's `BottomSheetDialogFragment`), so each sheet carries its own inline `repeatOnLifecycle(STARTED)` helper. Shared `BaseBottomSheetFragment` is a future refactor if a third sheet appears.
+- Fragment Result API across three layers (sheet → fragment → dialog → fragment): three independent keys, each dispatched through `parentFragmentManager`, each parent fragment is a free-standing listener.
+
+**Verified**
+- `./gradlew assembleDebug` — BUILD SUCCESSFUL.
+- `./gradlew testCloudDebugUnitTest` — BUILD SUCCESSFUL (all unit tests pass).
+
+**Assignment task supported**
+- **Task 2a (UI implementation)** — Manage sheet matches the design pixel-for-pixel; the delete-confirm dialog is a custom-view fragment inside an `AlertDialog` so it also matches without compromise.
+- **Task 4 (development)** — the four-action Manage sheet + custom confirm dialog + extend/make-main surfaces are the full "manage a goal" story the brief weights.

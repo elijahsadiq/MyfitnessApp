@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Delete-goal confirmation dialog (phase 8b step 7). Trash icon on a
+  pale-red circle, title, body naming the goal, Cancel + Delete pills.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@color/surface_white"
+    android:gravity="center_horizontal"
+    android:orientation="vertical"
+    android:padding="24dp">
+
+    <FrameLayout
+        android:layout_width="56dp"
+        android:layout_height="56dp"
+        android:background="@drawable/bg_goal_delete_badge">
+
+        <ImageView
+            android:layout_width="26dp"
+            android:layout_height="26dp"
+            android:layout_gravity="center"
+            android:contentDescription="@string/goals_delete_badge_content_description"
+            android:src="@drawable/ic_delete_24"
+            app:tint="@color/destructive" />
+    </FrameLayout>
+
+    <TextView
+        android:id="@+id/deleteGoalTitle"
+        style="@style/TextAppearance.Fitness.HeadlineSm"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="14dp"
+        android:gravity="center"
+        android:text="@string/goals_delete_confirm_title"
+        android:textSize="20sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/deleteGoalBody"
+        style="@style/TextAppearance.Fitness.BodyMd"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="14dp"
+        android:gravity="center"
+        android:textColor="@color/text_secondary"
+        tools:text="\&quot;Ride 100 km in 30 days\&quot; and its progress will be removed. Your rides stay in History." />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:baselineAligned="false"
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/deleteGoalCancel"
+            style="@style/TextAppearance.Fitness.LabelMd"
+            android:layout_width="0dp"
+            android:layout_height="50dp"
+            android:layout_weight="1"
+            android:background="@drawable/bg_goal_cancel_button"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center"
+            android:text="@string/goals_delete_confirm_cancel"
+            android:textAllCaps="false"
+            android:textColor="@color/text_primary"
+            android:textSize="15sp"
+            android:textStyle="bold" />
+
+        <Space
+            android:layout_width="10dp"
+            android:layout_height="match_parent" />
+
+        <TextView
+            android:id="@+id/deleteGoalConfirm"
+            style="@style/TextAppearance.Fitness.LabelMd"
+            android:layout_width="0dp"
+            android:layout_height="50dp"
+            android:layout_weight="1"
+            android:background="@drawable/bg_goal_delete_button"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center"
+            android:text="@string/goals_delete_confirm_ok"
+            android:textAllCaps="false"
+            android:textColor="@color/text_on_dark"
+            android:textSize="15sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+</LinearLayout>

@@ -74,7 +74,20 @@ class GoalsFragment : BaseFragment<FragmentGoalsBinding>() {
                 ?: return@setFragmentResultListener
             when (action) {
                 GoalActionsBottomSheet.ACTION_EDIT -> onEditRequested(goalId)
-                GoalActionsBottomSheet.ACTION_DELETE -> onDeleteConfirmed(goalId)
+                GoalActionsBottomSheet.ACTION_MAKE_MAIN -> onMakeMainRequested(goalId)
+                GoalActionsBottomSheet.ACTION_EXTEND -> onExtendRequested(goalId)
+                GoalActionsBottomSheet.ACTION_DELETE -> showDeleteConfirm(goalId)
+            }
+        }
+
+        parentFragmentManager.setFragmentResultListener(
+            DeleteGoalConfirmDialog.FRAGMENT_RESULT_KEY, viewLifecycleOwner,
+        ) { _, result ->
+            val action = result.getString(DeleteGoalConfirmDialog.ACTION_KEY)
+            val goalId = result.getString(DeleteGoalConfirmDialog.GOAL_ID_KEY)
+                ?: return@setFragmentResultListener
+            if (action == DeleteGoalConfirmDialog.ACTION_CONFIRM) {
+                onDeleteConfirmed(goalId)
             }
         }
 
@@ -135,6 +148,27 @@ class GoalsFragment : BaseFragment<FragmentGoalsBinding>() {
         )
     }
 
+    private fun onMakeMainRequested(goalId: String) {
+        viewModel.makeMainGoal(goalId)
+        Snackbar.make(binding.root, R.string.goals_main_updated_snackbar,
+            Snackbar.LENGTH_SHORT).show()
+    }
+
+    private fun onExtendRequested(goalId: String) {
+        viewModel.extendGoal(goalId, EXTEND_DAYS)
+        Snackbar.make(binding.root, R.string.goals_extended_snackbar,
+            Snackbar.LENGTH_SHORT).show()
+    }
+
+    private fun showDeleteConfirm(goalId: String) {
+        val goal = findGoalById(goalId) ?: return
+        DeleteGoalConfirmDialog.newInstance(
+            goalId = goal.id,
+            title = goal.title,
+            activityType = goal.activityType,
+        ).show(parentFragmentManager, "delete_goal_confirm")
+    }
+
     private fun onDeleteConfirmed(goalId: String) {
         val goal = findGoalById(goalId) ?: return
         viewModel.deleteWithUndo(goal)
@@ -169,5 +203,9 @@ class GoalsFragment : BaseFragment<FragmentGoalsBinding>() {
     private fun showCompletionSnackbar(title: String) {
         val text = getString(R.string.goals_completed_snackbar, title)
         Snackbar.make(binding.root, text, Snackbar.LENGTH_LONG).show()
+    }
+
+    private companion object {
+        const val EXTEND_DAYS = 7
     }
 }
