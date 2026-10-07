@@ -211,48 +211,119 @@
          a notification channel exists, fire an achievement notification
          instead of an in-app Snackbar. -->
     <string name="goals_completed_snackbar">Goal complete: %1$s 🎉</string>
-    <!-- New Goal bottom sheet (phase 7 step 5) -->
+    <!-- New Goal / Edit Goal full-screen fragment (phase 8b step 6) -->
     <string name="new_goal_title_create">New goal</string>
     <string name="new_goal_title_edit">Edit goal</string>
-    <string name="new_goal_section_activity">Activity</string>
-    <string name="new_goal_section_type">Type</string>
-    <string name="new_goal_section_period">Period</string>
-    <string name="new_goal_activity_running">Running</string>
-    <string name="new_goal_activity_cycling">Cycling</string>
-    <string name="new_goal_activity_weightlifting">Weightlifting</string>
-    <string name="new_goal_activity_any">Any</string>
-    <string name="new_goal_type_distance">Distance</string>
-    <string name="new_goal_type_count">Workouts</string>
-    <string name="new_goal_type_duration">Duration</string>
-    <string name="new_goal_type_volume">Volume</string>
-    <string name="new_goal_period_week">This week</string>
-    <string name="new_goal_period_month">This month</string>
-    <string name="new_goal_target_hint">Target</string>
-    <string name="new_goal_title_hint">Title</string>
+    <string name="new_goal_close_content_description">Close</string>
     <string name="new_goal_submit_create">Create goal</string>
     <string name="new_goal_submit_edit">Save changes</string>
-    <string name="new_goal_error_activity_required">Choose an activity.</string>
-    <string name="new_goal_error_type_required">Choose a goal type.</string>
-    <string name="new_goal_error_target_required">Enter a target.</string>
-    <string name="new_goal_error_target_invalid">Enter a valid number.</string>
-    <string name="new_goal_error_target_out_of_range_distance">Distance target must be between 1 and 1000 km.</string>
-    <string name="new_goal_error_target_out_of_range_count">Workout target must be between 1 and 1000.</string>
-    <string name="new_goal_error_target_out_of_range_duration">Duration target must be between 1 and 100000 min.</string>
-    <string name="new_goal_error_target_out_of_range_volume">Volume target must be between 1 and 500000 kg.</string>
-    <string name="new_goal_error_title_required">Add a title.</string>
-    <!-- Auto-title templates. Placeholders: %1$s target, %2$s unit, %3$s period -->
-    <string name="new_goal_auto_title_run">Run %1$s %2$s %3$s</string>
-    <string name="new_goal_auto_title_ride">Ride %1$s %2$s %3$s</string>
-    <string name="new_goal_auto_title_lift">Lift %1$s %2$s %3$s</string>
-    <string name="new_goal_auto_title_count">%1$s workouts %3$s</string>
-    <string name="new_goal_auto_title_duration">%1$s active minutes %3$s</string>
-    <string name="new_goal_auto_title_distance_any">Cover %1$s %2$s %3$s</string>
-    <string name="new_goal_auto_period_this_week">this week</string>
-    <string name="new_goal_auto_period_this_month">this month</string>
-    <string name="new_goal_preview">%1$s between %2$s and %3$s.</string>
     <string name="new_goal_saved_snackbar">Goal saved</string>
-    <string name="goals_edit_todo_snackbar">Editing arrives in the next update.</string>
-    <string name="goals_new_goal_todo_snackbar">The New Goal sheet arrives in the next update.</string>
+
+    <string name="new_goal_section_activity">Choose an activity</string>
+    <string name="new_goal_activity_running">Running</string>
+    <string name="new_goal_activity_cycling">Cycling</string>
+    <string name="new_goal_activity_weightlifting">Workout</string>
+    <string name="new_goal_activity_any">Any activity</string>
+
+    <string name="new_goal_section_metric">What do you want to track?</string>
+    <string name="new_goal_metric_hint_run">Track how far, how long or how often you run.</string>
+    <string name="new_goal_metric_hint_ride">Track how far, how long or how often you ride.</string>
+    <string name="new_goal_metric_hint_lift">Workouts are tracked by time, sessions or total weight lifted.</string>
+    <string name="new_goal_metric_hint_any">Counts every workout, whatever the activity.</string>
+    <string name="new_goal_metric_distance">Distance</string>
+    <string name="new_goal_metric_time">Time</string>
+    <string name="new_goal_metric_sessions">Sessions</string>
+    <string name="new_goal_metric_weight">Weight</string>
+    <string name="new_goal_metric_unit_distance">km</string>
+    <string name="new_goal_metric_unit_time">min</string>
+    <string name="new_goal_metric_unit_weight">kg</string>
+    <!-- Session label for the metric row varies by activity. -->
+    <plurals name="new_goal_metric_unit_sessions_run">
+        <item quantity="one">run</item>
+        <item quantity="other">runs</item>
+    </plurals>
+    <plurals name="new_goal_metric_unit_sessions_ride">
+        <item quantity="one">ride</item>
+        <item quantity="other">rides</item>
+    </plurals>
+    <plurals name="new_goal_metric_unit_sessions_lift">
+        <item quantity="one">workout</item>
+        <item quantity="other">workouts</item>
+    </plurals>
+    <plurals name="new_goal_metric_unit_sessions_any">
+        <item quantity="one">session</item>
+        <item quantity="other">sessions</item>
+    </plurals>
+
+    <string name="new_goal_section_target">Set your target</string>
+    <string name="new_goal_decrease_target_content_description">Decrease target</string>
+    <string name="new_goal_increase_target_content_description">Increase target</string>
+
+    <string name="new_goal_section_days">How many days?</string>
+    <string name="new_goal_decrease_days_content_description">Fewer days</string>
+    <string name="new_goal_increase_days_content_description">More days</string>
+    <plurals name="new_goal_days_unit">
+        <item quantity="one">day</item>
+        <item quantity="other">days</item>
+    </plurals>
+    <string name="new_goal_date_range">Starts today · ends %1$s</string>
+
+    <string name="new_goal_section_summary">Your goal</string>
+    <string name="new_goal_pace_per_day">Per day</string>
+    <string name="new_goal_pace_per_week">Per week</string>
+    <string name="new_goal_deadline_label">Deadline</string>
+
+    <!-- Summary sentence templates. Placeholders: %1$s target, %2$d days. -->
+    <string name="new_goal_summary_run_distance">Run %1$s km in %2$d days</string>
+    <string name="new_goal_summary_run_distance_one">Run %1$s km in 1 day</string>
+    <string name="new_goal_summary_ride_distance">Ride %1$s km in %2$d days</string>
+    <string name="new_goal_summary_ride_distance_one">Ride %1$s km in 1 day</string>
+    <string name="new_goal_summary_run_time">Run for %1$s min in %2$d days</string>
+    <string name="new_goal_summary_run_time_one">Run for %1$s min in 1 day</string>
+    <string name="new_goal_summary_ride_time">Ride for %1$s min in %2$d days</string>
+    <string name="new_goal_summary_ride_time_one">Ride for %1$s min in 1 day</string>
+    <string name="new_goal_summary_lift_time">Train for %1$s min in %2$d days</string>
+    <string name="new_goal_summary_lift_time_one">Train for %1$s min in 1 day</string>
+    <string name="new_goal_summary_any_time">Be active for %1$s min in %2$d days</string>
+    <string name="new_goal_summary_any_time_one">Be active for %1$s min in 1 day</string>
+    <string name="new_goal_summary_lift_volume">Lift %1$s kg in %2$d days</string>
+    <string name="new_goal_summary_lift_volume_one">Lift %1$s kg in 1 day</string>
+    <!-- Sessions summary: "4 runs in 14 days" / "1 run in 14 days" / "4 runs in 1 day".
+         We format the target+unit via plurals and the days via plurals, then
+         pass both to a %1$s / %2$s template. -->
+    <string name="new_goal_summary_sessions">%1$s in %2$s</string>
+    <string name="new_goal_sessions_count_run">%1$s runs</string>
+    <string name="new_goal_sessions_count_run_one">1 run</string>
+    <string name="new_goal_sessions_count_ride">%1$s rides</string>
+    <string name="new_goal_sessions_count_ride_one">1 ride</string>
+    <string name="new_goal_sessions_count_lift">%1$s workouts</string>
+    <string name="new_goal_sessions_count_lift_one">1 workout</string>
+    <string name="new_goal_sessions_count_any">%1$s sessions</string>
+    <string name="new_goal_sessions_count_any_one">1 session</string>
+    <string name="new_goal_days_count">%1$d days</string>
+    <string name="new_goal_days_count_one">1 day</string>
+
+    <!-- Pace tile values. "/ day" and "/ week" paces. -->
+    <string name="new_goal_pace_value_distance">%1$s km</string>
+    <string name="new_goal_pace_value_time">%1$d min</string>
+    <string name="new_goal_pace_value_volume">%1$s kg</string>
+    <string name="new_goal_pace_value_sessions_run">%1$s runs</string>
+    <string name="new_goal_pace_value_sessions_ride">%1$s rides</string>
+    <string name="new_goal_pace_value_sessions_lift">%1$s workouts</string>
+    <string name="new_goal_pace_value_sessions_any">%1$s sessions</string>
+
+    <!-- Target-input dialog -->
+    <string name="new_goal_target_dialog_title">Set target</string>
+    <string name="new_goal_days_dialog_title">Set days</string>
+    <string name="new_goal_dialog_ok">OK</string>
+    <string name="new_goal_dialog_cancel">Cancel</string>
+
+    <!-- Validation errors -->
+    <string name="new_goal_error_target_out_of_range_distance">Distance target must be between 1 and 1000 km.</string>
+    <string name="new_goal_error_target_out_of_range_count">Workout target must be between 1 and 100.</string>
+    <string name="new_goal_error_target_out_of_range_duration">Duration target must be between 15 and 10000 min.</string>
+    <string name="new_goal_error_target_out_of_range_volume">Volume target must be between 1000 and 500000 kg.</string>
+    <string name="new_goal_error_days_out_of_range">Days must be between 1 and 365.</string>
 
     <!-- Bottom navigation labels -->
     <string name="nav_home">Home</string>

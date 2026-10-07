@@ -51,7 +51,23 @@
         android:id="@+id/goalsFragment"
         android:name="com.elijah.fitness.ui.goals.GoalsFragment"
         android:label="@string/nav_goals"
-        tools:layout="@layout/fragment_goals" />
+        tools:layout="@layout/fragment_goals">
+        <action
+            android:id="@+id/action_goals_to_new_goal"
+            app:destination="@id/newGoalFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/newGoalFragment"
+        android:name="com.elijah.fitness.ui.goals.NewGoalFragment"
+        android:label="@string/new_goal_title_create"
+        tools:layout="@layout/fragment_new_goal">
+        <argument
+            android:name="goal_id"
+            app:argType="string"
+            android:defaultValue="@null"
+            app:nullable="true" />
+    </fragment>
 
     <!--
       Profile is no longer in the bottom nav — it opens from the Home

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Inner icon tile on the activity selector. Selected = lime; unselected =
+  the standard pale icon-tile fill.
+-->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_selected="true">
+        <shape android:shape="rectangle">
+            <solid android:color="@color/lime_accent" />
+            <corners android:radius="11dp" />
+        </shape>
+    </item>
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="@color/surface_container_low" />
+            <corners android:radius="11dp" />
+        </shape>
+    </item>
+</selector>

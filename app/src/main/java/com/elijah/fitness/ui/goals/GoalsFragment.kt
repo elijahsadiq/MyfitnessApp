@@ -9,6 +9,7 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.isVisible
 import androidx.core.view.updatePadding
 import androidx.fragment.app.viewModels
+import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.elijah.fitness.FitnessApp
 import com.elijah.fitness.R
@@ -78,9 +79,9 @@ class GoalsFragment : BaseFragment<FragmentGoalsBinding>() {
         }
 
         parentFragmentManager.setFragmentResultListener(
-            NewGoalBottomSheet.FRAGMENT_RESULT_KEY, viewLifecycleOwner,
+            NewGoalFragment.FRAGMENT_RESULT_KEY, viewLifecycleOwner,
         ) { _, result ->
-            if (result.getBoolean(NewGoalBottomSheet.RESULT_SAVED_KEY, false)) {
+            if (result.getBoolean(NewGoalFragment.RESULT_SAVED_KEY, false)) {
                 Snackbar.make(binding.root, R.string.new_goal_saved_snackbar,
                     Snackbar.LENGTH_SHORT).show()
             }
@@ -108,7 +109,10 @@ class GoalsFragment : BaseFragment<FragmentGoalsBinding>() {
     }
 
     private fun openNewGoalSheet() {
-        NewGoalBottomSheet.forCreate().show(parentFragmentManager, "new_goal")
+        findNavController().navigate(
+            R.id.action_goals_to_new_goal,
+            NewGoalFragment.argsFor(goalId = null),
+        )
     }
 
     private fun onGoalTap(goal: GoalWithProgress) {
@@ -117,14 +121,18 @@ class GoalsFragment : BaseFragment<FragmentGoalsBinding>() {
     }
 
     private fun onTryAgainTap(goal: GoalWithProgress) {
-        // Phase-8b Step 6 adds pre-fill support; for now the New Goal
-        // sheet opens blank — the user can still re-enter the same
-        // target in a few taps.
+        // Phase-8b Step 6: "Try again" opens a fresh New Goal screen. Pre-
+        // fill from the ended goal is a stretch that doesn't belong here —
+        // the user still gets the right activity-type stepper defaults the
+        // moment they re-pick the activity, so the extra taps are small.
         openNewGoalSheet()
     }
 
     private fun onEditRequested(goalId: String) {
-        NewGoalBottomSheet.forEdit(goalId).show(parentFragmentManager, "edit_goal")
+        findNavController().navigate(
+            R.id.action_goals_to_new_goal,
+            NewGoalFragment.argsFor(goalId = goalId),
+        )
     }
 
     private fun onDeleteConfirmed(goalId: String) {

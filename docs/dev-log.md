@@ -1768,3 +1768,62 @@ Rebuilt the Goals screen as a single scrolling list that matches `docs/design/go
 **Assignment task supported**
 - **Task 5b (inheritance #3)** — the RecyclerView now has five concrete `BaseViewHolder<T>` subclasses (one per view type), making the hierarchy more load-bearing than before and giving the report a stronger "polymorphism in action" example. The sealed `GoalListItem` + exhaustive `when` on view type is a textbook sealed-class use.
 - **Task 2a (UI implementation)** — Goals screen matches the Figma spec pixel-for-pixel (dark card radius, 108dp ring, dashed Ended rows, lime pill header).
+
+## Step 6 — Full-screen New Goal / Edit Goal (NewGoal.dc.html)
+
+Replaced the Phase-7 bottom sheet with a full-screen fragment that matches the design: 2×2 activity grid, dynamic tracking-option row, two stepper cards with hold-to-repeat + tap-to-type, and a dark summary card with per-day/per-week pace + deadline.
+
+**Built**
+- **`ui/goals/NewGoalFragment.kt`** — full-screen destination. Lays out header (close + title), scrolling content (activity grid, metric row, target stepper, days stepper, summary card), and a pinned lime pill button at the bottom. The fragment owns:
+  - **`HoldToRepeat`** inner class: an `OnTouchListener` that fires on `ACTION_DOWN`, re-fires after a 350ms long-press threshold, then at 160ms intervals, halving to 80ms after 6 repeats and to 35ms after 14 — so holding "+" on the Weight stepper (step 1,000, max 500,000) can race from 1,000 → 500,000 in a couple of seconds instead of 500 taps. One instance per stepper button; all four are cancelled in `onDestroyView`.
+  - **Tap-to-type `AlertDialog`** on the two numeric labels: numeric keyboard, length-limited by `max.toString().length`, out-of-range value triggers a Snackbar rather than silently clamping (so a mistyped 9000 for a distance goal doesn't become 1,000 without the user noticing).
+  - **Pure-state binding** via `collectOnStart(viewModel.uiState)`; activity tiles + metric pills use `setSelected(true/false)` on their roots and let drawable + text-colour selectors do the dark/lime treatment.
+- **`ui/goals/NewGoalViewModel.kt`** — rewritten from scratch. New state:
+  - `activity: ActivityOption` (RUN/RIDE/LIFT/ANY — a UI-level enum that maps 1-to-1 onto `ActivityType?`).
+  - `metric: GoalType` (DISTANCE/COUNT/DURATION/VOLUME).
+  - `target: Int`, `days: Int`.
+  - `startDate: LocalDate?` — set on edit mode so changing the number of days keeps the goal's **original** start date (per the brief).
+  - **Allowed-matrix coercion**: `setActivity` keeps the current metric when still allowed, otherwise falls back to the first allowed metric and resets the target to that metric's default.
+  - **Per-metric step/min/max/default spec**: Distance 5/1/1000/50, Time 15/15/10000/150, Sessions 1/1/100/4, Weight 1000/1000/500000/10000.
+  - **Submit**: builds the title via `autoTitle()` (pure Kotlin, locale-aware comma grouping, singular/plural forms), then calls `createGoal` with today's date or `updateGoal` without a new start date. Server field errors land on `targetError`/`daysError`; generic errors become `ShowError` events.
+- **Design tokens + drawables**:
+  - `bg_goal_activity_tile.xml`, `bg_goal_activity_icon.xml` — selected/unselected shape-list drawables for the activity grid.
+  - `bg_goal_metric_pill.xml`, `color/goal_metric_pill_label.xml` — the horizontal tracking-option row.
+  - `bg_goal_stepper_minus.xml` (hairline-bordered circle) + `bg_goal_stepper_plus.xml` (dark circle) + `bg_goal_stepper_card.xml` (24dp-radius white card with hairline divider).
+  - `bg_goal_main_card_bg.xml` + `bg_goal_summary_tile.xml` — dark card + inner "Per day" / "Deadline" tiles.
+  - `ic_close_24.xml`, `ic_minus_24.xml` — new vectors.
+- **Sub-layouts** so the activity tile + metric pill DRY out across repetitions: `view_goal_activity_tile.xml`, `view_goal_metric_pill.xml`. The fragment binds each `<include>` through its own ViewBinding (`ViewGoalActivityTileBinding`) so there's no `findViewById` noise.
+- **Strings**: all the summary / pace / dialog copy, plus plurals for the days unit and the four session words (`run/runs`, `ride/rides`, `workout/workouts`, `session/sessions`).
+- **Navigation**: `nav_graph.xml` gets a new `newGoalFragment` destination (nullable `goal_id` argument) + `action_goals_to_new_goal`. `MainActivity` already hides the bottom nav + toolbar on non-top-level destinations, so the New Goal screen owns its full chrome.
+- **`GoalsFragment`** — `openNewGoalSheet` + `onEditRequested` + `onTryAgainTap` now call `findNavController().navigate(action, args)` instead of showing a `BottomSheetDialogFragment`. The result listener still fires the "Goal saved" Snackbar on `NewGoalFragment.RESULT_SAVED_KEY`.
+
+**Deleted**
+- `ui/goals/NewGoalBottomSheet.kt`
+- `res/layout/bottom_sheet_new_goal.xml`
+
+**Updated tests**
+- `NewGoalViewModelTest` rewritten for the new state model (12 tests, up from 11):
+  - Activity → metric coercion: LIFT drops DISTANCE and resets to DURATION/default; RIDE keeps DISTANCE and the current target; ANY only exposes DURATION + COUNT.
+  - Target clamping: `+` caps at the metric max; `-` floors at the min; type-in `setTarget` coerces into range.
+  - Days clamping between 1 and 365.
+  - Create submit on COUNT with target=1 → "1 run in 1 day" (singular session word + singular day word).
+  - VOLUME summary uses "Lift" and the comma-grouped target ("Lift 10,000 kg in 30 days").
+  - Edit mode pre-fills every field including the `startDate` and never calls `createGoal` on submit.
+  - Server `targetValue` validation error lands on `targetError`; generic 500 becomes a `ShowError` event.
+
+**Key design decision — stepper-only input, no text field**
+The brief explicitly removed preset chips. Steppers are the fastest input for the common case (a round number near the default) and the type-in dialog covers the exotic case (10,000 kg goal), without the UX cost of a visible EditText that would need its own validation lifecycle and keyboard-dismiss affordance. Hold-to-repeat is the one piece of custom gesture code — it exists because `step=1000` goals would otherwise require far too many taps.
+
+**Kotlin/Android concepts** *(for my notes)*
+- Fragment Result API across the Navigation graph: both source + listener fragments share the NavHost's `childFragmentManager`, so `setFragmentResult` propagates without extra wiring.
+- `view.isSelected = …` + state-list drawables + state-list `ColorStateList`: lets the activity tile / metric pill render selected/unselected variants with zero conditional code in the view holder.
+- `OnTouchListener` returning `true` on `ACTION_DOWN`: swallows the ripple-driven click so I can run the first step on the DOWN event and the repeats from the `Handler` — otherwise the first tap would still fire a separate `onClick` and double-step.
+- `resources.getQuantityString(R.plurals.X, n)` + `R.plurals.X` entries: locale-aware pluralisation of "day/days" and the session words, so swapping locale later doesn't require edits in Kotlin.
+
+**Verified**
+- `./gradlew assembleDebug` — BUILD SUCCESSFUL.
+- `./gradlew testCloudDebugUnitTest` — BUILD SUCCESSFUL (all unit tests pass).
+
+**Assignment task supported**
+- **Task 2a (UI implementation)** — the New Goal screen is a direct rebuild of `NewGoal.dc.html`; the stepper + hold-to-repeat is non-trivial and worth a paragraph in the report.
+- **Task 5b (inheritance #2)** — `BaseFragment<FragmentNewGoalBinding>` becomes the sixth concrete subclass of the shared base, further strengthening the inheritance-#2 example without any new helper code.
