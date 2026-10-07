@@ -48,6 +48,16 @@ class FakeWorkoutRepository(
     override suspend fun getWorkout(id: String): Workout? =
         _workouts.value.firstOrNull { it.id == id }
 
+    override suspend fun deleteWorkout(clientUuid: String): ApiResult<Unit> {
+        val before = _workouts.value.size
+        _workouts.update { current -> current.filterNot { it.id == clientUuid } }
+        return if (_workouts.value.size == before) {
+            ApiResult.Error(message = "Workout not found", status = 404, fieldErrors = emptyMap())
+        } else {
+            ApiResult.Success(Unit)
+        }
+    }
+
     override suspend fun getWorkoutDetail(
         clientUuid: String,
     ): ApiResult<com.elijah.fitness.data.model.WorkoutDetail> {

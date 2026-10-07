@@ -25,9 +25,15 @@ android {
     }
 
     // Two build flavors on the `env` dimension. BASE_URL is exposed through
-    // BuildConfig; NetworkModule reads it at runtime. The `local` flavor
-    // targets the docker-compose stack from the emulator (10.0.2.2 is the
-    // host's loopback as seen from an Android emulator).
+    // BuildConfig; NetworkModule reads it at runtime.
+    //
+    // `local` targets the docker-compose stack via `adb reverse`:
+    //   adb reverse tcp:8080 tcp:8080
+    // That maps the emulator's `localhost:8080` to the host's `localhost:8080`
+    // through the adb bridge. We used to point at `10.0.2.2:8080` directly,
+    // but on recent Android Emulator + Docker-Desktop-on-macOS combos the
+    // 10.0.2.2 → host-loopback forward is unreliable (ICMP works, TCP
+    // sometimes times out) — adb reverse is the escape hatch.
     flavorDimensions += "env"
     productFlavors {
         create("local") {

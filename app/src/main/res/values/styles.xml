@@ -118,12 +118,40 @@
         <item name="boxCornerRadiusBottomEnd">@dimen/radius_text_field</item>
         <item name="boxBackgroundColor">@color/surface_white</item>
         <item name="boxBackgroundMode">outline</item>
+        <!-- Focused outline + focused label both use `text_primary` so no
+             lime shows up on a light surface (phase 8c step 1). -->
         <item name="boxStrokeColor">@color/text_field_stroke</item>
         <item name="boxStrokeWidth">@dimen/stroke_hairline</item>
         <item name="boxStrokeWidthFocused">1.5dp</item>
         <item name="boxStrokeErrorColor">@color/error_red</item>
-        <item name="hintTextColor">@color/text_secondary</item>
+        <item name="hintTextColor">@color/text_primary</item>
         <item name="errorTextColor">@color/error_red</item>
+    </style>
+
+    <!--
+      Phase 8c step 1 — Theme overlays applied via the `materialAlertDialogTheme`,
+      `materialCalendarTheme` and `materialTimePickerTheme` theme attrs on
+      `Theme.MyFitnessApp`. Each one locally sets `colorPrimary` to the
+      dark hue so the picker's header + accent chrome paints `#111410`
+      rather than lime. The rest of the overlay inherits from the base
+      Material 3 theme untouched.
+    -->
+    <style name="ThemeOverlay.Fitness.MaterialAlertDialog" parent="ThemeOverlay.Material3.MaterialAlertDialog">
+        <item name="colorPrimary">@color/text_primary</item>
+        <item name="colorOnPrimary">@color/white</item>
+        <item name="colorAccent">@color/text_primary</item>
+    </style>
+
+    <style name="ThemeOverlay.Fitness.MaterialDatePicker" parent="ThemeOverlay.Material3.MaterialCalendar">
+        <item name="colorPrimary">@color/text_primary</item>
+        <item name="colorOnPrimary">@color/white</item>
+        <item name="colorAccent">@color/text_primary</item>
+    </style>
+
+    <style name="ThemeOverlay.Fitness.MaterialTimePicker" parent="ThemeOverlay.Material3.MaterialTimePicker">
+        <item name="colorPrimary">@color/text_primary</item>
+        <item name="colorOnPrimary">@color/white</item>
+        <item name="colorAccent">@color/text_primary</item>
     </style>
 
     <!-- Icon tile: 44x44 squircle, surface-container-low fill. -->

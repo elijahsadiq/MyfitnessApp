@@ -1963,3 +1963,65 @@ Every Goals-v2 design file in `docs/design/goals-v2/*.dc.html` — Main, NewGoal
 - Open phpMyAdmin and verify a freshly-created goal lands with the right `start_date`/`last_day`/`duration_days`/`is_main`.
 
 Everything else is signed off from this side — the branch is ready for the manual pass + the written report.
+
+## Phase 8c — Step 1: Theme fix (olive → lime) + History FAB reinstatement
+
+The whole phase has one brief, `docs/prompts/phase-8c-logging-and-maps.md`. Step 1 fixes the olive-green primary-button bug noted in the brief, cleans up every lime-on-light leak that fell out of flipping the colour role, and puts the History `FloatingActionButton` back on the screen so the assignment's "visibly uses a FAB" requirement is satisfied again.
+
+**FAB audit before I started**
+- Zero `FloatingActionButton` or `ExtendedFloatingActionButton` instances anywhere in `app/src/main/res/layout`. The Goals "+ New goal" is a `LinearLayout` with a lime pill drawable (Phase 8b, Step 5); the History FAB was deleted at the user's earlier request. The assignment requires a visible FAB; this step reinstates one.
+
+**Built — theme fixes**
+- **`values/themes.xml`** — flipped the `colorPrimary` → `lime_accent` (lime fill) + `colorOnPrimary` → `text_on_lime` (`#111410`), and set theme-wide **`colorAccent` + `colorControlActivated` → `text_primary`** so the handful of Material widgets that use those roles for text / thin lines paint dark on light.
+- Three new theme overlays in `values/styles.xml`, wired via `materialAlertDialogTheme`, `materialCalendarTheme` and `materialTimePickerTheme` on the main theme:
+  - `ThemeOverlay.Fitness.MaterialAlertDialog` → confirmation dialog buttons dark.
+  - `ThemeOverlay.Fitness.MaterialDatePicker` → calendar header + "OK" / "Cancel" buttons dark.
+  - `ThemeOverlay.Fitness.MaterialTimePicker` → time dial + buttons dark.
+- `textInputStyle` → `Widget.Fitness.TextField` theme-wide, so every `TextInputLayout` across the app picks up the Fitness-styled outline + hint colours without needing an explicit `style=` attribute in each layout.
+- `Widget.Fitness.TextField` tightened: `hintTextColor` moved from `text_secondary` → `text_primary`, so the focused label matches the focused outline from `text_field_stroke.xml` (both dark).
+
+**Built — direct olive leaks**
+- `fragment_log_distance_workout.xml` line 180: `livePreview` text colour `?attr/colorPrimary` → `@color/text_primary`.
+- `fragment_log_distance_workout.xml:200`: Save button given `style="@style/Widget.Fitness.Button.Primary"` (was unstyled, so inherited olive from `Widget.Material3.Button`).
+- `fragment_log_strength_workout.xml:229`: same fix on the strength Save button.
+- `fragment_login.xml:28`: brand-tile icon `app:tint="@color/lime_deep"` → `@color/text_primary`.
+- `fragment_workout_history.xml:211`: empty-state history icon tint `lime_deep` → `text_primary`.
+- `fragment_profile.xml` lines 193 / 249 / 296: three "Edit" labels `textColor="@color/lime_deep"` → `@color/text_primary`.
+- `item_distance_workout.xml:55`, `item_strength_workout.xml:55`: pace/speed text `textColor="?attr/colorPrimary"` → `@color/text_primary`.
+- Every `LinearProgressIndicator` (`fragment_progress.xml`, `fragment_workout_detail.xml`, `fragment_dashboard.xml`, `fragment_workout_history.xml`, `fragment_goals.xml`): `app:indicatorColor="@color/lime_deep"` → `@color/text_primary`. A thin loading line on a white surface is a text / thin-line role, not a fill role.
+
+After these edits `grep -rnE 'lime_deep|textColor="\?attr/colorPrimary"|tint="\?attr/colorPrimary"' app/src/main/res/layout` returns **zero results**. The only remaining references to `@color/lime_deep` are the two definitions in `colors.xml` itself + its mention in the `themes.xml` historical-note comment.
+
+**Built — History FAB reinstatement**
+- `fragment_workout_history.xml` gains a `com.google.android.material.floatingactionbutton.FloatingActionButton` with `style="@style/Widget.Fitness.FAB"`, `android:src="@drawable/ic_add_24"`, pinned bottom-right (margin `fab_margin_end` × `fab_margin_bottom`).
+- `WorkoutHistoryFragment.onViewCreated` wires `binding.addWorkoutFab.setOnClickListener { findNavController().navigate(R.id.action_history_to_choose_activity) }`. The brief's Step 4 will swap the destination to the new "Log a workout" sheet, but the FAB itself is now permanent.
+- `docs/assignment-coverage.md` row for FloatingActionButton updated to point at this FAB and note that it is now the sole FAB in the app.
+
+**Key design decision — fix `colorPrimary` at the role, not per widget**
+Changing `colorPrimary` closes the olive leak in every widget that reads it (unstyled `MaterialButton`, text buttons, focused `TextInputLayout`, date / time picker chrome, `LinearProgressIndicator` defaults) in one line. The alternative — auditing every unstyled Material widget and either styling it or wrapping it in a themeOverlay — would ship the fix 20+ edits later and would silently regress whenever a new unstyled widget was added. The ThemeOverlay-on-attr pattern then re-pins the handful of components that MUST be dark text (dialog + date / time picker buttons) back to `text_primary` so lime stays strictly for fills.
+
+**Rejected alternative — introduce a `ThemeOverlay.Fitness.DarkOnLight` and apply it to every "lime-leaky" layout root**
+Would have let the base theme keep `colorPrimary = lime_deep` and relied on each screen to opt in. Rejected because it's additive — every new screen would have to remember the overlay, every new MaterialButton would still default olive if the overlay wasn't inherited, and the olive bug would come back the first time someone forgot. Changing the role at the theme root is subtractive: the olive is simply gone.
+
+**Kotlin / Android concepts** *(for my notes)*
+- Material 3 theme attributes `textInputStyle`, `materialAlertDialogTheme`, `materialCalendarTheme`, `materialTimePickerTheme`: a theme attribute whose value is a *style* or *theme overlay* reference that Material components resolve when they inflate. Setting these on the main theme sidesteps per-widget `style="…"` declarations.
+- `ThemeOverlay.Material3.MaterialAlertDialog` / `MaterialCalendar` / `MaterialTimePicker`: parent overlays that carry the full component theme. Children only need to override the handful of colour roles they care about (here `colorPrimary` + `colorOnPrimary` + `colorAccent`).
+- `colorControlActivated` is the pre-Material compound-button attribute still read by `MaterialCheckBox`, `MaterialRadioButton`, `MaterialSwitch` for their ON tint; setting it on the theme is a one-liner that darkens every compound button in the app.
+
+**Verified**
+- `./gradlew assembleDebug` — BUILD SUCCESSFUL.
+- `./gradlew testCloudDebugUnitTest` — BUILD SUCCESSFUL (all unit tests pass).
+- APK installed on the emulator via `installLocalDebug`; `adb reverse tcp:8080 tcp:8080` still active so the backend is reachable.
+
+**Pending user action — screenshots the brief asks for**
+Capture these on the emulator to prove the olive fix landed everywhere:
+1. A **focused `TextInputLayout`** — e.g. the Password field on Login or the Weight field in Profile → Edit — showing a `text_primary` outline + label, not olive / lime.
+2. A **text button** — Login screen's "Create account" link, or Register screen's "Log in" link.
+3. The **`MaterialDatePicker`** — on the strength or distance log form, tap the Date card.
+4. The **`MaterialTimePicker`** — same screens, tap the Time card.
+
+Shoot them into `docs/screenshots/` with names like `theme-focused-input.png`, `theme-text-button.png`, `theme-date-picker.png`, `theme-time-picker.png` for the Phase-8c final report.
+
+**Assignment task supported**
+- **Task 4 (development)** — History `FloatingActionButton` is back on screen, so the brief's "visibly uses a FAB" requirement is unambiguously satisfied again.
+- **Task 2a (UI implementation)** — primary buttons now paint the design-system lime everywhere, with no olive leaks on buttons, focused inputs, date / time pickers or loading indicators.

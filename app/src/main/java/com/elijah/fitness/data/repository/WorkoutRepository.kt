@@ -57,4 +57,12 @@ interface WorkoutRepository {
      * isn't known locally (e.g. deep link to a deleted workout).
      */
     suspend fun getWorkoutDetail(clientUuid: String): ApiResult<WorkoutDetail>
+
+    /**
+     * Delete a workout by its device-generated clientUuid. On success,
+     * [observeWorkouts] re-emits without the row. Lookup failures return
+     * `ApiResult.Error(status = 404)` so the UI can treat a stale swipe
+     * as a soft no-op.
+     */
+    suspend fun deleteWorkout(clientUuid: String): ApiResult<Unit>
 }

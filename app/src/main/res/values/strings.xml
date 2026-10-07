@@ -477,6 +477,10 @@
     <string name="log_error_save_generic">Couldn\'t save your workout.</string>
     <string name="log_error_save_retry">Retry</string>
 
+    <!-- History swipe-to-delete -->
+    <string name="history_deleted_snackbar">Workout deleted</string>
+    <string name="history_deleted_undo">Undo</string>
+
     <!-- History screen -->
     <string name="history_headline">History</string>
     <string name="history_momentum_eyebrow">Weekly momentum</string>

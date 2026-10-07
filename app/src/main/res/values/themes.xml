@@ -9,12 +9,35 @@
       mode never flips us to a night resource we don't have.
     -->
     <style name="Theme.MyFitnessApp" parent="Theme.Material3.Light.NoActionBar">
-        <!-- Primary role holds the deep-green surface tint (M3 wants a dark hue
-             here; the lime is exposed on primaryContainer, matching the HTML export). -->
-        <item name="colorPrimary">@color/lime_deep</item>
-        <item name="colorOnPrimary">@color/white</item>
+        <!--
+          Phase 8c step 1 — colour-role fix.
+
+          Pre-8c the theme put olive-green `lime_deep` (#536600) on
+          `colorPrimary`. Every Material widget that defaults to that
+          role (unstyled MaterialButton, TextInputLayout focused outline
+          and label, text buttons, LinearProgressIndicator tint,
+          date / time picker chrome) painted olive. Fix:
+
+          * `colorPrimary` is now the design-system lime fill. Buttons
+            that read it for `backgroundTint` come out lime.
+          * `colorOnPrimary` is `text_on_lime` (#111410) so button text
+            is dark on lime.
+          * Lime is a *fill* colour, never a text or thin-line colour on
+            a light surface. The attribute overrides below reroute
+            `textInputStyle`, the alert / date / time picker themes and
+            the compound-button `colorControlActivated` to the dark hue
+            so nothing lime lands on text or thin lines.
+        -->
+        <item name="colorPrimary">@color/lime_accent</item>
+        <item name="colorOnPrimary">@color/text_on_lime</item>
         <item name="colorPrimaryContainer">@color/lime_accent</item>
         <item name="colorOnPrimaryContainer">@color/text_on_lime</item>
+
+        <!-- Dark hue for text / thin-line roles that light-surface
+             widgets read when they would otherwise paint lime. -->
+        <item name="colorAccent">@color/text_primary</item>
+        <item name="colorControlActivated">@color/text_primary</item>
+        <item name="colorControlHighlight">@color/surface_container_high</item>
 
         <!-- Secondary + tertiary aren't heavily used; align with the design's greys. -->
         <item name="colorSecondary">@color/text_secondary</item>
@@ -84,5 +107,16 @@
         <item name="textAppearanceLabelLarge">@style/TextAppearance.Fitness.Button</item>
         <item name="textAppearanceLabelMedium">@style/TextAppearance.Fitness.LabelMd</item>
         <item name="textAppearanceLabelSmall">@style/TextAppearance.Fitness.LabelSm</item>
+
+        <!--
+          Phase 8c step 1 — component style attrs. These make the Material
+          widgets below default to the Fitness styles / overlays even when
+          a layout forgot to set `style=…` explicitly, closing the lime-
+          on-light paths at the theme level.
+        -->
+        <item name="textInputStyle">@style/Widget.Fitness.TextField</item>
+        <item name="materialAlertDialogTheme">@style/ThemeOverlay.Fitness.MaterialAlertDialog</item>
+        <item name="materialCalendarTheme">@style/ThemeOverlay.Fitness.MaterialDatePicker</item>
+        <item name="materialTimePickerTheme">@style/ThemeOverlay.Fitness.MaterialTimePicker</item>
     </style>
 </resources>

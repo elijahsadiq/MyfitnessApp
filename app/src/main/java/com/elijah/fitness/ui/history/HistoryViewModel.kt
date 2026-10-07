@@ -12,6 +12,7 @@ import com.elijah.fitness.data.model.ActivityType
 import com.elijah.fitness.data.model.DistanceWorkout
 import com.elijah.fitness.data.model.Workout
 import com.elijah.fitness.data.remote.ApiResult
+import com.elijah.fitness.data.repository.WorkoutDeleteCoordinator
 import com.elijah.fitness.data.repository.WorkoutRepository
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -42,6 +43,7 @@ import java.time.temporal.TemporalAdjusters
  */
 class HistoryViewModel(
     private val repository: WorkoutRepository,
+    private val deleteCoordinator: WorkoutDeleteCoordinator,
     private val clock: Clock = Clock.systemDefaultZone(),
     private val zone: ZoneId = ZoneId.systemDefault(),
 ) : ViewModel() {
@@ -57,8 +59,16 @@ class HistoryViewModel(
     private val _errorEvents = Channel<ErrorEvent>(Channel.BUFFERED)
     val errorEvents: Flow<ErrorEvent> = _errorEvents.receiveAsFlow()
 
-    /** All workouts (unfiltered) — used by the momentum card. */
-    private val allWorkouts: StateFlow<List<Workout>> = repository.observeWorkouts()
+    /**
+     * All workouts (unfiltered), minus any that are currently in the
+     * "pending delete" window. The hidden-ids filter runs here so **both**
+     * the momentum card and the sectioned list drop a swiped workout the
+     * moment the user swipes, long before the server-side DELETE fires.
+     */
+    private val allWorkouts: StateFlow<List<Workout>> = combine(
+        repository.observeWorkouts(),
+        deleteCoordinator.hiddenIds,
+    ) { workouts, hidden -> workouts.filterNot { it.id in hidden } }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), emptyList())
 
     /** Filtered list (respects the chip filter) used to build [sectioned]. */
@@ -99,6 +109,22 @@ class HistoryViewModel(
 
     fun setFilter(filter: Filter) {
         _filter.value = filter
+    }
+
+    /**
+     * Swipe-to-delete: hide the workout immediately and fire the real
+     * DELETE after 5 s unless [undoDelete] is called first.
+     */
+    fun deleteWithUndo(workout: Workout) {
+        deleteCoordinator.scheduleDelete(workout)
+        viewModelScope.launch {
+            _errorEvents.send(ErrorEvent.DeletedWithUndo(workout.id))
+        }
+    }
+
+    /** Cancel a pending delete; the workout reappears on the next emission. */
+    fun undoDelete(workoutId: String) {
+        deleteCoordinator.undo(workoutId)
     }
 
     fun refresh() {
@@ -187,6 +213,12 @@ class HistoryViewModel(
     sealed interface ErrorEvent {
         data class Network(@StringRes val messageRes: Int) : ErrorEvent
         data class Generic(@StringRes val messageRes: Int) : ErrorEvent
+        /**
+         * The swipe just hid a workout; the server-side DELETE is already
+         * scheduled on the app-level scope. Carries the id so the
+         * fragment's Snackbar can offer Undo.
+         */
+        data class DeletedWithUndo(val workoutId: String) : ErrorEvent
     }
 
     data class Momentum(
@@ -206,7 +238,10 @@ class HistoryViewModel(
 
         fun factory(container: AppContainer): ViewModelProvider.Factory = viewModelFactory {
             initializer {
-                HistoryViewModel(container.workoutRepository)
+                HistoryViewModel(
+                    repository = container.workoutRepository,
+                    deleteCoordinator = container.workoutDeleteCoordinator,
+                )
             }
         }
     }

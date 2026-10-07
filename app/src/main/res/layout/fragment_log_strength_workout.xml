@@ -228,10 +228,10 @@
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/saveButton"
+        style="@style/Widget.Fitness.Button.Primary"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_margin="16dp"
-        android:minHeight="48dp"
         android:text="@string/log_save_button"
         app:layout_constraintBottom_toBottomOf="parent" />
 </androidx.constraintlayout.widget.ConstraintLayout>

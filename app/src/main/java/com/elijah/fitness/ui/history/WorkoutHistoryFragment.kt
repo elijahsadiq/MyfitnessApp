@@ -8,6 +8,7 @@ import androidx.core.view.isVisible
 import androidx.fragment.app.viewModels
 import androidx.core.os.bundleOf
 import androidx.navigation.fragment.findNavController
+import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.elijah.fitness.FitnessApp
 import com.elijah.fitness.R
@@ -55,6 +56,17 @@ class WorkoutHistoryFragment : BaseFragment<FragmentWorkoutHistoryBinding>() {
         binding.workoutList.adapter = adapter
         binding.workoutList.layoutManager = LinearLayoutManager(requireContext())
 
+        ItemTouchHelper(
+            WorkoutSwipeToDeleteCallback(adapter) { position ->
+                val item = adapter.currentList.getOrNull(position)
+                if (item is HistoryItem.Row) viewModel.deleteWithUndo(item.workout)
+            }
+        ).attachToRecyclerView(binding.workoutList)
+
+        binding.addWorkoutFab.setOnClickListener {
+            findNavController().navigate(R.id.action_history_to_choose_activity)
+        }
+
         binding.filterChips.setOnCheckedStateChangeListener { _, checkedIds ->
             val filter = when (checkedIds.firstOrNull()) {
                 binding.chipRunning.id -> HistoryViewModel.Filter.RUNNING
@@ -63,10 +75,6 @@ class WorkoutHistoryFragment : BaseFragment<FragmentWorkoutHistoryBinding>() {
                 else -> HistoryViewModel.Filter.ALL
             }
             viewModel.setFilter(filter)
-        }
-
-        binding.addWorkoutFab.setOnClickListener {
-            findNavController().navigate(R.id.action_history_to_choose_activity)
         }
 
         collectOnStart(viewModel.sectioned) { items ->
@@ -87,13 +95,24 @@ class WorkoutHistoryFragment : BaseFragment<FragmentWorkoutHistoryBinding>() {
             binding.loadingBar.isVisible = loading
         }
         collectOnStart(viewModel.errorEvents) { event ->
-            val messageRes = when (event) {
-                is HistoryViewModel.ErrorEvent.Network -> event.messageRes
-                is HistoryViewModel.ErrorEvent.Generic -> event.messageRes
+            when (event) {
+                is HistoryViewModel.ErrorEvent.Network ->
+                    Snackbar.make(binding.root, event.messageRes, Snackbar.LENGTH_LONG)
+                        .setAction(R.string.workouts_retry) { viewModel.refresh() }
+                        .show()
+                is HistoryViewModel.ErrorEvent.Generic ->
+                    Snackbar.make(binding.root, event.messageRes, Snackbar.LENGTH_LONG)
+                        .setAction(R.string.workouts_retry) { viewModel.refresh() }
+                        .show()
+                is HistoryViewModel.ErrorEvent.DeletedWithUndo -> {
+                    Snackbar.make(binding.root, R.string.history_deleted_snackbar,
+                        Snackbar.LENGTH_LONG)
+                        .setAction(R.string.history_deleted_undo) {
+                            viewModel.undoDelete(event.workoutId)
+                        }
+                        .show()
+                }
             }
-            Snackbar.make(binding.root, messageRes, Snackbar.LENGTH_LONG)
-                .setAction(R.string.workouts_retry) { viewModel.refresh() }
-                .show()
         }
     }
 

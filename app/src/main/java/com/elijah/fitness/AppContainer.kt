@@ -21,6 +21,7 @@ import com.elijah.fitness.data.repository.RemoteWorkoutRepository
 import com.elijah.fitness.data.repository.UserSettings
 import com.elijah.fitness.data.repository.WorkoutRepository
 import com.elijah.fitness.data.repository.GoalDeleteCoordinator
+import com.elijah.fitness.data.repository.WorkoutDeleteCoordinator
 import com.elijah.fitness.insights.InsightEngine
 import com.elijah.fitness.tracking.LocationTracker
 import com.elijah.fitness.tracking.TrackingSession
@@ -123,6 +124,16 @@ class AppContainer(applicationContext: Context) {
      */
     val goalDeleteCoordinator: GoalDeleteCoordinator = GoalDeleteCoordinator(
         repository = goalRepository,
+        appScope = appScope,
+    )
+
+    /**
+     * Twin of [goalDeleteCoordinator] for the History screen's swipe-to-
+     * delete gesture. Same 5-second delay + Undo semantics, same app-level
+     * scope so the DELETE survives navigating away from History.
+     */
+    val workoutDeleteCoordinator: WorkoutDeleteCoordinator = WorkoutDeleteCoordinator(
+        repository = workoutRepository,
         appScope = appScope,
     )
 

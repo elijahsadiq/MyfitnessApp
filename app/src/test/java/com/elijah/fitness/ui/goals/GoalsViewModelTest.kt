@@ -397,5 +397,7 @@ class GoalsViewModelTest {
         override suspend fun getWorkout(id: String): Workout? = flow.value.firstOrNull { it.id == id }
         override suspend fun getWorkoutDetail(clientUuid: String): ApiResult<com.elijah.fitness.data.model.WorkoutDetail> =
             ApiResult.Error("not supported in test fake", 404, emptyMap())
+        override suspend fun deleteWorkout(clientUuid: String): ApiResult<Unit> =
+            ApiResult.Success(Unit)
     }
 }

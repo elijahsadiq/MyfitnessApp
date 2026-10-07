@@ -5,6 +5,7 @@ import com.elijah.fitness.data.model.WorkoutDetail
 import com.elijah.fitness.data.remote.ApiResult
 import com.elijah.fitness.data.remote.api.WorkoutApi
 import com.elijah.fitness.data.remote.apiCall
+import com.elijah.fitness.data.remote.apiCallEmpty
 import com.elijah.fitness.data.remote.mapper.toDomain
 import com.elijah.fitness.data.remote.mapper.toRequestDto
 import com.elijah.fitness.data.remote.dto.RoutePointDto
@@ -89,6 +90,24 @@ class RemoteWorkoutRepository(
         accuracyM = accuracyM,
         recordedAt = Instant.parse(recordedAt),
     )
+
+    override suspend fun deleteWorkout(clientUuid: String): ApiResult<Unit> {
+        val serverId = serverIds[clientUuid]
+            ?: return ApiResult.Error(
+                message = "Workout not found locally",
+                status = 404,
+                fieldErrors = emptyMap(),
+            )
+        return when (val result = apiCallEmpty { workoutApi.delete(serverId) }) {
+            is ApiResult.Success -> {
+                serverIds.remove(clientUuid)
+                _workouts.value = _workouts.value.filterNot { it.id == clientUuid }
+                ApiResult.Success(Unit)
+            }
+            is ApiResult.Error -> result
+            ApiResult.NetworkError -> ApiResult.NetworkError
+        }
+    }
 
     override suspend fun getWorkoutDetail(clientUuid: String): ApiResult<WorkoutDetail> {
         val serverId = serverIds[clientUuid]

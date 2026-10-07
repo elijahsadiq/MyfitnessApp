@@ -125,5 +125,9 @@ class LogStrengthWorkoutViewModelTest {
             com.elijah.fitness.data.remote.ApiResult.Error(
                 "not supported in test fake", 404, emptyMap(),
             )
+        override suspend fun deleteWorkout(
+            clientUuid: String,
+        ): com.elijah.fitness.data.remote.ApiResult<Unit> =
+            com.elijah.fitness.data.remote.ApiResult.Success(Unit)
     }
 }

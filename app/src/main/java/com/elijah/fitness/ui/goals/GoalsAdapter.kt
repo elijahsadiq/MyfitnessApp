@@ -157,6 +157,12 @@ class GoalsHeaderViewHolder(
     override fun bind(item: GoalListItem.Header) {
         val ctx = binding.root.context
         binding.goalsHeaderEyebrow.text = formatEyebrow(ctx, item)
+        // Hide the "+ New goal" pill in the empty state — the dark hero
+        // card renders its own "Create a goal" button, so a second CTA
+        // in the header would be redundant.
+        val hasAnyGoals = item.activeCount > 0 || item.completedCount > 0
+        binding.goalsHeaderNewButton.visibility =
+            if (hasAnyGoals) android.view.View.VISIBLE else android.view.View.GONE
         binding.goalsHeaderNewButton.setOnClickListener { onNewGoalTap() }
     }
 

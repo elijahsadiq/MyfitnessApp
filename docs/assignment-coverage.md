@@ -11,7 +11,7 @@ the examiner (and I) can scan against the mark scheme.
 | Requirement | Status | Where |
 |---|---|---|
 | **RecyclerView** (visibly used) | ✅ Shipped | `app/src/main/res/layout/fragment_workout_history.xml:184`, `fragment_goals.xml:52`, `fragment_log_strength_workout.xml:191`. Adapters: `WorkoutAdapter`, `GoalsAdapter`, `StrengthSetAdapter`. Screenshot: `docs/screenshots/geolocation_3_route_on_detail_screen.png` (adapter visible in the History row that leads into the detail screen). |
-| **FloatingActionButton** (visibly used) | ✅ Shipped | History FAB in `fragment_workout_history.xml:232`; Goals mini-FAB in `fragment_goals.xml:42`. |
+| **FloatingActionButton** (visibly used) | ✅ Shipped | **`fragment_workout_history.xml` → `addWorkoutFab`** (phase 8c step 1 reinstatement) — a `com.google.android.material.floatingactionbutton.FloatingActionButton` styled as `Widget.Fitness.FAB` (lime circle, `ic_add_24`), pinned bottom-right of the History screen, opening the "Log a workout" sheet. The Goals "+ New goal" at the top of the Goals screen is a lime pill button, not a FAB — the History FAB is therefore the sole FloatingActionButton in the app and must not be removed. |
 | **Geolocation** | ✅ Shipped | Engine: `app/src/main/java/com/elijah/fitness/tracking/`. Service: `LocationTrackingService.kt` (foreground, `type=location`). UI: `ui/tracking/LiveTrackingFragment.kt`. Storage: `route_points` table (migration 04). Screenshots: `docs/screenshots/geolocation_*.png`. |
 | **Three inheritance hierarchies** | ✅ Shipped + KDoc'd | `Workout.kt` (hierarchy #1), `BaseFragment.kt` (#2), `BaseViewHolder.kt` (#3). Phase-7 bonus: `Goal.kt` (#4). All four carry their inheritance-example KDoc for the report. |
 

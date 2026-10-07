@@ -14,7 +14,7 @@
         android:layout_height="wrap_content"
         android:indeterminate="true"
         android:visibility="gone"
-        app:indicatorColor="@color/lime_deep"
+        app:indicatorColor="@color/text_primary"
         app:layout_constraintTop_toTopOf="parent"
         app:trackColor="@color/surface_container_high"
         tools:visibility="visible" />
@@ -208,7 +208,7 @@
                     android:contentDescription="@string/history_empty_icon_content_description"
                     android:padding="16dp"
                     android:src="@drawable/ic_history_24"
-                    app:tint="@color/lime_deep" />
+                    app:tint="@color/text_primary" />
 
                 <TextView
                     style="@style/TextAppearance.Fitness.HeadlineSm"
@@ -229,6 +229,13 @@
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 
+    <!--
+      Phase 8c step 1 — History FAB reinstated.
+
+      Opens the "Log a workout" sheet. The brief's Step 4 will swap the
+      sheet contents; this FAB is the entry point either way. Required
+      as a visible FloatingActionButton by the assignment brief.
+    -->
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/addWorkoutFab"
         style="@style/Widget.Fitness.FAB"

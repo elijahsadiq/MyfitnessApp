@@ -24,7 +24,7 @@
             android:layout_height="wrap_content"
             android:indeterminate="true"
             android:visibility="gone"
-            app:indicatorColor="@color/lime_deep"
+            app:indicatorColor="@color/text_primary"
             app:trackColor="@color/surface_container_high"
             tools:visibility="visible" />
 

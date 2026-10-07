@@ -190,7 +190,7 @@
                         android:layout_height="wrap_content"
                         android:text="@string/profile_edit_action"
                         android:textAllCaps="false"
-                        android:textColor="@color/lime_deep" />
+                        android:textColor="@color/text_primary" />
                 </LinearLayout>
 
                 <View
@@ -246,7 +246,7 @@
                         android:layout_height="wrap_content"
                         android:text="@string/profile_edit_action"
                         android:textAllCaps="false"
-                        android:textColor="@color/lime_deep" />
+                        android:textColor="@color/text_primary" />
                 </LinearLayout>
 
                 <View
@@ -293,7 +293,7 @@
                         android:layout_height="wrap_content"
                         android:text="@string/profile_edit_action"
                         android:textAllCaps="false"
-                        android:textColor="@color/lime_deep" />
+                        android:textColor="@color/text_primary" />
                 </LinearLayout>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>

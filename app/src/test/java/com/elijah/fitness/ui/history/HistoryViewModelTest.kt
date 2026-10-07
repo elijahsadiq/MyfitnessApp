@@ -6,8 +6,11 @@ import com.elijah.fitness.data.model.RunningWorkout
 import com.elijah.fitness.data.model.StrengthSet
 import com.elijah.fitness.data.model.StrengthWorkout
 import com.elijah.fitness.data.model.Workout
+import com.elijah.fitness.data.repository.WorkoutDeleteCoordinator
 import com.elijah.fitness.data.repository.WorkoutRepository
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -42,7 +45,7 @@ class HistoryViewModelTest {
     @Test
     fun `default filter is ALL and returns every workout`() = runTest {
         val repo = InMemoryTestRepo(fakeWorkouts())
-        val vm = HistoryViewModel(repo)
+        val vm = HistoryViewModel(repo, newDeleteCoordinator(repo))
         val list = vm.workouts.first { it.size == 3 }
         assertEquals(3, list.size)
     }
@@ -50,7 +53,7 @@ class HistoryViewModelTest {
     @Test
     fun `switching filter to RUNNING keeps only running workouts`() = runTest {
         val repo = InMemoryTestRepo(fakeWorkouts())
-        val vm = HistoryViewModel(repo)
+        val vm = HistoryViewModel(repo, newDeleteCoordinator(repo))
         vm.setFilter(HistoryViewModel.Filter.RUNNING)
         val list = vm.workouts.first { list -> list.size == 1 && list[0].type == ActivityType.RUNNING }
         assertTrue(list.all { it.type == ActivityType.RUNNING })
@@ -59,7 +62,7 @@ class HistoryViewModelTest {
     @Test
     fun `switching filter to WEIGHTLIFTING removes running and cycling`() = runTest {
         val repo = InMemoryTestRepo(fakeWorkouts())
-        val vm = HistoryViewModel(repo)
+        val vm = HistoryViewModel(repo, newDeleteCoordinator(repo))
         vm.setFilter(HistoryViewModel.Filter.WEIGHTLIFTING)
         val list = vm.workouts.first { list -> list.size == 1 && list[0].type == ActivityType.WEIGHTLIFTING }
         assertEquals(1, list.size)
@@ -86,6 +89,13 @@ class HistoryViewModelTest {
         )
     )
 
+    private fun newDeleteCoordinator(repo: WorkoutRepository): WorkoutDeleteCoordinator =
+        WorkoutDeleteCoordinator(
+            repository = repo,
+            appScope = CoroutineScope(SupervisorJob() + dispatcher),
+            delayMs = 50L,
+        )
+
     private class InMemoryTestRepo(seed: List<Workout>) : WorkoutRepository {
         private val state = MutableStateFlow(seed)
         override fun observeWorkouts(): Flow<List<Workout>> = state
@@ -106,5 +116,17 @@ class HistoryViewModelTest {
             com.elijah.fitness.data.remote.ApiResult.Error(
                 "not supported in test fake", 404, emptyMap(),
             )
+
+        override suspend fun deleteWorkout(
+            clientUuid: String,
+        ): com.elijah.fitness.data.remote.ApiResult<Unit> {
+            val before = state.value.size
+            state.value = state.value.filterNot { it.id == clientUuid }
+            return if (state.value.size == before) {
+                com.elijah.fitness.data.remote.ApiResult.Error("not found", 404, emptyMap())
+            } else {
+                com.elijah.fitness.data.remote.ApiResult.Success(Unit)
+            }
+        }
     }
 }
