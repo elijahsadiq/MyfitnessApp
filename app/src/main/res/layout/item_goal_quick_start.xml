@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  One Quick Start row (phase 8b step 8). Icon tile + title/subtitle on
+  the left, a small "+" chevron on the right. Opens the New Goal screen
+  pre-filled with the suggestion.
+-->
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/goalQuickStartCard"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginHorizontal="@dimen/screen_margin"
+    android:layout_marginBottom="10dp"
+    android:background="?attr/selectableItemBackground"
+    app:cardBackgroundColor="@color/surface_white"
+    app:cardCornerRadius="@dimen/radius_row"
+    app:cardElevation="0dp"
+    app:contentPaddingLeft="16dp"
+    app:contentPaddingRight="16dp"
+    app:contentPaddingTop="14dp"
+    app:contentPaddingBottom="14dp"
+    app:strokeColor="@color/divider"
+    app:strokeWidth="@dimen/stroke_hairline">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <FrameLayout
+            android:layout_width="@dimen/icon_tile_size"
+            android:layout_height="@dimen/icon_tile_size"
+            android:background="@drawable/bg_icon_tile">
+
+            <ImageView
+                android:id="@+id/goalQuickStartIcon"
+                android:layout_width="22dp"
+                android:layout_height="22dp"
+                android:layout_gravity="center"
+                android:contentDescription="@string/goals_row_icon_content_description"
+                app:tint="@color/text_primary"
+                tools:src="@drawable/ic_run_24" />
+        </FrameLayout>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/space_md"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/goalQuickStartTitle"
+                style="@style/TextAppearance.Fitness.BodyLg"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:textColor="@color/text_primary"
+                android:textStyle="bold"
+                tools:text="Run 20 km in 14 days" />
+
+            <TextView
+                android:id="@+id/goalQuickStartSubtitle"
+                style="@style/TextAppearance.Fitness.LabelMd"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:textAllCaps="false"
+                android:textColor="@color/text_secondary"
+                tools:text="About 1.4 km a day" />
+        </LinearLayout>
+
+        <ImageView
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:layout_marginStart="@dimen/space_sm"
+            android:contentDescription="@string/goals_quick_start_cta_content_description"
+            android:src="@drawable/ic_add_24"
+            app:tint="@color/text_primary" />
+    </LinearLayout>
+</com.google.android.material.card.MaterialCardView>

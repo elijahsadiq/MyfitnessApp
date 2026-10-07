@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Empty-state hero card (phase 8b step 8). Dark 26dp card with a lime
+  72dp target icon tile, "Set your first goal" headline, body copy, and
+  a full-width "Create a goal" lime pill button.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/goalEmptyHeroRoot"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginHorizontal="@dimen/screen_margin"
+    android:layout_marginTop="@dimen/space_xl"
+    android:background="@drawable/bg_goal_main_card_bg"
+    android:gravity="center_horizontal"
+    android:orientation="vertical"
+    android:paddingHorizontal="24dp"
+    android:paddingVertical="32dp">
+
+    <FrameLayout
+        android:layout_width="72dp"
+        android:layout_height="72dp"
+        android:background="@drawable/bg_goal_empty_hero_icon">
+
+        <ImageView
+            android:layout_width="34dp"
+            android:layout_height="34dp"
+            android:layout_gravity="center"
+            android:contentDescription="@null"
+            android:src="@drawable/ic_target_24"
+            app:tint="@color/text_on_lime" />
+    </FrameLayout>
+
+    <TextView
+        android:id="@+id/goalEmptyHeroTitle"
+        style="@style/TextAppearance.Fitness.HeadlineSm"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="14dp"
+        android:gravity="center"
+        android:text="@string/goals_empty_hero_title"
+        android:textColor="@color/text_on_dark"
+        android:textSize="22sp" />
+
+    <TextView
+        style="@style/TextAppearance.Fitness.BodyMd"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="14dp"
+        android:gravity="center"
+        android:text="@string/goals_empty_hero_body"
+        android:textColor="@color/goal_main_muted" />
+
+    <TextView
+        android:id="@+id/goalEmptyHeroCta"
+        style="@style/TextAppearance.Fitness.LabelMd"
+        android:layout_width="match_parent"
+        android:layout_height="52dp"
+        android:layout_marginTop="20dp"
+        android:background="@drawable/bg_goal_new_pill"
+        android:clickable="true"
+        android:focusable="true"
+        android:gravity="center"
+        android:text="@string/goals_empty_hero_cta"
+        android:textAllCaps="false"
+        android:textColor="@color/text_on_lime"
+        android:textSize="15sp"
+        android:textStyle="bold" />
+</LinearLayout>

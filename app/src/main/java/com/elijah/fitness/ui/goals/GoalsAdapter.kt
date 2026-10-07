@@ -14,8 +14,10 @@ import com.elijah.fitness.data.model.GoalWithProgress
 import com.elijah.fitness.data.remote.mapper.goalType
 import com.elijah.fitness.databinding.ItemGoalActiveBinding
 import com.elijah.fitness.databinding.ItemGoalCompletedBinding
+import com.elijah.fitness.databinding.ItemGoalEmptyHeroBinding
 import com.elijah.fitness.databinding.ItemGoalEndedBinding
 import com.elijah.fitness.databinding.ItemGoalMainCardBinding
+import com.elijah.fitness.databinding.ItemGoalQuickStartBinding
 import com.elijah.fitness.databinding.ItemGoalsHeaderBinding
 import com.elijah.fitness.databinding.ItemGoalsSectionHeaderBinding
 import com.elijah.fitness.ui.base.BaseViewHolder
@@ -42,6 +44,8 @@ class GoalsAdapter(
     private val onGoalTap: (GoalWithProgress) -> Unit,
     private val onNewGoalTap: () -> Unit,
     private val onTryAgainTap: (GoalWithProgress) -> Unit,
+    private val onEmptyHeroCta: () -> Unit,
+    private val onQuickStartTap: (GoalSuggestion) -> Unit,
 ) : ListAdapter<GoalListItem, RecyclerView.ViewHolder>(GoalListItemDiff) {
 
     override fun getItemViewType(position: Int): Int = when (getItem(position)) {
@@ -51,6 +55,8 @@ class GoalsAdapter(
         is GoalListItem.Active -> VIEW_TYPE_ACTIVE
         is GoalListItem.Completed -> VIEW_TYPE_COMPLETED
         is GoalListItem.Ended -> VIEW_TYPE_ENDED
+        GoalListItem.EmptyHeroCard -> VIEW_TYPE_EMPTY_HERO
+        is GoalListItem.QuickStart -> VIEW_TYPE_QUICK_START
     }
 
     override fun onCreateViewHolder(
@@ -79,6 +85,12 @@ class GoalsAdapter(
             VIEW_TYPE_ENDED -> EndedGoalViewHolder(
                 ItemGoalEndedBinding.inflate(inflater, parent, false), onGoalTap, onTryAgainTap,
             )
+            VIEW_TYPE_EMPTY_HERO -> EmptyHeroViewHolder(
+                ItemGoalEmptyHeroBinding.inflate(inflater, parent, false), onEmptyHeroCta,
+            )
+            VIEW_TYPE_QUICK_START -> QuickStartViewHolder(
+                ItemGoalQuickStartBinding.inflate(inflater, parent, false), onQuickStartTap,
+            )
             else -> error("Unknown view type $viewType")
         }
     }
@@ -91,6 +103,9 @@ class GoalsAdapter(
             is GoalListItem.Active -> (holder as ActiveGoalViewHolder).bind(item)
             is GoalListItem.Completed -> (holder as CompletedGoalViewHolder).bind(item)
             is GoalListItem.Ended -> (holder as EndedGoalViewHolder).bind(item)
+            GoalListItem.EmptyHeroCard ->
+                (holder as EmptyHeroViewHolder).bind(GoalListItem.EmptyHeroCard)
+            is GoalListItem.QuickStart -> (holder as QuickStartViewHolder).bind(item)
         }
     }
 
@@ -101,6 +116,8 @@ class GoalsAdapter(
         private const val VIEW_TYPE_ACTIVE = 3
         private const val VIEW_TYPE_COMPLETED = 4
         private const val VIEW_TYPE_ENDED = 5
+        private const val VIEW_TYPE_EMPTY_HERO = 6
+        private const val VIEW_TYPE_QUICK_START = 7
     }
 }
 
@@ -119,6 +136,9 @@ private object GoalListItemDiff : DiffUtil.ItemCallback<GoalListItem>() {
                 oldItem.goal.goal.id == newItem.goal.goal.id
             oldItem is GoalListItem.SectionHeader && newItem is GoalListItem.SectionHeader ->
                 oldItem.labelRes == newItem.labelRes
+            oldItem is GoalListItem.EmptyHeroCard && newItem is GoalListItem.EmptyHeroCard -> true
+            oldItem is GoalListItem.QuickStart && newItem is GoalListItem.QuickStart ->
+                oldItem.suggestion.id == newItem.suggestion.id
             else -> false
         }
 
@@ -267,6 +287,31 @@ class CompletedGoalViewHolder(
             GoalFormatters.unitLabel(ctx, type),
         )
         binding.completedCard.setOnClickListener { onGoalTap(gwp) }
+    }
+}
+
+class EmptyHeroViewHolder(
+    private val binding: ItemGoalEmptyHeroBinding,
+    private val onCta: () -> Unit,
+) : BaseViewHolder<GoalListItem.EmptyHeroCard>(binding) {
+    override fun bind(item: GoalListItem.EmptyHeroCard) {
+        binding.goalEmptyHeroCta.setOnClickListener { onCta() }
+    }
+}
+
+class QuickStartViewHolder(
+    private val binding: ItemGoalQuickStartBinding,
+    private val onTap: (GoalSuggestion) -> Unit,
+) : BaseViewHolder<GoalListItem.QuickStart>(binding) {
+    override fun bind(item: GoalListItem.QuickStart) {
+        val ctx = binding.root.context
+        val s = item.suggestion
+        binding.goalQuickStartIcon.setImageResource(
+            GoalFormatters.iconRes(s.activity.toApi(), s.metric)
+        )
+        binding.goalQuickStartTitle.setText(s.titleRes)
+        binding.goalQuickStartSubtitle.text = ctx.getString(s.subtitleRes, s.subtitleArg)
+        binding.goalQuickStartCard.setOnClickListener { onTap(s) }
     }
 }
 

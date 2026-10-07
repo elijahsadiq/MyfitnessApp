@@ -167,7 +167,20 @@ class GoalsViewModel(
     }
 
     private fun buildItems(all: List<GoalWithProgress>): List<GoalListItem> {
-        if (all.isEmpty()) return emptyList()
+        if (all.isEmpty()) {
+            // Phase-8b step 8: Header + dark hero card + "Quick start"
+            // section with three pre-filled suggestions. The list carries
+            // the full empty-state composition so the fragment is a single
+            // RecyclerView — no visibility-toggled sibling view.
+            return buildList {
+                add(GoalListItem.Header(activeCount = 0, completedCount = 0))
+                add(GoalListItem.EmptyHeroCard)
+                add(GoalListItem.SectionHeader(
+                    labelRes = R.string.goals_quick_start_title,
+                ))
+                GoalSuggestion.DEFAULTS.forEach { add(GoalListItem.QuickStart(it)) }
+            }
+        }
 
         val active = all.filter { it.isActive }
         val completed = all.filter { it.isCompleted }

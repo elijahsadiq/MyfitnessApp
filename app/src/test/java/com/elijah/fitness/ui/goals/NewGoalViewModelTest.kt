@@ -183,6 +183,30 @@ class NewGoalViewModelTest {
         assertEquals("Lift 10,000 kg in 30 days", repo.lastCreatedTitle)
     }
 
+    // --------- Pre-fill (create mode with suggested seed) ---------
+
+    @Test
+    fun `pre-fill UiState hydrates activity, metric, target and days`() {
+        val vm = NewGoalViewModel(
+            repository = FakeGoalRepo(),
+            editingGoalId = null,
+            initial = NewGoalViewModel.UiState(
+                activity = NewGoalViewModel.ActivityOption.RIDE,
+                metric = GoalType.DISTANCE,
+                target = 100,
+                days = 30,
+            ),
+            clock = clock,
+            zone = ZoneOffset.UTC,
+        )
+        val s = vm.uiState.value
+        assertEquals(null, s.editingGoalId)
+        assertEquals(NewGoalViewModel.ActivityOption.RIDE, s.activity)
+        assertEquals(GoalType.DISTANCE, s.metric)
+        assertEquals(100, s.target)
+        assertEquals(30, s.days)
+    }
+
     // --------- Edit mode ---------
 
     @Test

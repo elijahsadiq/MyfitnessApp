@@ -197,6 +197,20 @@
     <string name="goals_error_load_failed">Couldn\'t load your goals.</string>
     <string name="goals_retry">Retry</string>
 
+    <!-- Empty state hero card (phase 8b step 8) -->
+    <string name="goals_empty_hero_title">Set your first goal</string>
+    <string name="goals_empty_hero_body">Pick an activity, choose how many kilometres or minutes, and give yourself a number of days. Your workouts count towards it automatically.</string>
+    <string name="goals_empty_hero_cta">Create a goal</string>
+
+    <!-- Quick start section (phase 8b step 8) -->
+    <string name="goals_quick_start_title">Quick start</string>
+    <string name="goals_quick_start_run_title">Run 20 km in 14 days</string>
+    <string name="goals_quick_start_ride_title">Ride 100 km in 30 days</string>
+    <string name="goals_quick_start_lift_title">Train 150 min in 7 days</string>
+    <string name="goals_quick_start_subtitle_distance">About %1$s km a day</string>
+    <string name="goals_quick_start_subtitle_time">About %1$s min a day</string>
+    <string name="goals_quick_start_cta_content_description">Create this goal</string>
+
     <!-- Manage goal bottom sheet (phase 8b step 7) -->
     <string name="manage_goal_sheet_title">Manage goal</string>
     <string name="manage_goal_close_content_description">Close</string>

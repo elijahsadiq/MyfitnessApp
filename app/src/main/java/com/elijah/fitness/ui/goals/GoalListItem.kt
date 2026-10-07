@@ -48,4 +48,17 @@ sealed interface GoalListItem {
      * `N of M units` so the user still sees how close they got.
      */
     data class Ended(val goal: GoalWithProgress) : GoalListItem
+
+    /**
+     * Empty-state hero card (phase 8b step 8). Rendered once below the
+     * header when the user has no goals at all. Taps the dark card's
+     * "Create a goal" pill to open the New Goal screen blank.
+     */
+    data object EmptyHeroCard : GoalListItem
+
+    /**
+     * Quick Start row — pre-filled New Goal suggestion. Only rendered
+     * in the empty-state composition.
+     */
+    data class QuickStart(val suggestion: GoalSuggestion) : GoalListItem
 }

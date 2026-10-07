@@ -15,6 +15,7 @@ import com.elijah.fitness.FitnessApp
 import com.elijah.fitness.R
 import com.elijah.fitness.data.model.Goal
 import com.elijah.fitness.data.model.GoalWithProgress
+import com.elijah.fitness.data.remote.mapper.goalType
 import com.elijah.fitness.databinding.FragmentGoalsBinding
 import com.elijah.fitness.ui.base.BaseFragment
 import com.google.android.material.snackbar.Snackbar
@@ -36,6 +37,8 @@ class GoalsFragment : BaseFragment<FragmentGoalsBinding>() {
         onGoalTap = ::onGoalTap,
         onNewGoalTap = ::openNewGoalSheet,
         onTryAgainTap = ::onTryAgainTap,
+        onEmptyHeroCta = ::openNewGoalSheet,
+        onQuickStartTap = ::openQuickStart,
     )
 
     override fun inflateBinding(
@@ -63,8 +66,6 @@ class GoalsFragment : BaseFragment<FragmentGoalsBinding>() {
 
         binding.goalsList.layoutManager = LinearLayoutManager(requireContext())
         binding.goalsList.adapter = adapter
-
-        binding.newGoalEmptyButton.setOnClickListener { openNewGoalSheet() }
 
         parentFragmentManager.setFragmentResultListener(
             GoalActionsBottomSheet.FRAGMENT_RESULT_KEY, viewLifecycleOwner,
@@ -101,15 +102,13 @@ class GoalsFragment : BaseFragment<FragmentGoalsBinding>() {
         }
 
         collectOnStart(viewModel.items) { items ->
+            // Phase-8b step 8: the list itself now carries the empty-state
+            // composition (Header + dark hero card + Quick Start rows), so
+            // the fragment no longer toggles a sibling view's visibility.
             adapter.submitList(items)
-            val hasContent = items.isNotEmpty()
-            binding.goalsList.isVisible = hasContent
-            binding.goalsEmptyState.isVisible =
-                !hasContent && !viewModel.isLoading.value
         }
         collectOnStart(viewModel.isLoading) { loading ->
             binding.goalsLoadingBar.isVisible = loading
-            if (loading) binding.goalsEmptyState.isVisible = false
         }
         collectOnStart(viewModel.errorEvents) { event ->
             when (event) {
@@ -128,17 +127,37 @@ class GoalsFragment : BaseFragment<FragmentGoalsBinding>() {
         )
     }
 
+    private fun openQuickStart(suggestion: GoalSuggestion) {
+        findNavController().navigate(
+            R.id.action_goals_to_new_goal,
+            NewGoalFragment.argsFor(
+                prefillActivity = suggestion.activity,
+                prefillMetric = suggestion.metric,
+                prefillTarget = suggestion.target,
+                prefillDays = suggestion.days,
+            ),
+        )
+    }
+
     private fun onGoalTap(goal: GoalWithProgress) {
         GoalActionsBottomSheet.newInstance(goal.goal.id)
             .show(parentFragmentManager, "goal_actions")
     }
 
     private fun onTryAgainTap(goal: GoalWithProgress) {
-        // Phase-8b Step 6: "Try again" opens a fresh New Goal screen. Pre-
-        // fill from the ended goal is a stretch that doesn't belong here —
-        // the user still gets the right activity-type stepper defaults the
-        // moment they re-pick the activity, so the extra taps are small.
-        openNewGoalSheet()
+        // Phase-8b step 8: pre-fill the New Goal screen from the ended
+        // goal so one tap gives the user the same activity/metric/target
+        // in a fresh window. The start date is deliberately NOT carried
+        // across — "Try again" means a new goal with today as day 1.
+        findNavController().navigate(
+            R.id.action_goals_to_new_goal,
+            NewGoalFragment.argsFor(
+                prefillActivity = NewGoalViewModel.ActivityOption.fromApi(goal.goal.activityType),
+                prefillMetric = goal.goal.goalType(),
+                prefillTarget = goal.goal.targetValue.toInt().coerceAtLeast(1),
+                prefillDays = goal.goal.durationDays,
+            ),
+        )
     }
 
     private fun onEditRequested(goalId: String) {

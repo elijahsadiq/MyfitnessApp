@@ -54,9 +54,22 @@ class GoalsViewModelTest {
     private val clock = Clock.fixed(now, ZoneOffset.UTC)
 
     @Test
-    fun `empty goals yields an empty list (fragment renders empty state)`() = runTest {
+    fun `empty goals yields the empty-state composition (header + hero + quick start)`() = runTest {
         val vm = viewModelWith(goals = emptyList(), workouts = emptyList())
-        assertTrue(collectItems(vm).isEmpty())
+        val items = collectItems(vm)
+        // Header + EmptyHeroCard + SectionHeader("Quick start") + 3 QuickStart rows
+        assertEquals(6, items.size)
+        assertTrue(items[0] is GoalListItem.Header)
+        assertEquals(0, (items[0] as GoalListItem.Header).activeCount)
+        assertEquals(0, (items[0] as GoalListItem.Header).completedCount)
+        assertTrue(items[1] is GoalListItem.EmptyHeroCard)
+        assertTrue(items[2] is GoalListItem.SectionHeader)
+        assertEquals(R.string.goals_quick_start_title,
+            (items[2] as GoalListItem.SectionHeader).labelRes)
+        assertTrue(items.subList(3, 6).all { it is GoalListItem.QuickStart })
+        // Order matches GoalSuggestion.DEFAULTS.
+        val ids = items.filterIsInstance<GoalListItem.QuickStart>().map { it.suggestion.id }
+        assertEquals(GoalSuggestion.DEFAULTS.map { it.id }, ids)
     }
 
     @Test

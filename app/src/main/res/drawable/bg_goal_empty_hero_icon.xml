@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 72dp lime icon tile at the top of the empty-state hero card. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="@color/lime_accent" />
+    <corners android:radius="22dp" />
+</shape>

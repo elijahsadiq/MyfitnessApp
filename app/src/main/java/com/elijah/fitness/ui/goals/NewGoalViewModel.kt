@@ -53,6 +53,13 @@ import java.time.ZoneId
 class NewGoalViewModel(
     private val repository: GoalRepository,
     editingGoalId: String? = null,
+    /**
+     * Phase-8b step 8: optional seed for a *create* flow. Lets the Quick
+     * Start rows + Ended-row "Try again" open the New Goal screen with
+     * fields already filled in. Ignored when [editingGoalId] is set
+     * (edit mode seeds from the stored goal instead).
+     */
+    initial: UiState? = null,
     private val clock: Clock = Clock.systemDefaultZone(),
     private val zone: ZoneId = ZoneId.systemDefault(),
 ) : ViewModel() {
@@ -113,7 +120,9 @@ class NewGoalViewModel(
         data class ShowError(@StringRes val messageRes: Int) : Event
     }
 
-    private val _uiState = MutableStateFlow(UiState(editingGoalId = editingGoalId))
+    private val _uiState = MutableStateFlow(
+        initial?.copy(editingGoalId = editingGoalId) ?: UiState(editingGoalId = editingGoalId)
+    )
     val uiState: StateFlow<UiState> = _uiState.asStateFlow()
 
     private val _events = Channel<Event>(Channel.BUFFERED)
@@ -307,11 +316,13 @@ class NewGoalViewModel(
         fun factory(
             container: AppContainer,
             editingGoalId: String?,
+            initial: UiState? = null,
         ): ViewModelProvider.Factory = viewModelFactory {
             initializer {
                 NewGoalViewModel(
                     repository = container.goalRepository,
                     editingGoalId = editingGoalId,
+                    initial = initial,
                 )
             }
         }

@@ -56,6 +56,29 @@ class NewGoalFragment : BaseFragment<FragmentNewGoalBinding>() {
         NewGoalViewModel.factory(
             container = (requireContext().applicationContext as FitnessApp).container,
             editingGoalId = arguments?.getString(ARG_GOAL_ID),
+            initial = buildInitialFromArgs(),
+        )
+    }
+
+    /**
+     * Phase-8b step 8: optional pre-fill from Quick Start / "Try again".
+     * Returns `null` when no prefill args are present so the VM falls
+     * back to its own defaults.
+     */
+    private fun buildInitialFromArgs(): NewGoalViewModel.UiState? {
+        val a = arguments ?: return null
+        val activity = a.getString(ARG_PREFILL_ACTIVITY)?.let {
+            NewGoalViewModel.ActivityOption.valueOf(it)
+        } ?: return null
+        val metric = a.getString(ARG_PREFILL_METRIC)?.let { GoalType.valueOf(it) }
+            ?: return null
+        val target = a.getInt(ARG_PREFILL_TARGET, -1).takeIf { it > 0 } ?: return null
+        val days = a.getInt(ARG_PREFILL_DAYS, -1).takeIf { it > 0 } ?: return null
+        return NewGoalViewModel.UiState(
+            activity = activity,
+            metric = metric,
+            target = target,
+            days = days,
         )
     }
 
@@ -473,10 +496,28 @@ class NewGoalFragment : BaseFragment<FragmentNewGoalBinding>() {
         const val RESULT_SAVED_KEY = "saved"
 
         internal const val ARG_GOAL_ID = "goal_id"
+        internal const val ARG_PREFILL_ACTIVITY = "prefill_activity"
+        internal const val ARG_PREFILL_METRIC = "prefill_metric"
+        internal const val ARG_PREFILL_TARGET = "prefill_target"
+        internal const val ARG_PREFILL_DAYS = "prefill_days"
 
-        /** Factory + argument plumbing so the fragment is driver-agnostic. */
-        fun argsFor(goalId: String?): Bundle = Bundle().apply {
+        /**
+         * Build the fragment's argument bundle. Edit mode: pass [goalId].
+         * Create mode: pass the four optional pre-fill fields together (or
+         * none at all). Mixing modes isn't meaningful — edit always wins.
+         */
+        fun argsFor(
+            goalId: String? = null,
+            prefillActivity: NewGoalViewModel.ActivityOption? = null,
+            prefillMetric: GoalType? = null,
+            prefillTarget: Int? = null,
+            prefillDays: Int? = null,
+        ): Bundle = Bundle().apply {
             goalId?.let { putString(ARG_GOAL_ID, it) }
+            prefillActivity?.let { putString(ARG_PREFILL_ACTIVITY, it.name) }
+            prefillMetric?.let { putString(ARG_PREFILL_METRIC, it.name) }
+            prefillTarget?.let { putInt(ARG_PREFILL_TARGET, it) }
+            prefillDays?.let { putInt(ARG_PREFILL_DAYS, it) }
         }
     }
 }

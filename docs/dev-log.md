@@ -1876,3 +1876,43 @@ Would have avoided the `ManageGoalViewModel` entirely. Rejected because the snap
 **Assignment task supported**
 - **Task 2a (UI implementation)** — Manage sheet matches the design pixel-for-pixel; the delete-confirm dialog is a custom-view fragment inside an `AlertDialog` so it also matches without compromise.
 - **Task 4 (development)** — the four-action Manage sheet + custom confirm dialog + extend/make-main surfaces are the full "manage a goal" story the brief weights.
+
+## Step 8 — Empty state (Empty.dc.html) + Quick Start pre-fill
+
+Rebuilt the empty Goals screen to match `Empty.dc.html` — the dark hero card + three Quick Start suggestions — and added true pre-fill for the New Goal screen so Quick Start taps and the Ended-row "Try again" button both open with the right activity, metric, target and days already filled.
+
+**Built**
+- **`ui/goals/GoalSuggestion.kt`** — new data class carrying the three Quick Start presets straight from the design: Run 20 km in 14 days (RUN + DISTANCE), Ride 100 km in 30 days (RIDE + DISTANCE), Train 150 min in 7 days (LIFT + DURATION). Each suggestion holds its own `titleRes` + subtitle template so the per-day figure ("About 1.4 km a day", "About 21 min a day") can be formatted via `getString` without a Kotlin branch.
+- **`GoalListItem` variants** — added `EmptyHeroCard` (singleton `data object`) and `QuickStart(suggestion: GoalSuggestion)`. DiffUtil compares EmptyHeroCard by identity and QuickStart by `suggestion.id`.
+- **`GoalsViewModel.buildItems`** — the empty branch now returns the full empty-state composition instead of `emptyList()`:
+  `Header(0, 0)` + `EmptyHeroCard` + `SectionHeader("Quick start")` + three `QuickStart` rows. The non-empty path is unchanged.
+- **`GoalsAdapter`** — added two view types (`VIEW_TYPE_EMPTY_HERO`, `VIEW_TYPE_QUICK_START`) and two matching `BaseViewHolder` subclasses. Both are wired to adapter-level callbacks: `onEmptyHeroCta` opens a blank New Goal, `onQuickStartTap(suggestion)` opens it pre-filled.
+- **Layouts + drawables**:
+  - `item_goal_empty_hero.xml` — dark 26dp card, lime 72dp `bg_goal_empty_hero_icon` tile, headline, body, full-width lime "Create a goal" pill.
+  - `item_goal_quick_start.xml` — white 20dp-radius card with activity icon tile · title + "About X unit a day" subtitle · trailing `+` glyph.
+  - New vector: `ic_target_24` for the lime hero tile.
+- **`fragment_goals.xml`** — deleted the sibling `goalsEmptyState` `LinearLayout` + its `newGoalEmptyButton`. The RecyclerView fills the screen; everything renders from the list.
+- **`ui/goals/GoalsFragment.kt`** — removed empty-state visibility toggling. New callbacks `onEmptyHeroCta` and `onQuickStartTap` navigate to `newGoalFragment` with pre-fill args. The "Try again" handler on an ended row now actually pre-fills from the ended goal (activity, metric, target, days — not startDate; "try again" starts today).
+- **`NewGoalFragment` + `NewGoalViewModel` pre-fill plumbing**:
+  - `argsFor()` gains four optional parameters: `prefillActivity`, `prefillMetric`, `prefillTarget`, `prefillDays`. All-or-nothing; if any one is missing the fragment falls back to the ViewModel's own defaults.
+  - `NewGoalFragment.buildInitialFromArgs()` turns those args into a seed `UiState` and passes it to the ViewModel factory.
+  - `NewGoalViewModel` accepts an optional `initial: UiState?` constructor arg; when present (and `editingGoalId == null`), it seeds the starting state. Edit mode still wins so the two modes don't collide.
+
+**Updated tests**
+- `GoalsViewModelTest.empty goals yields the empty-state composition` — replaces the old "empty list" assertion. Verifies the exact six-row sequence and that the three Quick Start rows match `GoalSuggestion.DEFAULTS` in order.
+- `NewGoalViewModelTest.pre-fill UiState hydrates activity, metric, target and days` — new test verifying the create-mode seed hydrates every state field.
+
+**Key design decision — the empty state is a list, not a sibling view**
+Keeping the empty state inside the RecyclerView preserves the single-list architecture introduced in Step 5. Any "snap in" visual transition between empty and populated states uses DiffUtil's normal animations instead of a sudden view swap. It also means the "+ New goal" header pill is in the same place in both states (because it's `GoalListItem.Header`), so returning from Create → list doesn't shift the user's thumb target.
+
+**Kotlin/Android concepts** *(for my notes)*
+- `data object` in a sealed interface: used for `EmptyHeroCard` so DiffUtil can match a singleton without a bespoke equality check. The `when` branch binds via `GoalListItem.EmptyHeroCard -> …` (identity match) rather than a smart cast — which is why `bind(item)` had to be replaced with `bind(GoalListItem.EmptyHeroCard)` to satisfy the compiler.
+- `argsFor(...)` with four nullable prefill parameters: the pattern is "all four or none" and the fragment's `buildInitialFromArgs()` returns `null` on any missing field, so a stray `prefillTarget = 50` without the other three can't ship broken state to the VM.
+
+**Verified**
+- `./gradlew assembleDebug` — BUILD SUCCESSFUL.
+- `./gradlew testCloudDebugUnitTest` — BUILD SUCCESSFUL (all unit tests pass).
+
+**Assignment task supported**
+- **Task 2a (UI implementation)** — empty state matches `Empty.dc.html` exactly, with the Quick Start suggestions and the dark hero card.
+- **Task 4 (development)** — Quick Start → New Goal pre-fill is a nice "end-to-end thought" story for the report: data flows from a const list → Fragment-Result-less adapter callback → navigation args → ViewModel seed → UI render.
