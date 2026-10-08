@@ -41,15 +41,19 @@ class LiveTrackingViewModel(
     val events: Flow<Event> = _events.receiveAsFlow()
 
     sealed interface Event {
-        /** The workout went to the server; the fragment should pop with a snackbar. */
-        data object Saved : Event
+        /**
+         * The workout went to the server; the fragment navigates straight
+         * to the finished-workout screen for [clientUuid] (phase 8c step
+         * 6 — notes are edited there, not here).
+         */
+        data class Saved(val clientUuid: String) : Event
         /** Save failed; the fragment keeps the data on screen with a Retry. */
         data object SaveFailed : Event
         /** The user cancelled a stopped session; discard the state and pop. */
         data object Discarded : Event
     }
 
-    fun save(notes: String) {
+    fun save(notes: String = "") {
         if (_isSaving.value) return
         val state = trackingState.value
         _isSaving.value = true
@@ -60,7 +64,7 @@ class LiveTrackingViewModel(
             when (result) {
                 is ApiResult.Success -> {
                     container.trackingSession.reset()
-                    _events.send(Event.Saved)
+                    _events.send(Event.Saved(workout.id))
                 }
                 is ApiResult.Error,
                 ApiResult.NetworkError -> _events.send(Event.SaveFailed)

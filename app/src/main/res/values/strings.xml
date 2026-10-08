@@ -484,6 +484,28 @@
     <!-- Phase 8c step 3 — OpenStreetMap attribution (required by the tile licence) -->
     <string name="map_attribution_osm">© OpenStreetMap contributors</string>
 
+    <!-- Phase 8c step 6 — Live tracking screen rebuild -->
+    <string name="tracking_minimise_content_description">Minimise tracking</string>
+    <string name="tracking_recenter_content_description">Centre map on my location</string>
+    <string name="tracking_elapsed_eyebrow_run">Running · elapsed</string>
+    <string name="tracking_elapsed_eyebrow_ride">Cycling · elapsed</string>
+    <string name="tracking_stat_distance">Distance</string>
+    <string name="tracking_stat_pace">Pace</string>
+    <string name="tracking_stat_speed">Speed</string>
+    <string name="tracking_stat_calories">Calories</string>
+    <string name="tracking_unit_km">km</string>
+    <string name="tracking_unit_pace_slash_km">/km</string>
+    <string name="tracking_unit_kmh">km/h</string>
+    <string name="tracking_unit_kcal">kcal</string>
+    <string name="tracking_control_finish">Finish</string>
+    <string name="tracking_control_pause">Pause</string>
+    <string name="tracking_control_resume">Resume</string>
+    <string name="tracking_control_lock">Lock</string>
+    <string name="tracking_locked_hint">Hold to unlock</string>
+    <string name="tracking_paused_pill">Paused</string>
+    <string name="tracking_lock_content_description">Lock screen</string>
+    <string name="tracking_finish_content_description">Finish workout</string>
+
     <!-- History screen -->
     <string name="history_headline">History</string>
     <string name="history_momentum_eyebrow">Weekly momentum</string>

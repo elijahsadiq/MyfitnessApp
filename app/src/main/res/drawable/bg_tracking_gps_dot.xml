@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 8dp coloured dot inside the GPS status pill. The tint is set from code
+     (lime for Strong, muted for Searching/Paused, red for Weak). -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="oval">
+    <solid android:color="@color/lime_accent" />
+</shape>

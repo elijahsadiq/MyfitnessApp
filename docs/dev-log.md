@@ -2231,3 +2231,54 @@ Suggested screenshots: `log-manual-run-empty.png`, `log-manual-run-filled.png`, 
 **Assignment task supported**
 - **Task 2a (UI implementation)** — manual form matches `LogRun.dc.html` with the dark live-summary card and the big centred duration/distance fields.
 - **Task 4 (development)** — the calorie integration ties the manual-log preview to the shared `Workout.caloriesBurned` formula + real profile weight; the pure-Kotlin summary calculator is a clean unit-tested piece of domain logic for the report.
+
+## Phase 8c — Step 6: Live tracking screen (Tracking.dc.html)
+
+**Built**
+- **`fragment_live_tracking.xml`** rebuilt as a `FrameLayout` with four stacked layers (map / top overlay / re-centre button / bottom panel) plus a fifth Lock overlay on top. The map fills the whole window; the top row and the bottom panel receive their system-bar insets independently so the map draws edge-to-edge behind both.
+- **Dark bottom panel**: 28dp top-radius `#121411` with a `#23271F` 1dp top border; drag handle, "Running · elapsed" / "Cycling · elapsed" eyebrow, 58sp elapsed timer with `android:fontFeatureSettings="tnum"` so the digits don't jitter, three stat columns (Distance, Pace / Speed in lime, Calories), three controls (Finish 60dp dark circle, Pause/Resume 84dp lime circle, Lock 60dp dark circle).
+- **`LiveTrackingFragment`** rewritten end-to-end:
+  - Edge-to-edge insets split per-layer: status-bar inset lands on the top overlay, nav-bar inset lands on the panel.
+  - **GPS status pill** swaps text between "Searching" / "GPS strong" / "GPS weak" / "Paused" from `TrackingState`; the 8dp dot's `backgroundTintList` flips lime / muted / red to match.
+  - **Pause/Resume button** swaps the icon between `ic_pause_24` (two bars) and `ic_play_triangle_24` as the status toggles. The brief's "never a plus" rule is honoured.
+  - **Minimise** → `findNavController().popBackStack()`; the service + session + ongoing notification keep running. Returning via Home → Start workout re-triggers the one-session-at-a-time guard from Step 4 and lands you back here.
+  - **Re-centre button** → `mapCamera.followCurrent(true)` + pan to the latest fix. The Step-3 `MapCameraController` disables follow mode when the user drags; the button turns it back on.
+  - **Finish** → confirm dialog (same copy as Phase 8a) → stops the service, then `viewModel.save()`. On success `Event.Saved(clientUuid)` navigates straight to `workoutDetailFragment` via the new `action_live_tracking_to_detail`.
+  - **Lock overlay**: an `isLocked` boolean flips the overlay `View.VISIBLE`; a hold-to-unlock `OnTouchListener` on the lock pill drives a `Handler.postDelayed` loop ticking every 16 ms, feeding a `LinearProgressIndicator` with `max=1000`. Reaching the 1 000 ms threshold calls `exitLock()`. `ACTION_UP` / `ACTION_CANCEL` cancels the loop. Both the overlay and the inner pill are `clickable + focusable` so stray taps are swallowed.
+  - **Back-gesture block** while locked: a disabled `OnBackPressedCallback` is registered in `onViewCreated`; `enterLock()` enables it, `exitLock()` disables it. When enabled, `handleOnBackPressed()` is a no-op so Android's dispatcher doesn't fall through to the fragment's pop.
+  - `FLAG_KEEP_SCREEN_ON` set on `onViewCreated` and cleared on `onDestroyView`.
+- **`LiveTrackingViewModel`**:
+  - `Event.Saved` is now `data class Saved(val clientUuid: String)` — same pattern Step 5 followed, so both save paths route to the detail screen for the just-saved workout.
+  - `save(notes = "")` default argument so Finish can call it without an argument; the brief's Step 6 removes the save-mode notes field from this screen (notes are edited later on the detail screen).
+- **Nav graph**: `liveTrackingFragment` gains `action_live_tracking_to_detail` pointing at `workoutDetailFragment` with `popUpTo=workoutHistoryFragment`.
+- **Design tokens**: `bg_tracking_overlay_pill` (88 %-alpha dark pill with 1dp `#2E332B` border), `bg_tracking_panel`, `bg_tracking_panel_handle`, `bg_tracking_panel_button`, `bg_tracking_pause_button`, `bg_tracking_gps_dot`. New vectors: `ic_pause_24`, `ic_play_triangle_24`, `ic_stop_square_24`, `ic_chevron_down_24`, `ic_crosshair_24`.
+- **Strings**: full `tracking_*` block for the new UI copy (status pill, elapsed eyebrow, three stat labels + units, three control labels, "Hold to unlock" hint, "Paused" pill, content descriptions).
+
+**Key design decision — view-local lock state, not ViewModel-level**
+`isLocked` lives on the fragment, not on `TrackingSession` or the VM. The lock is a *view affordance* that stops accidental taps on the current screen. A rotation while locked drops the overlay — correct, since the fresh view starts with no accidental touches queued. The service, the session, and the elapsed timer carry on untouched, so the user doesn't lose any data by rotating out of locked mode. Pushing `isLocked` into the VM would couple it to process lifetime, which costs more than it saves.
+
+**Rejected alternative — detect long-press via `View.setOnLongClickListener`**
+Would have been one line. Rejected because `OnLongClickListener` fires once at the system's long-press threshold (~500 ms) with no progress feedback. The brief asks for an *about-one-second* hold **with** a visible progress bar; a `Handler.postDelayed` tick at 16 ms + a `LinearProgressIndicator` max=1000 gives both.
+
+**Kotlin / Android concepts** *(for my notes)*
+- `OnBackPressedCallback(enabled: Boolean)` + `addCallback(viewLifecycleOwner, callback)`: the modern way to intercept Back. Toggling `isEnabled` flips the dispatcher's routing without re-registering.
+- `android:fontFeatureSettings="tnum"`: enables the OpenType "tabular numbers" feature so each digit occupies the same advance width — the elapsed timer no longer dances left and right as seconds roll over.
+- `View.backgroundTintList = ContextCompat.getColorStateList(ctx, R.color.*)`: changes a shape drawable's fill without allocating a new drawable, so flipping the GPS dot between lime / muted / red is a one-field update.
+
+**Verified**
+- `./gradlew assembleDebug` — BUILD SUCCESSFUL.
+- `./gradlew testCloudDebugUnitTest` — BUILD SUCCESSFUL (all unit tests still pass).
+- APK reinstalled on the emulator; `adb reverse tcp:8080 tcp:8080` still active.
+
+**Pending user action — GPX walkthrough on the emulator**
+1. Choose activity → Track with GPS. Confirm the top of the screen is the dark map (no white strip), GPS pill reads "Searching" then "GPS strong" with the lime dot once fixes land.
+2. Start / pause / resume cycle: the pause-resume icon flips between two bars and a play triangle. GPS pill reads "Paused" with a muted dot while paused. Confirm the polyline leaves a visible gap across any paused segment (Step 3's splitter).
+3. Lock: tap Lock → overlay covers the screen, taps are swallowed, Back doesn't exit. Hold the pill → progress bar fills over ~1 s → overlay disappears.
+4. Minimise: tap the chevron → returns to the previous screen. Service notification keeps ticking; reopening via Home → Start workout drops you back on the live tracking screen (the one-session-at-a-time guard from Step 4).
+5. Finish: tap Finish → confirmation → save → lands on the finished workout detail screen with the just-saved workout.
+
+Suggested shots: `tracking-live.png`, `tracking-paused.png`, `tracking-locked.png`.
+
+**Assignment task supported**
+- **Task 2a (UI implementation)** — the live tracking screen is the heaviest visual deliverable of Phase 8c and now matches `Tracking.dc.html`.
+- **Task 4 (development)** — Lock + hold-to-unlock + Back-gesture swallow is a small but visible piece of custom gesture handling; the save-success → detail-screen route closes the one-shot "log a GPS workout" loop end-to-end.

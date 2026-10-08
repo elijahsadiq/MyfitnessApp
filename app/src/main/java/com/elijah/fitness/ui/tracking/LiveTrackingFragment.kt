@@ -1,13 +1,20 @@
 package com.elijah.fitness.ui.tracking
 
-import android.content.Intent
+import android.annotation.SuppressLint
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.view.LayoutInflater
+import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.view.WindowManager
+import androidx.activity.OnBackPressedCallback
 import androidx.core.content.ContextCompat
+import androidx.core.os.bundleOf
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.isVisible
 import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
@@ -20,7 +27,7 @@ import com.elijah.fitness.tracking.LocationTrackingService
 import com.elijah.fitness.tracking.TrackPoint
 import com.elijah.fitness.tracking.TrackingState
 import com.elijah.fitness.ui.base.BaseFragment
-import com.elijah.fitness.ui.main.MainActivity
+import com.elijah.fitness.ui.history.WorkoutDetailFragment
 import com.elijah.fitness.ui.tracking.map.DarkMapStyler
 import com.elijah.fitness.ui.tracking.map.MapCameraController
 import com.elijah.fitness.ui.tracking.map.RoutePolylineRenderer
@@ -28,15 +35,23 @@ import com.elijah.fitness.util.Formatters
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
 import org.osmdroid.util.GeoPoint
+import java.util.Locale
 
 /**
- * Live tracking screen. One fragment, two visual modes:
- *   - **Tracking** — map updates in real time, pause/resume + stop controls.
- *   - **Save** — same stats held static, notes field + save/discard.
+ * Live tracking screen (phase 8c step 6). Rebuilt from
+ * `Tracking.dc.html`:
  *
- * The user never leaves this screen between stopping and saving — the
- * single-fragment approach keeps the data path simple and makes retrying
- * a failed save trivial (nothing has been navigated-away-from).
+ * - Map fills the screen behind the status bar and the panel.
+ * - Top overlay: GPS pill (left) + minimise chevron (right).
+ * - Re-centre button on the right edge, above the panel.
+ * - Dark bottom panel with the elapsed time, three stats, and three
+ *   controls (Finish, Pause/Resume, Lock).
+ * - Lock overlay with "Hold to unlock" — covers taps, blocks the back
+ *   gesture, and the map / stats keep updating underneath.
+ *
+ * The confirm-to-finish flow carries over from Phase 8a. On save
+ * success the fragment navigates to the finished-workout screen for
+ * the just-saved workout rather than popping back to History.
  */
 class LiveTrackingFragment : BaseFragment<FragmentLiveTrackingBinding>() {
 
@@ -58,50 +73,89 @@ class LiveTrackingFragment : BaseFragment<FragmentLiveTrackingBinding>() {
     private var routeRenderer: RoutePolylineRenderer? = null
     private var mapCamera: MapCameraController? = null
 
+    // Lock-overlay state. View-local — a rotation re-shows the panel
+    // with the overlay dismissed; the service carries on either way.
+    private var isLocked: Boolean = false
+    private var backCallback: OnBackPressedCallback? = null
+
+    // Hold-to-unlock pulse animation.
+    private val holdHandler = Handler(Looper.getMainLooper())
+    private var holdStartMs: Long = 0L
+    private val holdTick: Runnable = object : Runnable {
+        override fun run() {
+            val b = _bindingOrNull ?: return
+            val elapsed = System.currentTimeMillis() - holdStartMs
+            if (elapsed >= HOLD_TO_UNLOCK_MS) {
+                b.lockHoldProgress.progress = HOLD_TO_UNLOCK_MS.toInt()
+                exitLock()
+            } else {
+                b.lockHoldProgress.progress = elapsed.toInt()
+                holdHandler.postDelayed(this, 16L)
+            }
+        }
+    }
+
+    /** Nullable binding accessor — background callbacks bail cleanly after `onDestroyView`. */
+    private val _bindingOrNull: FragmentLiveTrackingBinding?
+        get() = runCatching { binding }.getOrNull()
+
     override fun inflateBinding(
         inflater: LayoutInflater,
         container: ViewGroup?,
     ): FragmentLiveTrackingBinding =
         FragmentLiveTrackingBinding.inflate(inflater, container, false)
 
+    @SuppressLint("ClickableViewAccessibility")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        // Phase 8c step 2 — edge-to-edge. The root CoordinatorLayout
-        // paints `surface_dark` behind the status bar + gesture bar;
-        // this listener pushes the actual content down below the
-        // status-bar inset and up above the gesture-bar inset so
-        // controls aren't clipped. MainActivity flips the status-bar
-        // icon colour via its `DARK_STATUS_DESTINATIONS` set.
-        applySystemBarInsets(target = binding.root)
+        applyInsetsPerLayer()
 
         configureOsmdroid()
         setupMap()
 
-        binding.closeButton.setOnClickListener { onCloseRequested() }
+        binding.minimiseButton.setOnClickListener { findNavController().popBackStack() }
         binding.pauseResumeButton.setOnClickListener { onPauseResumeTapped() }
-        binding.stopButton.setOnClickListener { confirmStop() }
-        binding.saveButton.setOnClickListener { onSaveTapped() }
-        binding.discardButton.setOnClickListener { confirmDiscard() }
+        binding.finishButton.setOnClickListener { confirmFinish() }
+        binding.lockButton.setOnClickListener { enterLock() }
+        binding.recenterButton.setOnClickListener { onRecenterTapped() }
 
-        setPaceLabel()
+        setActivityLabels()
+
+        binding.lockHoldArea.setOnTouchListener { _, event ->
+            when (event.actionMasked) {
+                MotionEvent.ACTION_DOWN -> {
+                    holdStartMs = System.currentTimeMillis()
+                    binding.lockHoldProgress.isVisible = true
+                    binding.lockHoldProgress.progress = 0
+                    holdHandler.post(holdTick)
+                    true
+                }
+                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                    cancelHoldTick()
+                    true
+                }
+                else -> false
+            }
+        }
+
         startTrackingIfIdle()
         requestNotificationPermissionIfNeeded()
 
         collectOnStart(viewModel.trackingState) { render(it) }
-        collectOnStart(viewModel.isSaving) { saving ->
-            binding.saveButton.isEnabled = !saving
-            binding.discardButton.isEnabled = !saving
-        }
         collectOnStart(viewModel.events) { event ->
             when (event) {
-                LiveTrackingViewModel.Event.Saved -> onSaved()
+                is LiveTrackingViewModel.Event.Saved -> onSaved(event.clientUuid)
                 LiveTrackingViewModel.Event.SaveFailed -> onSaveFailed()
                 LiveTrackingViewModel.Event.Discarded -> findNavController().popBackStack()
             }
         }
 
-        // Keep the screen awake while tracking.
+        // Swallow the system back gesture while locked.
+        backCallback = object : OnBackPressedCallback(false) {
+            override fun handleOnBackPressed() { /* intentional no-op */ }
+        }.also { requireActivity().onBackPressedDispatcher.addCallback(viewLifecycleOwner, it) }
+
         requireActivity().window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
     }
 
@@ -117,18 +171,41 @@ class LiveTrackingFragment : BaseFragment<FragmentLiveTrackingBinding>() {
 
     override fun onDestroyView() {
         requireActivity().window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        cancelHoldTick()
+        backCallback?.remove()
+        backCallback = null
         binding.mapView.onDetach()
         routeRenderer = null
         mapCamera = null
         super.onDestroyView()
     }
 
+    // ---------- insets ----------
+
+    private fun applyInsetsPerLayer() {
+        val overlayTop = binding.trackingTopOverlay.paddingTop
+        ViewCompat.setOnApplyWindowInsetsListener(binding.trackingTopOverlay) { v, insets ->
+            val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            v.setPadding(v.paddingLeft, overlayTop + bars.top, v.paddingRight, v.paddingBottom)
+            WindowInsetsCompat.CONSUMED
+        }
+        val panelBottom = binding.trackingPanel.paddingBottom
+        ViewCompat.setOnApplyWindowInsetsListener(binding.trackingPanel) { v, insets ->
+            val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            v.setPadding(v.paddingLeft, v.paddingTop, v.paddingRight, panelBottom + bars.bottom)
+            WindowInsetsCompat.CONSUMED
+        }
+        ViewCompat.requestApplyInsets(binding.trackingTopOverlay)
+        ViewCompat.requestApplyInsets(binding.trackingPanel)
+    }
+
+    // ---------- tracking start / stop ----------
+
     private fun startTrackingIfIdle() {
         val state = viewModel.trackingState.value
         if (state.status == TrackingState.Status.Idle ||
             state.status == TrackingState.Status.Stopped
         ) {
-            // Reset wipes a leftover Stopped session before the user re-enters.
             if (state.status == TrackingState.Status.Stopped) {
                 (requireContext().applicationContext as FitnessApp).container
                     .trackingSession.reset()
@@ -144,42 +221,53 @@ class LiveTrackingFragment : BaseFragment<FragmentLiveTrackingBinding>() {
         notificationLauncher.launch(LocationPermissions.NOTIFICATION_PERMISSION)
     }
 
+    // ---------- render ----------
+
     private fun render(state: TrackingState) {
-        binding.gpsQualityPill.setText(
-            when (state.gpsQuality) {
-                TrackingState.GpsQuality.Searching -> R.string.live_tracking_gps_searching
-                TrackingState.GpsQuality.Strong -> R.string.live_tracking_gps_strong
-                TrackingState.GpsQuality.Weak -> R.string.live_tracking_gps_weak
+        val isPaused = state.status == TrackingState.Status.Paused
+        binding.gpsQualityLabel.setText(
+            when {
+                isPaused -> R.string.tracking_paused_pill
+                else -> when (state.gpsQuality) {
+                    TrackingState.GpsQuality.Searching -> R.string.live_tracking_gps_searching
+                    TrackingState.GpsQuality.Strong -> R.string.live_tracking_gps_strong
+                    TrackingState.GpsQuality.Weak -> R.string.live_tracking_gps_weak
+                }
             }
         )
+        val dotColor = when {
+            isPaused -> R.color.text_on_dark_muted
+            state.gpsQuality == TrackingState.GpsQuality.Strong -> R.color.lime_accent
+            state.gpsQuality == TrackingState.GpsQuality.Weak -> R.color.error_material
+            else -> R.color.text_on_dark_muted
+        }
+        binding.gpsQualityDot.backgroundTintList =
+            ContextCompat.getColorStateList(requireContext(), dotColor)
 
         binding.elapsedText.text = formatElapsed(state.elapsedMs)
-        binding.distanceText.text = getString(
-            R.string.live_tracking_distance_value, state.distanceMeters / 1000.0,
+        binding.distanceText.text = String.format(
+            Locale.getDefault(), "%.2f", state.distanceMeters / 1000.0,
         )
-        binding.paceText.text = formatMetricForActivity(state)
+        binding.paceText.text = formatPrimaryMetric(state)
         binding.caloriesText.text = estimateCalories(state).toString()
 
         updateRoute(state.points)
-        updateControlsForStatus(state.status)
+        updatePauseResumeIcon(state.status)
     }
 
-    private fun formatMetricForActivity(state: TrackingState): String =
+    private fun formatPrimaryMetric(state: TrackingState): String =
         when (state.activityType) {
-            ActivityType.RUNNING -> {
-                val pace = state.currentPaceMsPerKm
-                if (pace == null) "—" else Formatters.formatPace(pace / 1000)
-            }
             ActivityType.CYCLING -> {
                 val kmh = state.currentSpeedKmh
                 if (kmh == null) "—" else Formatters.formatSpeed(kmh)
             }
-            else -> "—"
+            else -> {
+                val pace = state.currentPaceMsPerKm
+                if (pace == null) "—" else Formatters.formatPace(pace / 1000)
+            }
         }
 
     private fun estimateCalories(state: TrackingState): Int {
-        // Reuse the domain hierarchy's MET-based calorie model by building a
-        // temporary workout and asking it. Avoids duplicating the formula.
         val kg = (requireContext().applicationContext as FitnessApp)
             .container.userSettings.bodyWeightKg.value
         val meters = state.distanceMeters.coerceAtLeast(1.0)
@@ -198,26 +286,41 @@ class LiveTrackingFragment : BaseFragment<FragmentLiveTrackingBinding>() {
         return workout.caloriesBurned(kg).toInt()
     }
 
-    private fun setPaceLabel() {
+    private fun setActivityLabels() {
+        binding.trackingElapsedEyebrow.setText(
+            when (activityType) {
+                ActivityType.CYCLING -> R.string.tracking_elapsed_eyebrow_ride
+                else -> R.string.tracking_elapsed_eyebrow_run
+            }
+        )
         binding.paceLabel.setText(
             when (activityType) {
-                ActivityType.CYCLING -> R.string.live_tracking_speed_label
-                else -> R.string.live_tracking_pace_label
+                ActivityType.CYCLING -> R.string.tracking_stat_speed
+                else -> R.string.tracking_stat_pace
+            }
+        )
+        binding.paceUnit.setText(
+            when (activityType) {
+                ActivityType.CYCLING -> R.string.tracking_unit_kmh
+                else -> R.string.tracking_unit_pace_slash_km
             }
         )
     }
 
-    private fun updateControlsForStatus(status: TrackingState.Status) {
-        val tracking = status == TrackingState.Status.Tracking || status == TrackingState.Status.Paused
-        binding.trackingControls.isVisible = tracking
-        binding.saveControls.isVisible = status == TrackingState.Status.Stopped
-        binding.pauseResumeButton.setText(
-            when (status) {
-                TrackingState.Status.Paused -> R.string.live_tracking_resume_button
-                else -> R.string.live_tracking_pause_button
-            }
+    private fun updatePauseResumeIcon(status: TrackingState.Status) {
+        val paused = status == TrackingState.Status.Paused
+        binding.pauseResumeButton.setImageResource(
+            if (paused) R.drawable.ic_play_triangle_24 else R.drawable.ic_pause_24
+        )
+        binding.pauseResumeButton.contentDescription = getString(
+            if (paused) R.string.tracking_control_resume else R.string.tracking_control_pause
+        )
+        binding.pauseResumeLabel.setText(
+            if (paused) R.string.tracking_control_resume else R.string.tracking_control_pause
         )
     }
+
+    // ---------- controls ----------
 
     private fun onPauseResumeTapped() {
         val status = viewModel.trackingState.value.status
@@ -229,62 +332,61 @@ class LiveTrackingFragment : BaseFragment<FragmentLiveTrackingBinding>() {
         requireContext().startService(intent)
     }
 
-    private fun confirmStop() {
+    private fun confirmFinish() {
         MaterialAlertDialogBuilder(requireContext())
             .setTitle(R.string.live_tracking_stop_confirm_title)
             .setMessage(R.string.live_tracking_stop_confirm_body)
-            .setPositiveButton(R.string.live_tracking_stop_confirm_positive) { _, _ -> doStop() }
+            .setPositiveButton(R.string.live_tracking_stop_confirm_positive) { _, _ -> doFinish() }
             .setNegativeButton(R.string.live_tracking_stop_confirm_negative, null)
             .show()
     }
 
-    private fun doStop() {
+    private fun doFinish() {
+        // Stop the service first so the final elapsed / points snapshot
+        // is on the session, then save straight away.
         requireContext().startService(LocationTrackingService.stopIntent(requireContext()))
+        viewModel.save()
     }
 
-    private fun onSaveTapped() {
-        val state = viewModel.trackingState.value
-        if (state.points.isEmpty()) {
-            MaterialAlertDialogBuilder(requireContext())
-                .setTitle(R.string.live_tracking_discard_confirm_title)
-                .setMessage(R.string.live_tracking_no_route_warning)
-                .setPositiveButton(R.string.live_tracking_save_button) { _, _ -> doSave() }
-                .setNegativeButton(R.string.live_tracking_stop_confirm_negative, null)
-                .show()
-            return
-        }
-        doSave()
+    private fun onRecenterTapped() {
+        mapCamera?.followCurrent(true)
+        val last = viewModel.trackingState.value.points.lastOrNull() ?: return
+        mapCamera?.followCurrentPosition(GeoPoint(last.latitude, last.longitude))
     }
 
-    private fun doSave() {
-        val notes = binding.notesInput.text?.toString().orEmpty()
-        viewModel.save(notes)
+    // ---------- lock ----------
+
+    private fun enterLock() {
+        if (isLocked) return
+        isLocked = true
+        binding.lockOverlay.isVisible = true
+        backCallback?.isEnabled = true
     }
 
-    private fun confirmDiscard() {
-        MaterialAlertDialogBuilder(requireContext())
-            .setTitle(R.string.live_tracking_discard_confirm_title)
-            .setMessage(R.string.live_tracking_discard_confirm_body)
-            .setPositiveButton(R.string.live_tracking_discard_confirm_positive) { _, _ ->
-                viewModel.discard()
-            }
-            .setNegativeButton(R.string.live_tracking_stop_confirm_negative, null)
-            .show()
+    private fun exitLock() {
+        if (!isLocked) return
+        isLocked = false
+        binding.lockOverlay.isVisible = false
+        binding.lockHoldProgress.isVisible = false
+        binding.lockHoldProgress.progress = 0
+        backCallback?.isEnabled = false
     }
 
-    private fun onCloseRequested() {
-        when (viewModel.trackingState.value.status) {
-            TrackingState.Status.Tracking,
-            TrackingState.Status.Paused -> confirmStop()
-            else -> findNavController().popBackStack()
+    private fun cancelHoldTick() {
+        holdHandler.removeCallbacks(holdTick)
+        _bindingOrNull?.lockHoldProgress?.let {
+            it.isVisible = false
+            it.progress = 0
         }
     }
 
-    private fun onSaved() {
-        (requireActivity() as? MainActivity)?.showSnackbar(
-            getString(R.string.live_tracking_saved_snackbar)
+    // ---------- save / events ----------
+
+    private fun onSaved(clientUuid: String) {
+        findNavController().navigate(
+            R.id.action_live_tracking_to_detail,
+            bundleOf(WorkoutDetailFragment.ARG_CLIENT_UUID to clientUuid),
         )
-        findNavController().popBackStack()
     }
 
     private fun onSaveFailed() {
@@ -295,20 +397,14 @@ class LiveTrackingFragment : BaseFragment<FragmentLiveTrackingBinding>() {
         ).show()
     }
 
-    // -----------------------------------------------------------------
-    // Map
-    // -----------------------------------------------------------------
+    // ---------- map ----------
 
     private fun configureOsmdroid() {
-        // Phase 8c step 3 — one call to the shared styler replaces the
-        // per-fragment osmdroid wiring; it also installs the OSM
-        // attribution overlay and darkens the tiles.
         DarkMapStyler.apply(binding.mapView, requireContext())
     }
 
     private fun setupMap() {
         binding.mapView.controller.setZoom(16.0)
-        // London fallback until the first fix lands.
         binding.mapView.controller.setCenter(GeoPoint(51.5074, -0.1278))
         mapCamera = MapCameraController(binding.mapView)
     }
@@ -318,8 +414,6 @@ class LiveTrackingFragment : BaseFragment<FragmentLiveTrackingBinding>() {
             routeRenderer = it
         }
         renderer.render(points)
-        // Follow the latest fix while follow-mode is on; the camera
-        // controller no-ops after the user drags the map.
         val last = points.lastOrNull() ?: return
         mapCamera?.followCurrentPosition(GeoPoint(last.latitude, last.longitude))
     }
@@ -329,14 +423,11 @@ class LiveTrackingFragment : BaseFragment<FragmentLiveTrackingBinding>() {
         val h = seconds / 3600
         val m = (seconds % 3600) / 60
         val s = seconds % 60
-        return if (h > 0) "%d:%02d:%02d".format(h, m, s)
-        else "%02d:%02d".format(m, s)
+        return "%02d:%02d:%02d".format(h, m, s)
     }
 
     companion object {
         const val ARG_ACTIVITY_TYPE = "activityType"
-
-        @Suppress("UNUSED_PARAMETER")
-        fun unused(intent: Intent) {}
+        private const val HOLD_TO_UNLOCK_MS = 1_000L
     }
 }

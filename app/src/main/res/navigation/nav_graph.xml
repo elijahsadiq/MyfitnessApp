@@ -107,6 +107,12 @@
             android:name="activityType"
             app:argType="string"
             android:defaultValue="RUNNING" />
+        <!-- Phase 8c step 6: on Finish → save success, open the finished
+             workout screen for the just-saved workout. -->
+        <action
+            android:id="@+id/action_live_tracking_to_detail"
+            app:destination="@id/workoutDetailFragment"
+            app:popUpTo="@id/workoutHistoryFragment" />
     </fragment>
 
     <fragment

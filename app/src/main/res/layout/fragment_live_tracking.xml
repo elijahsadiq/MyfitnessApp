@@ -1,91 +1,145 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.coordinatorlayout.widget.CoordinatorLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<!--
+  Live tracking screen (phase 8c step 6). Rebuilt from Tracking.dc.html:
+  edge-to-edge map, overlay row at the top with the GPS pill + minimise
+  button, a re-centre button on the right edge, and a dark bottom panel
+  with the elapsed time + three stats + three controls.
+
+  The lock overlay sits at the top of the FrameLayout stack and is
+  normally gone; the fragment flips it visible on Lock tap.
+-->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/surface_dark"
+    android:background="@color/map_background"
     tools:context=".ui.tracking.LiveTrackingFragment">
 
-    <LinearLayout
+    <!-- Map behind everything. -->
+    <org.osmdroid.views.MapView
+        android:id="@+id/mapView"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:orientation="vertical"
-        android:paddingBottom="@dimen/space_xl">
+        android:layout_height="match_parent" />
 
-        <!-- Top row: GPS pill + close -->
+    <!-- Top overlay: GPS pill + minimise button -->
+    <LinearLayout
+        android:id="@+id/trackingTopOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingHorizontal="16dp"
+        android:paddingTop="20dp">
+
         <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:id="@+id/gpsQualityPill"
+            android:layout_width="wrap_content"
+            android:layout_height="36dp"
+            android:background="@drawable/bg_tracking_overlay_pill"
             android:gravity="center_vertical"
             android:orientation="horizontal"
-            android:paddingHorizontal="@dimen/screen_margin"
-            android:paddingTop="@dimen/space_lg">
+            android:paddingHorizontal="14dp">
+
+            <View
+                android:id="@+id/gpsQualityDot"
+                android:layout_width="8dp"
+                android:layout_height="8dp"
+                android:background="@drawable/bg_tracking_gps_dot"
+                android:backgroundTint="@color/lime_accent" />
 
             <TextView
-                android:id="@+id/gpsQualityPill"
-                style="@style/TextAppearance.Fitness.LabelSm"
+                android:id="@+id/gpsQualityLabel"
+                style="@style/TextAppearance.Fitness.LabelMd"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:background="@drawable/bg_streak_pill"
-                android:paddingHorizontal="@dimen/space_md"
-                android:paddingVertical="@dimen/space_xs"
-                android:textColor="@color/text_primary"
+                android:layout_marginStart="8dp"
+                android:textAllCaps="false"
+                android:textColor="@color/text_on_dark"
+                android:textSize="13sp"
+                android:textStyle="bold"
                 tools:text="GPS strong" />
-
-            <Space
-                android:layout_width="0dp"
-                android:layout_height="1dp"
-                android:layout_weight="1" />
-
-            <ImageView
-                android:id="@+id/closeButton"
-                android:layout_width="@dimen/touch_target_min"
-                android:layout_height="@dimen/touch_target_min"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:clickable="true"
-                android:contentDescription="@string/live_tracking_close_content_description"
-                android:focusable="true"
-                android:padding="@dimen/space_sm"
-                android:src="@drawable/ic_arrow_forward_24"
-                android:rotation="180"
-                app:tint="@color/text_on_dark" />
         </LinearLayout>
 
-        <!-- Map -->
-        <FrameLayout
-            android:layout_width="match_parent"
+        <Space
+            android:layout_width="0dp"
             android:layout_height="0dp"
-            android:layout_marginHorizontal="@dimen/screen_margin"
-            android:layout_marginTop="@dimen/space_lg"
-            android:layout_weight="4">
+            android:layout_weight="1" />
 
-            <org.osmdroid.views.MapView
-                android:id="@+id/mapView"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:background="@color/surface_charcoal" />
-        </FrameLayout>
+        <ImageView
+            android:id="@+id/minimiseButton"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:background="@drawable/bg_tracking_overlay_pill"
+            android:clickable="true"
+            android:contentDescription="@string/tracking_minimise_content_description"
+            android:focusable="true"
+            android:padding="12dp"
+            android:src="@drawable/ic_chevron_down_24"
+            app:tint="@color/text_on_dark" />
+    </LinearLayout>
 
-        <!-- Elapsed time -->
+    <!-- Re-centre button, right edge above the panel -->
+    <ImageView
+        android:id="@+id/recenterButton"
+        android:layout_width="44dp"
+        android:layout_height="44dp"
+        android:layout_gravity="bottom|end"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="360dp"
+        android:background="@drawable/bg_tracking_overlay_pill"
+        android:clickable="true"
+        android:contentDescription="@string/tracking_recenter_content_description"
+        android:focusable="true"
+        android:padding="12dp"
+        android:src="@drawable/ic_crosshair_24"
+        app:tint="@color/text_on_dark" />
+
+    <!-- Bottom panel -->
+    <LinearLayout
+        android:id="@+id/trackingPanel"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:background="@drawable/bg_tracking_panel"
+        android:gravity="center_horizontal"
+        android:orientation="vertical"
+        android:paddingHorizontal="@dimen/screen_margin"
+        android:paddingTop="12dp"
+        android:paddingBottom="@dimen/space_xl">
+
+        <View
+            android:layout_width="40dp"
+            android:layout_height="4dp"
+            android:background="@drawable/bg_tracking_panel_handle" />
+
+        <TextView
+            android:id="@+id/trackingElapsedEyebrow"
+            style="@style/TextAppearance.Fitness.LabelSm"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:textColor="@color/goal_main_muted"
+            tools:text="Running · elapsed" />
+
         <TextView
             android:id="@+id/elapsedText"
             style="@style/TextAppearance.Fitness.DisplayMetric"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_gravity="center_horizontal"
-            android:layout_marginTop="@dimen/space_lg"
+            android:layout_marginTop="2dp"
+            android:fontFeatureSettings="tnum"
             android:textColor="@color/text_on_dark"
-            tools:text="00:00" />
+            android:textSize="58sp"
+            tools:text="00:24:36" />
 
-        <!-- Metrics row: distance + pace/speed + calories -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/space_md"
-            android:orientation="horizontal"
-            android:paddingHorizontal="@dimen/screen_margin">
+            android:layout_marginTop="18dp"
+            android:baselineAligned="false"
+            android:orientation="horizontal">
 
             <LinearLayout
                 android:layout_width="0dp"
@@ -95,19 +149,41 @@
                 android:orientation="vertical">
 
                 <TextView
-                    style="@style/TextAppearance.Fitness.LabelSm"
+                    style="@style/TextAppearance.Fitness.LabelMd"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="@string/live_tracking_distance_label"
-                    android:textColor="@color/text_on_dark_muted" />
+                    android:text="@string/tracking_stat_distance"
+                    android:textAllCaps="false"
+                    android:textColor="@color/goal_main_muted" />
 
-                <TextView
-                    android:id="@+id/distanceText"
-                    style="@style/TextAppearance.Fitness.HeadlineLg"
+                <LinearLayout
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textColor="@color/text_on_dark"
-                    tools:text="0.00 km" />
+                    android:layout_marginTop="4dp"
+                    android:baselineAligned="true"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/distanceText"
+                        style="@style/TextAppearance.Fitness.DisplayMetric"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textColor="@color/text_on_dark"
+                        android:textSize="24sp"
+                        tools:text="4.12" />
+
+                    <TextView
+                        style="@style/TextAppearance.Fitness.LabelMd"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="bottom"
+                        android:layout_marginStart="4dp"
+                        android:paddingBottom="2dp"
+                        android:text="@string/tracking_unit_km"
+                        android:textAllCaps="false"
+                        android:textColor="@color/goal_main_muted"
+                        android:textSize="13sp" />
+                </LinearLayout>
             </LinearLayout>
 
             <LinearLayout
@@ -119,19 +195,42 @@
 
                 <TextView
                     android:id="@+id/paceLabel"
-                    style="@style/TextAppearance.Fitness.LabelSm"
+                    style="@style/TextAppearance.Fitness.LabelMd"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="@string/live_tracking_pace_label"
-                    android:textColor="@color/text_on_dark_muted" />
+                    android:textAllCaps="false"
+                    android:textColor="@color/goal_main_muted"
+                    tools:text="Pace" />
 
-                <TextView
-                    android:id="@+id/paceText"
-                    style="@style/TextAppearance.Fitness.HeadlineLg"
+                <LinearLayout
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textColor="@color/text_on_dark"
-                    tools:text="— /km" />
+                    android:layout_marginTop="4dp"
+                    android:baselineAligned="true"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/paceText"
+                        style="@style/TextAppearance.Fitness.DisplayMetric"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textColor="@color/lime_accent"
+                        android:textSize="24sp"
+                        tools:text="5:52" />
+
+                    <TextView
+                        android:id="@+id/paceUnit"
+                        style="@style/TextAppearance.Fitness.LabelMd"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="bottom"
+                        android:layout_marginStart="4dp"
+                        android:paddingBottom="2dp"
+                        android:textAllCaps="false"
+                        android:textColor="@color/goal_main_muted"
+                        android:textSize="13sp"
+                        tools:text="/km" />
+                </LinearLayout>
             </LinearLayout>
 
             <LinearLayout
@@ -142,109 +241,205 @@
                 android:orientation="vertical">
 
                 <TextView
-                    style="@style/TextAppearance.Fitness.LabelSm"
+                    style="@style/TextAppearance.Fitness.LabelMd"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="@string/live_tracking_calories_label"
-                    android:textColor="@color/text_on_dark_muted" />
+                    android:text="@string/tracking_stat_calories"
+                    android:textAllCaps="false"
+                    android:textColor="@color/goal_main_muted" />
 
-                <TextView
-                    android:id="@+id/caloriesText"
-                    style="@style/TextAppearance.Fitness.HeadlineLg"
+                <LinearLayout
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textColor="@color/text_on_dark"
-                    tools:text="0" />
+                    android:layout_marginTop="4dp"
+                    android:baselineAligned="true"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/caloriesText"
+                        style="@style/TextAppearance.Fitness.DisplayMetric"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textColor="@color/text_on_dark"
+                        android:textSize="24sp"
+                        tools:text="288" />
+
+                    <TextView
+                        style="@style/TextAppearance.Fitness.LabelMd"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="bottom"
+                        android:layout_marginStart="4dp"
+                        android:paddingBottom="2dp"
+                        android:text="@string/tracking_unit_kcal"
+                        android:textAllCaps="false"
+                        android:textColor="@color/goal_main_muted"
+                        android:textSize="13sp" />
+                </LinearLayout>
             </LinearLayout>
         </LinearLayout>
 
-        <!-- Tracking controls -->
         <LinearLayout
-            android:id="@+id/trackingControls"
-            android:layout_width="match_parent"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:gravity="center"
-            android:layout_marginTop="@dimen/space_xl"
-            android:orientation="horizontal"
-            android:paddingHorizontal="@dimen/screen_margin">
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/stopButton"
-                style="@style/Widget.Fitness.Button.Outlined"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/live_tracking_stop_button" />
-
-            <Space
-                android:layout_width="@dimen/space_md"
-                android:layout_height="1dp" />
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/pauseResumeButton"
-                style="@style/Widget.Fitness.Button.Primary"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/live_tracking_pause_button"
-                app:icon="@drawable/ic_add_24"
-                app:iconGravity="textStart" />
-        </LinearLayout>
-
-        <!-- Save mode (shown after stop) -->
-        <LinearLayout
-            android:id="@+id/saveControls"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:paddingHorizontal="@dimen/screen_margin"
-            android:paddingTop="@dimen/space_lg"
-            android:visibility="gone"
-            tools:visibility="visible">
-
-            <com.google.android.material.textfield.TextInputLayout
-                android:id="@+id/notesFieldLayout"
-                style="@style/Widget.Fitness.TextField"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:hint="@string/live_tracking_notes_hint"
-                app:boxBackgroundColor="@color/surface_charcoal"
-                app:boxStrokeColor="@color/divider"
-                app:hintTextColor="@color/text_on_dark_muted">
-
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/notesInput"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:imeOptions="actionDone"
-                    android:inputType="textCapSentences|textMultiLine"
-                    android:maxLines="3"
-                    android:textColor="@color/text_on_dark" />
-            </com.google.android.material.textfield.TextInputLayout>
+            android:layout_marginTop="24dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
 
             <LinearLayout
-                android:layout_width="match_parent"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/space_md"
-                android:orientation="horizontal">
+                android:gravity="center_horizontal"
+                android:orientation="vertical">
 
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/discardButton"
-                    style="@style/Widget.Fitness.Button.Outlined"
+                <ImageView
+                    android:id="@+id/finishButton"
+                    android:layout_width="60dp"
+                    android:layout_height="60dp"
+                    android:background="@drawable/bg_tracking_panel_button"
+                    android:clickable="true"
+                    android:contentDescription="@string/tracking_finish_content_description"
+                    android:focusable="true"
+                    android:padding="20dp"
+                    android:src="@drawable/ic_stop_square_24"
+                    app:tint="@color/text_on_dark" />
+
+                <TextView
+                    style="@style/TextAppearance.Fitness.LabelMd"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="@string/live_tracking_discard_button" />
+                    android:layout_marginTop="6dp"
+                    android:text="@string/tracking_control_finish"
+                    android:textAllCaps="false"
+                    android:textColor="@color/goal_main_muted" />
+            </LinearLayout>
 
-                <Space
-                    android:layout_width="0dp"
-                    android:layout_height="1dp"
-                    android:layout_weight="1" />
+            <Space
+                android:layout_width="28dp"
+                android:layout_height="1dp" />
 
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/saveButton"
-                    style="@style/Widget.Fitness.Button.Primary"
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="center_horizontal"
+                android:orientation="vertical">
+
+                <ImageView
+                    android:id="@+id/pauseResumeButton"
+                    android:layout_width="84dp"
+                    android:layout_height="84dp"
+                    android:background="@drawable/bg_tracking_pause_button"
+                    android:clickable="true"
+                    android:contentDescription="@string/tracking_control_pause"
+                    android:focusable="true"
+                    android:padding="27dp"
+                    android:src="@drawable/ic_pause_24"
+                    app:tint="@color/text_on_lime" />
+
+                <TextView
+                    android:id="@+id/pauseResumeLabel"
+                    style="@style/TextAppearance.Fitness.LabelMd"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="@string/live_tracking_save_button" />
+                    android:layout_marginTop="6dp"
+                    android:text="@string/tracking_control_pause"
+                    android:textAllCaps="false"
+                    android:textColor="@color/goal_main_muted" />
+            </LinearLayout>
+
+            <Space
+                android:layout_width="28dp"
+                android:layout_height="1dp" />
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="center_horizontal"
+                android:orientation="vertical">
+
+                <ImageView
+                    android:id="@+id/lockButton"
+                    android:layout_width="60dp"
+                    android:layout_height="60dp"
+                    android:background="@drawable/bg_tracking_panel_button"
+                    android:clickable="true"
+                    android:contentDescription="@string/tracking_lock_content_description"
+                    android:focusable="true"
+                    android:padding="20dp"
+                    android:src="@drawable/ic_lock_24"
+                    app:tint="@color/text_on_dark" />
+
+                <TextView
+                    style="@style/TextAppearance.Fitness.LabelMd"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:text="@string/tracking_control_lock"
+                    android:textAllCaps="false"
+                    android:textColor="@color/goal_main_muted" />
             </LinearLayout>
         </LinearLayout>
     </LinearLayout>
-</androidx.coordinatorlayout.widget.CoordinatorLayout>
+
+    <!--
+      Lock overlay. Fills the window and swallows every touch (and the
+      system Back gesture via the fragment's OnBackPressedCallback).
+      Hold the lock pill for ~1 second to dismiss.
+    -->
+    <FrameLayout
+        android:id="@+id/lockOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#CC0C0E0B"
+        android:clickable="true"
+        android:focusable="true"
+        android:visibility="gone"
+        tools:visibility="visible">
+
+        <LinearLayout
+            android:id="@+id/lockHoldArea"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:background="@drawable/bg_tracking_overlay_pill"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center_vertical"
+            android:minHeight="56dp"
+            android:orientation="horizontal"
+            android:paddingHorizontal="18dp">
+
+            <ImageView
+                android:layout_width="22dp"
+                android:layout_height="22dp"
+                android:contentDescription="@null"
+                android:src="@drawable/ic_lock_24"
+                app:tint="@color/lime_accent" />
+
+            <TextView
+                style="@style/TextAppearance.Fitness.LabelMd"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="10dp"
+                android:text="@string/tracking_locked_hint"
+                android:textAllCaps="false"
+                android:textColor="@color/text_on_dark"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <com.google.android.material.progressindicator.LinearProgressIndicator
+            android:id="@+id/lockHoldProgress"
+            android:layout_width="200dp"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal|bottom"
+            android:layout_marginBottom="140dp"
+            android:max="1000"
+            android:progress="0"
+            android:visibility="invisible"
+            app:indicatorColor="@color/lime_accent"
+            app:trackColor="@color/tracking_panel_border"
+            app:trackCornerRadius="3dp"
+            app:trackThickness="6dp"
+            tools:visibility="visible" />
+    </FrameLayout>
+</FrameLayout>
