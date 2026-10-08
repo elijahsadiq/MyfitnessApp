@@ -481,6 +481,9 @@
     <string name="history_deleted_snackbar">Workout deleted</string>
     <string name="history_deleted_undo">Undo</string>
 
+    <!-- Phase 8c step 3 — OpenStreetMap attribution (required by the tile licence) -->
+    <string name="map_attribution_osm">© OpenStreetMap contributors</string>
+
     <!-- History screen -->
     <string name="history_headline">History</string>
     <string name="history_momentum_eyebrow">Weekly momentum</string>

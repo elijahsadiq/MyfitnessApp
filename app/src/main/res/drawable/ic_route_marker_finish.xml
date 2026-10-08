@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Finish marker — white circle with dark outline + small dark flag. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="28dp"
+    android:height="28dp"
+    android:viewportWidth="28"
+    android:viewportHeight="28">
+    <path
+        android:pathData="M14,2 A12,12 0 1 1 13.99,2 Z"
+        android:fillColor="#111410" />
+    <path
+        android:pathData="M14,4 A10,10 0 1 1 13.99,4 Z"
+        android:fillColor="#FFFFFF" />
+    <!-- Flag mast -->
+    <path
+        android:pathData="M11,8 L11,20 L12.5,20 L12.5,8 Z"
+        android:fillColor="#111410" />
+    <!-- Flag cloth (small right-pointing triangle) -->
+    <path
+        android:pathData="M12.5,8 L19,10 L12.5,13 Z"
+        android:fillColor="#111410" />
+</vector>

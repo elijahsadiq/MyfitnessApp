@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Start marker — lime circle with a dark outline + dark play triangle.
+  Rendered on `MapView` via a `Marker` with this drawable.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="28dp"
+    android:height="28dp"
+    android:viewportWidth="28"
+    android:viewportHeight="28">
+    <!-- Outer ring (dark outline) -->
+    <path
+        android:pathData="M14,2 A12,12 0 1 1 13.99,2 Z"
+        android:fillColor="#111410" />
+    <!-- Lime fill (slightly inset to leave the outline visible) -->
+    <path
+        android:pathData="M14,4 A10,10 0 1 1 13.99,4 Z"
+        android:fillColor="#D4F26A" />
+    <!-- Play triangle, dark on lime -->
+    <path
+        android:pathData="M11,9 L19,14 L11,19 Z"
+        android:fillColor="#111410" />
+</vector>

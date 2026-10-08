@@ -4,7 +4,6 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.fragment.app.viewModels
 import com.elijah.fitness.FitnessApp
@@ -21,13 +20,11 @@ import com.elijah.fitness.tracking.RouteSplit
 import com.elijah.fitness.tracking.RouteSplits
 import com.elijah.fitness.tracking.TrackPoint
 import com.elijah.fitness.ui.base.BaseFragment
+import com.elijah.fitness.ui.tracking.map.DarkMapStyler
+import com.elijah.fitness.ui.tracking.map.MapCameraController
+import com.elijah.fitness.ui.tracking.map.RoutePolylineRenderer
 import com.elijah.fitness.util.Formatters
 import com.google.android.material.snackbar.Snackbar
-import org.osmdroid.config.Configuration
-import org.osmdroid.tileprovider.tilesource.TileSourceFactory
-import org.osmdroid.util.BoundingBox
-import org.osmdroid.util.GeoPoint
-import org.osmdroid.views.overlay.Polyline
 import java.time.format.DateTimeFormatter
 import java.time.ZoneId
 
@@ -140,32 +137,23 @@ class WorkoutDetailFragment : BaseFragment<FragmentWorkoutDetailBinding>() {
         }
     }
 
+    private var routeRenderer: RoutePolylineRenderer? = null
+    private var mapCamera: MapCameraController? = null
+
     private fun bindMap(points: List<TrackPoint>) {
         if (points.isEmpty()) {
             binding.mapCard.isVisible = false
             return
         }
         binding.mapCard.isVisible = true
-        val geoPoints = points.map { GeoPoint(it.latitude, it.longitude) }
-        val polyline = Polyline(binding.mapView).apply {
-            outlinePaint.strokeWidth = 10f
-            outlinePaint.color =
-                ContextCompat.getColor(requireContext(), R.color.lime_accent)
-            setPoints(geoPoints)
+        val renderer = routeRenderer ?: RoutePolylineRenderer(binding.mapView).also {
+            routeRenderer = it
         }
-        binding.mapView.overlays.clear()
-        binding.mapView.overlays.add(polyline)
-
-        // Fit the map to the route's bounding box with a small pad.
-        val lats = geoPoints.map { it.latitude }
-        val lons = geoPoints.map { it.longitude }
-        val bbox = BoundingBox(
-            lats.max(), lons.max(), lats.min(), lons.min(),
-        )
-        binding.mapView.post {
-            binding.mapView.zoomToBoundingBox(bbox, false, 32)
+        val camera = mapCamera ?: MapCameraController(binding.mapView).also {
+            mapCamera = it
         }
-        binding.mapView.invalidate()
+        renderer.render(points)
+        camera.fitRouteToView(points, padFraction = 0.15)
     }
 
     private fun bindSplits(points: List<TrackPoint>) {
@@ -217,18 +205,14 @@ class WorkoutDetailFragment : BaseFragment<FragmentWorkoutDetailBinding>() {
     }
 
     private fun configureOsmdroid() {
-        val ctx = requireContext().applicationContext
-        val prefs = ctx.getSharedPreferences("osmdroid", 0)
-        Configuration.getInstance().load(ctx, prefs)
-        Configuration.getInstance().userAgentValue = ctx.packageName
+        // Phase 8c step 3 — one call to the shared styler replaces the
+        // per-fragment osmdroid wiring; it also installs the OSM
+        // attribution overlay and darkens the tiles.
+        DarkMapStyler.apply(binding.mapView, requireContext())
     }
 
     private fun setupMap() {
-        with(binding.mapView) {
-            setTileSource(TileSourceFactory.MAPNIK)
-            setMultiTouchControls(true)
-            controller.setZoom(14.0)
-        }
+        binding.mapView.controller.setZoom(14.0)
     }
 
     companion object {

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Current-position marker (tracking only). Translucent lime halo, white
+  ring, lime dot. Three concentric circles painted in order.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="32dp"
+    android:height="32dp"
+    android:viewportWidth="32"
+    android:viewportHeight="32">
+    <!-- Halo (translucent lime, 32dp outer) -->
+    <path
+        android:pathData="M16,2 A14,14 0 1 1 15.99,2 Z"
+        android:fillColor="#33D4F26A" />
+    <!-- White ring (18dp) -->
+    <path
+        android:pathData="M16,7 A9,9 0 1 1 15.99,7 Z"
+        android:fillColor="#FFFFFF" />
+    <!-- Lime core (10dp) -->
+    <path
+        android:pathData="M16,11 A5,5 0 1 1 15.99,11 Z"
+        android:fillColor="#D4F26A" />
+</vector>

@@ -66,4 +66,23 @@
     <!-- Onboarding-specific (dark-screen chrome only) -->
     <color name="onboarding_dot_inactive">#2A2E27</color>  <!-- inactive page-indicator dots on surface_dark -->
     <color name="onboarding_text_muted">#8E9489</color>    <!-- body copy on hero-tinted dark surfaces -->
+
+    <!--
+      Phase 8c step 3 — dark route map tokens. Values straight from the
+      brief. The `map_*` colours are the targets the ColorMatrix on the
+      MAPNIK tile overlay aims for; the overlay colours sit on top of
+      the darkened tiles.
+    -->
+    <color name="map_background">#0C0E0B</color>       <!-- dark land -->
+    <color name="map_minor_road">#1A1D18</color>
+    <color name="map_major_road">#272B24</color>
+    <color name="map_water">#0E1A1F</color>
+    <color name="map_park">#121811</color>
+
+    <color name="map_overlay_pill">#121411</color>     <!-- used at 88 % alpha in drawable -->
+    <color name="map_overlay_pill_border">#2E332B</color>
+
+    <color name="tracking_panel">#121411</color>
+    <color name="tracking_panel_border">#23271F</color>
+    <color name="tracking_panel_button">#2A2E27</color>
 </resources>

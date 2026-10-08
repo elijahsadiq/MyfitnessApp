@@ -2070,3 +2070,61 @@ Shoot them into `docs/screenshots/` as `edge2edge-tracking.png` and `edge2edge-h
 
 **Assignment task supported**
 - **Task 2a (UI implementation)** — the tracking screen now matches the design's full-bleed-dark intent, and every top-level screen draws correctly behind translucent system bars without clipping content.
+
+## Phase 8c — Step 3: Dark route map (reusable component)
+
+**Built**
+- **`tracking/RouteGeometry.kt`** — pure-Kotlin, no Android imports. Two helpers both unit-tested:
+  - `boundingBox(points, padFraction)` — lat/long envelope with proportional breathing room; handles the empty, single-point and multi-point cases.
+  - `splitByPause(points, minPauseGapMs = 2_000L)` — segments the route wherever `wallDelta − elapsedDelta ≥ minPauseGapMs`. Because `TrackPoint.elapsedMs` holds steady during a Pause (session clock) while `recordedAt` keeps moving (wall clock), the gap detects a user Pause unambiguously. A GPS dropout grows **both** deltas by the same amount so `pauseGap` stays near zero and no split happens — the renderer draws one continuous line through missed fixes.
+  - Returns a `BoundingBoxDegrees` immutable data class so no Android `BoundingBox` imports leak into the pure-Kotlin layer.
+- **`tracking/RouteGeometryTest.kt`** — 8 tests. Boundary cases on `boundingBox` (empty, single, pad=0, custom pad), plus a four-corner test matrix on `splitByPause`: no pause → one segment, single pause → two segments, two pauses → three segments, GPS dropout → no split, custom `minPauseGapMs` catches a 500 ms pause.
+- **`ui/tracking/map/DarkMapStyler.kt`** — reusable `object` that:
+  - Loads osmdroid's shared `Configuration` + sets the `userAgentValue` to the app package (OSM tile-usage policy).
+  - Selects `TileSourceFactory.MAPNIK` (no API key).
+  - Applies a `ColorMatrixColorFilter` to the tiles overlay. The matrix lives in one named constant (`DARK_MATRIX`) with per-row comments and tuned coefficients (0.35 on R + G, 0.40 on B for a cooler-reading water hue, −25.5 constant across RGB for a slight overall darken). Tuned on the Pixel 10 emulator.
+  - Hides the deprecated built-in zoom controls and enables multi-touch controls.
+  - Adds an "© OpenStreetMap contributors" `TextView` to the bottom-start of the `MapView` with the new `bg_map_attribution` dim pill. The OSM data licence requires attribution; the pill is legible on top of the darkened tiles.
+- **`ui/tracking/map/RoutePolylineRenderer.kt`** — three-layer glow renderer:
+  - Outer glow: 18 dp @ 14 % opacity.
+  - Inner glow: 9 dp @ 35 % opacity.
+  - Line: 4 dp @ 100 % opacity.
+  - All layers `#D4F26A`, round caps + joins (so a paused gap doesn't butt into a square end). Widths convert from dp to px via `displayMetrics.density`.
+  - `render(points)` splits by pause and emits one Polyline per segment per layer, so each paused gap leaves a visible break in all three layers. `clear()` removes every overlay the renderer has added without touching other overlays.
+- **`ui/tracking/map/MapCameraController.kt`** — follow-mode controller:
+  - `followCurrentPosition(point)` animates the camera to the latest fix while follow mode is on.
+  - A `MapListener` + a touch listener detect user drags and turn following off; a `lastPanWasProgrammatic` flag stops the listener from flipping during the controller's own `animateTo` calls.
+  - `fitRouteToView(points, padFraction)` posts the `zoomToBoundingBox` into the next layout pass so the camera doesn't fit before the view has a size.
+- **Vector markers**:
+  - `drawable/ic_route_marker_start.xml` — lime circle, dark outline, dark play triangle.
+  - `drawable/ic_route_marker_finish.xml` — white circle, dark outline, small dark flag.
+  - `drawable/ic_route_marker_current.xml` — translucent lime halo (33 % alpha) + white ring + lime core.
+- **Design tokens** added to `colors.xml`: `map_background`, `map_minor_road`, `map_major_road`, `map_water`, `map_park`, `map_overlay_pill` (+ `_border`), `tracking_panel` (+ `_border`), `tracking_panel_button`. New drawable `bg_map_attribution.xml` and string `map_attribution_osm = "© OpenStreetMap contributors"`.
+- **Migration of existing fragments**:
+  - `WorkoutDetailFragment` — `bindMap` now creates one `RoutePolylineRenderer` + one `MapCameraController` lazily and reuses them per emission. The `configureOsmdroid` + manual `setupMap` + 10-px solid lime polyline + hand-rolled `zoomToBoundingBox` block are gone.
+  - `LiveTrackingFragment` — same migration. The old `routeOverlay: Polyline` field is replaced with `routeRenderer: RoutePolylineRenderer?` + `mapCamera: MapCameraController?`, both nulled out in `onDestroyView` so the renderer's overlay list doesn't survive the view.
+
+**Key design decision — colour-matrix filter over a ready-made dark style**
+The brief's hardest constraint is "must work on any machine with no API key" because the marker builds the project themselves. The free `MAPNIK` tiles satisfy that, but they're a daytime style. A ready-made dark style (CARTO Dark Matter, Stadia Alidade Smooth Dark, Stamen Toner-lite) would mean either shipping a new tile-provider plugin (new licence terms, new attribution block) or signing up for an API key (same marker-reproducibility problem). The `ColorMatrixColorFilter` adds zero deps + zero licence overhead and still lets the colour palette track the design — the matrix constants are the only knob to tune.
+
+**Rejected alternative — detect pauses from large time gaps alone**
+Pre-8c pseudo-plan was to split on `recordedAt(i) − recordedAt(i−1) > T`. The user flagged in Step 0 that this would ALSO trigger on GPS dropouts, which is exactly wrong: dropouts should draw a straight line between the fixes we do have, not an unexplained gap. The chosen rule (`wall − elapsed`) uses the session clock we're already keeping and gives a 0-false-positive dropout test, verified by the dedicated unit test.
+
+**Kotlin / Android concepts** *(for my notes)*
+- `ColorMatrixColorFilter` on `TilesOverlay`: the only Android-side way to re-colour MAPNIK tiles. The filter runs on the GPU on recent devices; measurable overhead is negligible on the Pixel 10 emulator.
+- Three overlapping `Polyline`s with increasing stroke widths + decreasing alpha produces a cheap-but-convincing glow effect without a shader. Alpha is baked into the `Paint.color` (ARGB) rather than through `Paint.setAlpha` because `Polyline.outlinePaint.set(...)` is a full-paint copy and doesn't honour a separately-set alpha.
+- `MapListener` is osmdroid's hook for "the camera moved" — it fires for both user and programmatic pans, which is why `lastPanWasProgrammatic` is needed to filter out `followCurrentPosition` echoes.
+
+**Verified**
+- `./gradlew assembleDebug` — BUILD SUCCESSFUL.
+- `./gradlew testCloudDebugUnitTest` — **225 tests, 0 failures, 0 errors** (+ 8 new in `RouteGeometryTest`).
+- APK reinstalled on the emulator; `adb reverse tcp:8080 tcp:8080` still active.
+
+**Pending user action — screenshots the brief asks for**
+Capture a shot of the dark map on the emulator so the matrix tuning is documented before Step 6 reuses it full-screen:
+1. **`map-dark-detail.png`** — Workout detail with a saved route; shows the three-layer lime glow, the dark land + roads, and the "© OpenStreetMap contributors" pill.
+2. **`map-dark-tracking.png`** — Live tracking mid-run; same tile styling, lime polyline, overlay chrome.
+
+**Assignment task supported**
+- **Task 2a (UI implementation)** — the dark map + glowing route are the biggest visual deliverable of Phase 8c; Step 3 lands the shared component that Steps 6 + 7 will plug into.
+- **Task 4 (development)** — route geometry (bounding box + pause segmentation) is pure-Kotlin and tested, keeping the "domain layer stays JVM-testable" architecture story intact.

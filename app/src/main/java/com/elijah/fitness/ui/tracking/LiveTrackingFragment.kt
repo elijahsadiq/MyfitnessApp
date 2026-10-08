@@ -21,13 +21,13 @@ import com.elijah.fitness.tracking.TrackPoint
 import com.elijah.fitness.tracking.TrackingState
 import com.elijah.fitness.ui.base.BaseFragment
 import com.elijah.fitness.ui.main.MainActivity
+import com.elijah.fitness.ui.tracking.map.DarkMapStyler
+import com.elijah.fitness.ui.tracking.map.MapCameraController
+import com.elijah.fitness.ui.tracking.map.RoutePolylineRenderer
 import com.elijah.fitness.util.Formatters
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
-import org.osmdroid.config.Configuration
-import org.osmdroid.tileprovider.tilesource.TileSourceFactory
 import org.osmdroid.util.GeoPoint
-import org.osmdroid.views.overlay.Polyline
 
 /**
  * Live tracking screen. One fragment, two visual modes:
@@ -55,7 +55,8 @@ class LiveTrackingFragment : BaseFragment<FragmentLiveTrackingBinding>() {
     private val notificationLauncher =
         LocationPermissions.registerNotificationLauncher(this)
 
-    private var routeOverlay: Polyline? = null
+    private var routeRenderer: RoutePolylineRenderer? = null
+    private var mapCamera: MapCameraController? = null
 
     override fun inflateBinding(
         inflater: LayoutInflater,
@@ -117,7 +118,8 @@ class LiveTrackingFragment : BaseFragment<FragmentLiveTrackingBinding>() {
     override fun onDestroyView() {
         requireActivity().window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         binding.mapView.onDetach()
-        routeOverlay = null
+        routeRenderer = null
+        mapCamera = null
         super.onDestroyView()
     }
 
@@ -298,36 +300,28 @@ class LiveTrackingFragment : BaseFragment<FragmentLiveTrackingBinding>() {
     // -----------------------------------------------------------------
 
     private fun configureOsmdroid() {
-        val ctx = requireContext().applicationContext
-        val prefs = ctx.getSharedPreferences("osmdroid", 0)
-        Configuration.getInstance().load(ctx, prefs)
-        Configuration.getInstance().userAgentValue = ctx.packageName
+        // Phase 8c step 3 — one call to the shared styler replaces the
+        // per-fragment osmdroid wiring; it also installs the OSM
+        // attribution overlay and darkens the tiles.
+        DarkMapStyler.apply(binding.mapView, requireContext())
     }
 
     private fun setupMap() {
-        with(binding.mapView) {
-            setTileSource(TileSourceFactory.MAPNIK)
-            setMultiTouchControls(true)
-            controller.setZoom(16.0)
-            // London fallback until the first fix lands.
-            controller.setCenter(GeoPoint(51.5074, -0.1278))
-            setBuiltInZoomControls(false)
-        }
+        binding.mapView.controller.setZoom(16.0)
+        // London fallback until the first fix lands.
+        binding.mapView.controller.setCenter(GeoPoint(51.5074, -0.1278))
+        mapCamera = MapCameraController(binding.mapView)
     }
 
     private fun updateRoute(points: List<TrackPoint>) {
-        if (points.isEmpty()) return
-        val geoPoints = points.map { GeoPoint(it.latitude, it.longitude) }
-        val overlay = routeOverlay ?: Polyline(binding.mapView).also { poly ->
-            poly.outlinePaint.strokeWidth = 10f
-            poly.outlinePaint.color =
-                ContextCompat.getColor(requireContext(), R.color.lime_accent)
-            binding.mapView.overlays.add(poly)
-            routeOverlay = poly
+        val renderer = routeRenderer ?: RoutePolylineRenderer(binding.mapView).also {
+            routeRenderer = it
         }
-        overlay.setPoints(geoPoints)
-        binding.mapView.controller.animateTo(geoPoints.last())
-        binding.mapView.invalidate()
+        renderer.render(points)
+        // Follow the latest fix while follow-mode is on; the camera
+        // controller no-ops after the user drags the map.
+        val last = points.lastOrNull() ?: return
+        mapCamera?.followCurrentPosition(GeoPoint(last.latitude, last.longitude))
     }
 
     private fun formatElapsed(ms: Long): String {
