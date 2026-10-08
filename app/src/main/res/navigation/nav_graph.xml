@@ -118,6 +118,13 @@
             android:name="activityType"
             app:argType="string"
             android:defaultValue="RUNNING" />
+        <!-- Phase 8c step 5: on save success, open the finished workout
+             detail screen for the just-saved workout rather than popping
+             back to the History list. -->
+        <action
+            android:id="@+id/action_log_distance_to_detail"
+            app:destination="@id/workoutDetailFragment"
+            app:popUpTo="@id/workoutHistoryFragment" />
     </fragment>
 
     <fragment

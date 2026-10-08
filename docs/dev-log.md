@@ -2173,3 +2173,61 @@ Suggested screenshots: `log-sheet-run.png`, `log-sheet-ride.png`, `log-sheet-lif
 **Assignment task supported**
 - **Task 2a (UI implementation)** — one sheet replaces the two-sheet chain, matching the design pixel-for-pixel.
 - **Task 4 (development)** — DataStore-persisted preselection is a nice "we remember the user's choice" story for the report, and the one-session-at-a-time guard is a tight piece of state orchestration between the `TrackingSession` singleton and the sheet.
+
+## Phase 8c — Step 5: Manual entry form (LogRun.dc.html)
+
+**Built**
+- **`LogDistanceSummaryCalculator.kt`** — pure-Kotlin, no Android imports. `calculate(durationSeconds, distanceKm?, activity, bodyWeightKg)` → `Summary(paceSecondsPerKm, speedKmh, calories)` or `null` for empty / zero inputs. Calories go through the existing `Workout.caloriesBurned(kg)` by building a temporary `RunningWorkout` / `CyclingWorkout` — one place for the formula, real profile weight (never the design's 70 kg placeholder).
+- **`LogDistanceSummaryCalculatorTest.kt`** — 7 tests covering: empty inputs, zero distance (no divide-by-zero), negative duration, `WEIGHTLIFTING` activity rejected, 5 km / 30 min / 70 kg sanity figures (6:00 /km pace, 10 km/h speed, ~340 kcal), cycling < running calories at same workout, and calorie scaling with body weight.
+- **`fragment_log_distance_workout.xml`** rebuilt from `LogRun.dc.html`:
+  - Dark live-summary card at the top: lime pill eyebrow ("Running" / "Cycling"), three columns of label + value + unit (primary metric lime; secondary + Calories white), and an "Add a time and distance to see your pace." line when inputs are incomplete.
+  - "When" row: two tappable 64dp cards (Date + Start time) with a 36dp pale icon tile and label + bold value stacked.
+  - "How long?" card: three big centred `EditText`s with `textSize=34sp` + `textFontWeight=800`, inside pale rounded cells; colon separators between them.
+  - "How far?" card: one `textSize=44sp` `EditText` with "km" suffix.
+  - Notes textarea.
+  - Pinned Save button in a `FrameLayout` constrained to the parent bottom; inset-aware via `applyBottomNavInset`.
+- **`LogDistanceWorkoutFragment`** rewritten:
+  - `bindActivityChrome()` swaps icon, eyebrow label, primary / secondary metric labels + units, and Save button text based on `activityType`.
+  - Live summary update on every text change in hrs/min/sec/distance; distance parser accepts `.` or `,` as the decimal separator so a locale that uses one isn't broken.
+  - Date eyebrow renders "Today" / "Yesterday" / weekday-name depending on how the picked date relates to today.
+  - `imeOptions=actionNext` on the three duration fields chains Next → Next → Next → distance; distance's `actionDone` triggers Save.
+  - On `Event.Saved(clientUuid)` navigates straight to `workoutDetailFragment` via the new `action_log_distance_to_detail` action; `popUpTo = workoutHistoryFragment` so Back goes back to History (not back to the save form).
+- **`LogDistanceWorkoutViewModel`**:
+  - `Event.Saved` is now `data class Saved(val clientUuid: String)` so the fragment can navigate to the just-saved workout.
+  - New `log_error_duration_out_of_range` string + validation rule: minutes and seconds must be in 0..59 by **value** (user's Step 0 note: don't just cap `maxLength`, which silently clamps `99` → `99` and would still send bogus data). `hours < 0` is also flagged.
+
+**Nav graph**: `logDistanceWorkoutFragment` gains `action_log_distance_to_detail` pointing at `workoutDetailFragment` with `popUpTo=workoutHistoryFragment`.
+
+**Design tokens added**: `bg_log_form_card.xml` (24dp white card + divider), `bg_log_duration_cell.xml` (16dp warm fill), `bg_log_when_card.xml` (18dp white card), `bg_log_when_icon.xml` (12dp pale icon tile), `bg_log_summary_pill.xml` (dark pill on the summary header). No new colours needed — reuses `goal_main_card`, `goal_main_pill`, `goal_main_muted` from Phase 8b and `background_warm` for the duration cells.
+
+**Key design decision — pure-Kotlin summary calculator vs computing in the fragment / ViewModel**
+Previously the fragment computed `kmh = km / hoursDecimal` and formatted the preview itself. Pulling it into a stand-alone object gives us:
+- A single formula for pace, speed and calories (the ViewModel's save path doesn't need to recompute).
+- 7 unit tests on JVM that exercise the empty / zero / negative edge cases the brief flags.
+- A natural home for the "reuse the real profile weight" rule (via `Workout.caloriesBurned`), so no screen can ever drift and ship the 70 kg placeholder.
+
+**Rejected alternative — validate minutes / seconds with `maxLength=2` + an `InputFilter.LengthFilter` only**
+Would have kept the fragment smaller. Rejected because `maxLength` doesn't stop `99`, which is semantically wrong for a minutes field (should be 0..59). The user's Step 0 explicitly asked for value-level validation. The new `log_error_duration_out_of_range` string surfaces as an inline error below the three fields.
+
+**Kotlin / Android concepts** *(for my notes)*
+- `android:imeOptions="actionNext"` + `android:inputType="number"` on a chain of `EditText`s: the keyboard's `Next` button walks focus through the fields in XML order. No extra Kotlin needed.
+- `android:textFontWeight="800"` on an `EditText`: variable-font weight picker that lets us use Plus Jakarta Sans ExtraBold without a bespoke `android:fontFamily` on each field. Requires API 28+, and we're `minSdk=27` — K2 flags the lint but the attribute's a no-op below API 28 so the text just falls back to bold.
+- `java.util.Locale` + `String.format(Locale.getDefault(), …)`: ensures the fragment's rendered pace / speed uses the device's decimal separator and digit grouping without needing a locale-aware number formatter.
+
+**Verified**
+- `./gradlew assembleDebug` — BUILD SUCCESSFUL.
+- `./gradlew testCloudDebugUnitTest` — **232 tests, 0 failures** (+ 7 new in `LogDistanceSummaryCalculatorTest`).
+- APK reinstalled on the emulator; `adb reverse tcp:8080 tcp:8080` still active.
+
+**Pending user action — walk the form on the emulator**
+1. Open the Log sheet → **Enter manually** (either Running or Cycling). The summary card shows "—" + "Add a time and distance to see your pace."
+2. Type `0` hours, `30` minutes, `0` seconds, `5` km. Watch the summary card fill with real pace / speed / calories using the profile weight.
+3. Try typing `99` into Minutes → tap Save → inline "Minutes and seconds must be between 0 and 59." error below the duration row.
+4. Try typing `500` into Distance → inline "Distance can't exceed 300 km." error below the distance row.
+5. Save valid inputs → lands on the finished workout screen (Step 7's rebuild) for the just-saved workout.
+
+Suggested screenshots: `log-manual-run-empty.png`, `log-manual-run-filled.png`, `log-manual-validation.png`.
+
+**Assignment task supported**
+- **Task 2a (UI implementation)** — manual form matches `LogRun.dc.html` with the dark live-summary card and the big centred duration/distance fields.
+- **Task 4 (development)** — the calorie integration ties the manual-log preview to the shared `Workout.caloriesBurned` formula + real profile weight; the pure-Kotlin summary calculator is a clean unit-tested piece of domain logic for the report.

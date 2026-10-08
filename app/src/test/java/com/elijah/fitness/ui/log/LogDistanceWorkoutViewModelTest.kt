@@ -54,7 +54,7 @@ class LogDistanceWorkoutViewModelTest {
         dispatcher.scheduler.advanceUntilIdle()
 
         val event = vm.events.first()
-        assertEquals(LogDistanceWorkoutViewModel.Event.Saved, event)
+        assertTrue(event is LogDistanceWorkoutViewModel.Event.Saved)
         val list = repo.observeWorkouts().first { it.isNotEmpty() }
         assertEquals(1, list.size)
         val w = list.first()

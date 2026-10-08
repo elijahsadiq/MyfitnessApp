@@ -548,9 +548,42 @@
     <!-- Log form validation -->
     <string name="log_error_date_in_future">Date can\'t be in the future.</string>
     <string name="log_error_duration_zero">Duration must be greater than 0.</string>
+    <string name="log_error_duration_out_of_range">Minutes and seconds must be between 0 and 59.</string>
     <string name="log_error_distance_positive">Distance must be greater than 0.</string>
     <string name="log_error_distance_too_far">Distance can\'t exceed 300 km.</string>
     <string name="log_error_sets_required">Add at least one set before saving.</string>
+
+    <!-- Phase 8c step 5 — manual log form -->
+    <string name="log_run_title">Log a run</string>
+    <string name="log_ride_title">Log a ride</string>
+    <string name="log_summary_eyebrow_running">Running</string>
+    <string name="log_summary_eyebrow_cycling">Cycling</string>
+    <string name="log_summary_updates_as_you_type">Updates as you type</string>
+    <string name="log_summary_metric_pace">Avg pace</string>
+    <string name="log_summary_metric_speed">Avg speed</string>
+    <string name="log_summary_metric_calories">Calories</string>
+    <string name="log_summary_metric_dash">—</string>
+    <string name="log_summary_unit_pace">/km</string>
+    <string name="log_summary_unit_speed">km/h</string>
+    <string name="log_summary_unit_kcal">kcal</string>
+    <string name="log_summary_incomplete">Add a time and distance to see your pace.</string>
+    <string name="log_when_header">When</string>
+    <string name="log_date_eyebrow_today">Today</string>
+    <string name="log_date_eyebrow_yesterday">Yesterday</string>
+    <string name="log_time_eyebrow">Start time</string>
+    <string name="log_how_long_header">How long?</string>
+    <string name="log_how_far_header">How far?</string>
+    <string name="log_duration_hours_label">hours</string>
+    <string name="log_duration_minutes_label">min</string>
+    <string name="log_duration_seconds_label">sec</string>
+    <string name="log_distance_hint">0.00</string>
+    <string name="log_distance_unit">km</string>
+    <string name="log_notes_label">Notes</string>
+    <string name="log_notes_optional_suffix">(optional)</string>
+    <string name="log_notes_hint">How did it feel?</string>
+    <string name="log_save_run_button">Save run</string>
+    <string name="log_save_ride_button">Save ride</string>
+    <string name="log_back_content_description">Back</string>
 
     <!-- Log strength -->
     <string name="log_strength_sets_title">Sets</string>

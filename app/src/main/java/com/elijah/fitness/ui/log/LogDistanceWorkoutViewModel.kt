@@ -55,7 +55,12 @@ class LogDistanceWorkoutViewModel(
     val events: Flow<Event> = _events.receiveAsFlow()
 
     sealed interface Event {
-        data object Saved : Event
+        /**
+         * Save succeeded. [clientUuid] is the id of the just-saved workout
+         * — the fragment navigates straight to its detail screen rather
+         * than popping back to the list (phase 8c step 5).
+         */
+        data class Saved(val clientUuid: String) : Event
         data class ValidationFailed(val errors: List<FieldError>) : Event
         /**
          * Save failed on the network layer. The fragment keeps the user's
@@ -97,7 +102,12 @@ class LogDistanceWorkoutViewModel(
         val duration = Duration.ofSeconds(
             hours * 3_600L + minutes * 60L + seconds.toLong()
         )
-        val errors = validate(startInstant, duration, distanceKm)
+        val errors = validate(
+            startInstant = startInstant,
+            duration = duration,
+            hours = hours, minutes = minutes, seconds = seconds,
+            distanceKm = distanceKm,
+        )
         if (errors.isNotEmpty()) {
             viewModelScope.launch { _events.send(Event.ValidationFailed(errors)) }
             return
@@ -105,7 +115,7 @@ class LogDistanceWorkoutViewModel(
         val workout = buildWorkout(startInstant, duration, distanceKm!!, notes)
         viewModelScope.launch {
             when (repository.addWorkout(workout)) {
-                is ApiResult.Success -> _events.send(Event.Saved)
+                is ApiResult.Success -> _events.send(Event.Saved(workout.id))
                 ApiResult.NetworkError ->
                     _events.send(Event.SaveFailed(R.string.log_error_save_network))
                 is ApiResult.Error ->
@@ -117,13 +127,21 @@ class LogDistanceWorkoutViewModel(
     private fun validate(
         startInstant: Instant,
         duration: Duration,
-        distanceKm: Double?
+        hours: Int,
+        minutes: Int,
+        seconds: Int,
+        distanceKm: Double?,
     ): List<FieldError> {
         val errors = mutableListOf<FieldError>()
         if (startInstant.isAfter(clock.instant())) {
             errors += FieldError(Field.DATE, R.string.log_error_date_in_future)
         }
-        if (duration.isZero || duration.isNegative) {
+        // Phase 8c step 5 user instruction: validate the VALUES, don't
+        // just cap maxLength on the EditText. Negative or over-flowed
+        // digits must be an inline error, not a silent clamp.
+        if (minutes !in 0..59 || seconds !in 0..59 || hours < 0) {
+            errors += FieldError(Field.DURATION, R.string.log_error_duration_out_of_range)
+        } else if (duration.isZero || duration.isNegative) {
             errors += FieldError(Field.DURATION, R.string.log_error_duration_zero)
         }
         val km = distanceKm
