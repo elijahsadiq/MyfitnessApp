@@ -2343,3 +2343,84 @@ Suggested shots: `workout-detail.png`, `workout-detail-fullmap.png`.
 **Assignment task supported**
 - **Task 2a (UI implementation)** — the finished workout screen is the last big-ticket visual deliverable of Phase 8c and now matches `Detail.dc.html`.
 - **Task 4 (development)** — the Edit-notes flow is a new write path (dialog → ViewModel → repository → PHP `PATCH` → MySQL → observable list refresh), useful evidence of real CRUD against the backend.
+
+---
+
+## Phase 8c — Step 8: Verification, screenshots + report evidence
+
+**Goal**
+Close out Phase 8c: audit the olive-free theme end to end, point the
+report screenshots at the rebuilt screens, update
+`docs/assignment-coverage.md` for the geolocation row, and credit
+OpenStreetMap + the Claude design canvas as the design source for the
+rebuilt flows.
+
+**Autonomous checks**
+- Grep for `#536600` / `#6b7a1f` / `#a3b32e` / `olive` / `brand_lime` / `brand_run` / `brand_cycl` / `brand_strength` across `app/src/main` → 0 matches outside KDoc / theme-comment text and the orphaned colour entry in `values/colors.xml` (kept so the design-system doc still parses). No layout or style references `@color/lime_deep` or `@color/on_lime_deep` as a fill — the olive hex only lives as a named token in `colors.xml`, intentionally retained for the design-system reference. `colorPrimary` resolves to `@color/lime_accent` (`values/themes.xml:31`).
+- `./gradlew assembleDebug` + `./gradlew testCloudDebugUnitTest` + `./gradlew testLocalDebugUnitTest` all green on top of Step 7 (`213f5cb`). 264+ unit tests cover the pure-Kotlin domain layer; nothing from Step 7 required mock-Android.
+- `docs/screenshots/README.md` extended with the six phase-8c figures and the device-matrix spot-check list.
+- `docs/assignment-coverage.md` — the **Geolocation** row now cites `LiveTrackingFragment.kt` (Step 6 rebuild), `WorkoutDetailFragment.kt` + `FullScreenMapFragment.kt` (Step 7), and the shared `ui/tracking/map/` renderer (Step 3). The "Workout detail with route" row no longer references the deleted `RouteSplits.kt`. The "Pure-Kotlin domain layer" row swapped the `RouteSplits.kt` cite for `RouteGeometry.kt` (the Step-3 pause splitter that replaced it).
+
+**Credit — design canvas + OpenStreetMap**
+- Every HTML source under `docs/design/logging-v2/` (`Main.dc.html`, `LogRun.dc.html`, `LogStrength.dc.html`, `Tracking.dc.html`, `Detail.dc.html`) was authored in a Claude design canvas, the same workflow that produced `docs/design/goals-v2/` in phase 8b. The HTML is checked in alongside the Android implementation so the examiner can see design + implementation side by side. Each `fragment_*.xml` in `app/src/main/res/layout/` was then re-implemented by hand against the canvas HTML — no HTML-to-XML autoconversion.
+- Every `MapView` in the app (live tracking, detail card, full-screen map) renders © OpenStreetMap tiles through osmdroid's default MAPNIK source. The "© OpenStreetMap" attribution overlay is drawn by `DarkMapStyler.apply()` on every map and must stay visible in every map screenshot captured for the report. No API key, no bundled tiles. Credit copy for the written report: *"Map tiles © OpenStreetMap contributors, rendered via osmdroid's MAPNIK tile source. Licensed under the Open Database License (ODbL)."*
+
+**Pending user action — the emulator walkthrough**
+Shoot the Phase-8c figures below using the Hyde Park fixture at
+`docs/testing/sample_route.gpx`. Each shot has a matching design canvas
+HTML under `docs/design/logging-v2/` so pairs sit side by side in the
+report.
+
+| # | File | Device state |
+|---|---|---|
+| 1 | `log-sheet.png` | Tap the History FAB on a fresh install; one shot with no preselection, one shot after a run has been logged so the Running tile is preselected. |
+| 2 | `log-manual.png` | Running → Enter manually → `0h 28m 15s` + `5.1 km`. Confirm the dark summary card reads non-zero pace / speed / calories. |
+| 3 | `tracking-live.png` | Mid-playback of the GPX fixture, roughly minute 8. GPS pill reads "GPS strong"; polyline is glowing lime. |
+| 4 | `tracking-locked.png` | During #3, tap Lock, then press-and-hold the pill about half a second and screenshot while the progress bar is roughly 50 %. |
+| 5 | `workout-detail.png` | Open the just-saved GPS workout from History. For a second shot, open any strength workout (map card should be absent). |
+| 6 | `workout-detail-fullmap.png` | On the detail screen, tap the expand icon on the map card. Screenshot the full-screen map with the close pill visible. |
+
+Device matrix (for every new screen — Phase-8c brief): 320dp width,
+tablet, landscape, largest system font, dark system theme (the app
+stays light-only). Spot-check the lock overlay still covers the full
+tracking surface, the 2 × 2 detail stat grid wraps without cutting off
+values, and the Save / Finish pills clear the IME + gesture bar.
+
+**Database verification**
+Open http://localhost:8081 → `fitness_app` → **Browse** on each table
+after running the walkthrough:
+
+- `workouts`: the new row has an ISO `start_time`, correct
+  `duration_seconds`, non-null `distance_meters` for the GPS run, and
+  the `notes` cell reflects the latest Edit-notes dialog save
+  (phase 8c step 7 added `PATCH /workouts/{id}`).
+- `route_points`: a `seq`-ordered sequence of points for the saved
+  workout_id; `recorded_at` increases monotonically; the pause gap
+  from Step 6 shows as a jump in `elapsed_ms` relative to
+  `recorded_at` (the Step-3 splitter uses this difference).
+
+**Rejected alternative — a second design canvas pass for Phase 8c**
+Phase 8b used one design canvas iteration before the Kotlin
+implementation; Phase 8c kept the same single-pass workflow because
+the design-system tokens from phase-2 step 1 (Kinetic Glow) were
+already stable, so there was no colour or type drift to re-reconcile.
+Second-pass iterations would have cost a day and produced no visible
+mark-scheme difference.
+
+**Verified**
+- `./gradlew assembleDebug` — BUILD SUCCESSFUL on top of Step 7.
+- `./gradlew testCloudDebugUnitTest` + `./gradlew testLocalDebugUnitTest` — BUILD SUCCESSFUL.
+- Olive-colour grep: 0 matches on `@color/lime_deep` or `@color/on_lime_deep` references in `res/`.
+
+**Assignment task supported**
+- **Task 4 (geolocation)** — the Phase-8c `tracking-live.png`,
+  `tracking-locked.png`, `workout-detail.png`, and
+  `workout-detail-fullmap.png` figures are the strongest visual
+  evidence of the GPS end-to-end: a working foreground service, a
+  dark route map with a glowing polyline, pause-gap handling, and a
+  saved route surviving across screens. The assignment-coverage row
+  for geolocation now points at all four.
+- **Task 1b (architecture + design chapter)** — the attribution
+  section is the one-paragraph OSM / design-canvas credit the report
+  needs to cite in both the "External libraries" and "Design
+  methodology" subsections.

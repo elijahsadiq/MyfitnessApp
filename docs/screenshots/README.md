@@ -66,3 +66,45 @@ The brief asks that the Goals screens hold up at:
 
 For each configuration, confirm the New Goal screen's tracking-option
 row stays on one line.
+
+---
+
+# Report screenshots — phase 8c logging + maps redesign
+
+Capture these for the Phase-8c figures. Each file should sit **next
+to its design** at `docs/design/logging-v2/<matching>.dc.html` so the
+report can show design + implementation side by side.
+
+| # | File | Captures | Where to shoot |
+|---|---|---|---|
+| 1 | `log-sheet.png` | "Log a workout" bottom sheet with the three activity tiles + the context "Track with GPS" / "Enter manually" options under the preselected activity | Tap the History FAB (or Home → Start workout) on a fresh install so no "last-logged" activity is preselected yet. For a second shot, open the sheet again after logging a run — the Running tile should be preselected. |
+| 2 | `log-manual.png` | Manual entry form with the dark summary card showing a non-zero pace, speed and calorie estimate | Choose Running → **Enter manually** → fill `0h 28m 15s` + `5.1 km` so pace reads `5:32 /km`. |
+| 3 | `tracking-live.png` | Live-tracking screen with the glowing lime polyline on the dark map, GPS pill in **GPS strong**, non-zero elapsed + distance + pace, and all three bottom controls (Pause · Lock · Finish) visible | Mid-playback of `docs/testing/sample_route.gpx`, roughly minute 8 of the loop. |
+| 4 | `tracking-locked.png` | Lock overlay covering the screen; "Hold to unlock" pill visible mid-progress (progress bar roughly 50 %) | During shot #3, tap Lock, then hold the pill about half a second and screenshot. |
+| 5 | `workout-detail.png` | Finished workout screen — self-drawn header (`Morning run` / `Today, Wed 7 Oct · 06:30`), dark map card with "Running · GPS" pill + expand button + distance pill, 2 × 2 stat grid with the highlighted lime pace card, Notes card with real text | Open the just-saved GPS workout from History. For the strength variant, open any strength workout — the map card should be absent and the stat grid should read Volume / Duration / Sets / Calories. |
+| 6 | `workout-detail-fullmap.png` | Full-screen interactive map opened via the expand button; close pill top-right of the status bar area; the glowing lime polyline fills the viewport. | Tap the expand icon on the detail map card, then screenshot. |
+
+### Device matrix (phase 8c step 8)
+
+The brief asks that every new screen holds up at:
+
+- 320dp width (nexus_s or similar narrow emulator profile)
+- Tablet (any 7"+ profile)
+- Landscape (rotate on any phone profile)
+- Largest system font size (Settings → Display → Font size → max)
+- Dark system theme — the app is light-only by design but the layouts
+  must not break if the system is in dark mode
+
+Spot-check in each configuration:
+
+- Lock overlay still blocks the whole live-tracking surface.
+- The 2 × 2 stat grid on the detail screen wraps cleanly (no cut-off
+  values at 320dp + largest font).
+- Save / Finish pills clear the IME + gesture bar.
+
+### Attribution
+
+Every map in this app uses © OpenStreetMap contributors tiles via
+osmdroid's MAPNIK source. The "© OpenStreetMap" overlay is drawn by
+`DarkMapStyler` on every `MapView` and must stay visible in every
+map screenshot you capture.
