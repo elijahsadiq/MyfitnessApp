@@ -507,7 +507,20 @@
     <string name="history_placeholder_title">Workout history</string>
     <string name="history_placeholder_body">Your logged workouts will appear here.</string>
 
-    <!-- Choose activity bottom sheet -->
+    <!-- Log a workout bottom sheet (phase 8c step 4) -->
+    <string name="log_sheet_title">Log a workout</string>
+    <string name="log_sheet_subtitle">What did you do?</string>
+    <string name="log_sheet_options_label">How do you want to log it?</string>
+    <string name="log_sheet_track_gps">Track with GPS</string>
+    <string name="log_sheet_track_gps_hint">Live map, distance and pace</string>
+    <string name="log_sheet_manual">Enter manually</string>
+    <string name="log_sheet_manual_hint_run">Add a run you have already done</string>
+    <string name="log_sheet_manual_hint_ride">Add a ride you have already done</string>
+    <string name="log_sheet_lift_option">Log sets and reps</string>
+    <string name="log_sheet_lift_hint">Exercises, sets, reps and weight</string>
+    <string name="log_sheet_permission_denied_snackbar">Location is off. You can still enter your workout manually.</string>
+
+    <!-- Legacy choose-activity strings — kept so stale references compile. -->
     <string name="choose_activity_title">Log a workout</string>
     <string name="choose_activity_subtitle">Pick the type of activity.</string>
     <string name="choose_mode_title">How would you like to log it?</string>

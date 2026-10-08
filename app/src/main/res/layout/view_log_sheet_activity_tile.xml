@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Log-sheet activity tile. Selected state is driven from code by
+  `setSelected(true)` on the root — drawable + text-colour selectors
+  resolve dark / lime treatments automatically.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/logSheetActivityTileRoot"
+    android:layout_width="0dp"
+    android:layout_height="104dp"
+    android:layout_weight="1"
+    android:background="@drawable/bg_log_sheet_activity_tile"
+    android:clickable="true"
+    android:focusable="true"
+    android:gravity="center"
+    android:orientation="vertical">
+
+    <FrameLayout
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:background="@drawable/bg_log_sheet_activity_icon">
+
+        <ImageView
+            android:id="@+id/logSheetActivityTileIcon"
+            android:layout_width="22dp"
+            android:layout_height="22dp"
+            android:layout_gravity="center"
+            android:contentDescription="@null"
+            app:tint="@color/text_primary"
+            tools:src="@drawable/ic_run_24" />
+    </FrameLayout>
+
+    <TextView
+        android:id="@+id/logSheetActivityTileLabel"
+        style="@style/TextAppearance.Fitness.LabelMd"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:textAllCaps="false"
+        android:textColor="@color/log_sheet_activity_label"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        tools:text="Running" />
+</LinearLayout>

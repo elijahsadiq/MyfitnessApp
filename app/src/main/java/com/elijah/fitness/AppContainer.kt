@@ -1,7 +1,9 @@
 package com.elijah.fitness
 
 import android.content.Context
+import com.elijah.fitness.data.local.DataStoreLastLoggedActivityStore
 import com.elijah.fitness.data.local.DataStoreOnboardingStore
+import com.elijah.fitness.data.local.LastLoggedActivityStore
 import com.elijah.fitness.data.local.OnboardingStore
 import com.elijah.fitness.data.remote.AuthEventBus
 import com.elijah.fitness.data.remote.DataStoreTokenStore
@@ -55,6 +57,8 @@ class AppContainer(applicationContext: Context) {
     // Phase-2 preferences.
     val tokenStore: TokenStore = DataStoreTokenStore(applicationContext)
     val onboardingStore: OnboardingStore = DataStoreOnboardingStore(applicationContext)
+    val lastLoggedActivityStore: LastLoggedActivityStore =
+        DataStoreLastLoggedActivityStore(applicationContext)
 
     // App-wide auth signal bus (Step 5): a 401 from any endpoint fires an
     // Unauthorized event, MainActivity observes it and bounces back to auth.

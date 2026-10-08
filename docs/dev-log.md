@@ -2128,3 +2128,48 @@ Capture a shot of the dark map on the emulator so the matrix tuning is documente
 **Assignment task supported**
 - **Task 2a (UI implementation)** — the dark map + glowing route are the biggest visual deliverable of Phase 8c; Step 3 lands the shared component that Steps 6 + 7 will plug into.
 - **Task 4 (development)** — route geometry (bounding box + pause segmentation) is pure-Kotlin and tested, keeping the "domain layer stays JVM-testable" architecture story intact.
+
+## Phase 8c — Step 4: Log a workout sheet (Main.dc.html)
+
+**Built**
+- **`bottom_sheet_choose_activity.xml`** rebuilt from `Main.dc.html` as a single-step sheet: drag handle, "Log a workout" title + "What did you do?" subtitle, three activity tiles in a 1 × 3 row (Running / Cycling / Workout), then a context-sensitive options block. Replaces the former two-step chain entirely.
+- **Activity tile selectors** (`bg_log_sheet_activity_tile.xml`, `bg_log_sheet_activity_icon.xml`, `color/log_sheet_activity_label.xml`): selected = `surface_dark` with a lime inner icon tile and `text_on_dark` label; unselected = `background_warm` with a white inner tile and `text_primary` label. Switch is driven by `root.isSelected = (type == selected)` so the state propagates to the three selectors without per-view conditional code.
+- **Option cards**: `bg_log_sheet_option_dark.xml` (Track with GPS / Log sets and reps), `bg_log_sheet_option_light.xml` (Enter manually). Each gets a 44dp inner icon tile; the dark cards paint `bg_log_sheet_option_icon_lime.xml`, the light card reuses `bg_icon_tile`.
+- **New vector `ic_list_24.xml`** for the Log-sets-and-reps card.
+- **Strings** replaced: `log_sheet_*` block covers title, subtitle, options label, both primary options with their hints, and the permission-denied Snackbar. The old `choose_*` strings are kept with a legacy-note comment so any stale reference still compiles.
+- **`ChooseActivityBottomSheet`** rewritten end-to-end (same class name so the nav graph entry is untouched):
+  - Reads the DataStore key for the last-logged activity on open and preselects that tile; falls back to `RUNNING` for new users.
+  - Hides the Workout option when a distance activity is picked, and vice versa; the manual hint swaps between "Add a run / ride you have already done".
+  - **Track with GPS** routes through `LocationPermissions.outcome(context)` — already granted navigates straight to live tracking; `Denied` fires the Phase-8a permission launcher. On refusal the sheet stays open and a Snackbar nudges toward Enter manually.
+  - After every successful navigation the sheet writes the chosen activity back to the DataStore so the next open preselects it.
+- **`LastLoggedActivityStore`** (new): small DataStore-backed preference wrapper modelled on `OnboardingStore` — interface + `DataStoreLastLoggedActivityStore` implementation. Wired through `AppContainer.lastLoggedActivityStore`.
+
+**One session at a time (user's Step 0 addition)**
+Before the sheet renders, `onViewCreated` inspects `AppContainer.trackingSession.state.value`. If the status is `Tracking` or `Paused`, the sheet navigates straight to the live tracking screen with the session's own `activityType` and dismisses itself. The Home "Start workout" button, the History FAB and any future entry all land here, so one guard covers all three.
+
+**Key design decision — reuse the existing nav id, not a new sheet class**
+The brief wanted a single new sheet. I renamed the content (strings, layout, option flow) but kept the class name `ChooseActivityBottomSheet` and the nav-graph destination id. That lets the three entry points keep using the existing `action_*_to_choose_activity` / `action_choose_to_*` actions — the sheet behaviour changes behind an unchanged navigation API.
+
+**Rejected alternative — redirect pre-session on Home instead of in the sheet**
+Would have put the "one-session-at-a-time" guard on the `Start workout` click handler and the History FAB's click, so the sheet never opens when a session is live. Rejected because that duplicates the guard across every entry point. One guard in the sheet's `onViewCreated` covers every entry, and the dismiss-then-navigate pair happens so fast the sheet never visibly renders.
+
+**Kotlin / Android concepts** *(for my notes)*
+- `preferencesDataStore(name = "log_prefs")` extension on `Context`: generates a lazy `DataStore<Preferences>` per file. Separate from `onboarding_prefs` so edits to one store don't rewrite the other's file.
+- `root.isSelected = …` + state-list drawables + state-list `ColorStateList`: the same pattern used on the Goals activity tile. No `when` ladder in `bind` — the drawable + selector pair carries the branching.
+- `BottomSheetDialogFragment` + fragment-safe `LocationPermissions.registerLocationLauncher`: the launcher is declared as a field (not inside `onViewCreated`) so it's registered before the fragment enters STARTED, which is `registerForActivityResult`'s hard constraint.
+
+**Verified**
+- `./gradlew assembleDebug` — BUILD SUCCESSFUL.
+- `./gradlew testCloudDebugUnitTest` — BUILD SUCCESSFUL (all unit tests pass).
+- APK reinstalled on the emulator; `adb reverse tcp:8080 tcp:8080` still active.
+
+**Pending user action — walk the sheet on the emulator**
+1. Tap Home's **Start workout** → sheet opens, Running tile is preselected (first time) or the last-used activity (subsequent opens). Pick Cycling → the Enter-manually hint flips to "Add a ride you have already done". Pick Workout → the single "Log sets and reps" card replaces the two running/cycling options.
+2. With Location permission not yet granted: tap **Track with GPS** → OS permission dialog appears. Refuse → Snackbar prompts "Location is off. You can still enter your workout manually." Accept → navigates straight to live tracking.
+3. Confirm **one-session-at-a-time**: start a run, pause, press Home → tap **Start workout** again → the sheet skips through and lands back on the live tracking screen without ever becoming visible.
+
+Suggested screenshots: `log-sheet-run.png`, `log-sheet-ride.png`, `log-sheet-lift.png`.
+
+**Assignment task supported**
+- **Task 2a (UI implementation)** — one sheet replaces the two-sheet chain, matching the design pixel-for-pixel.
+- **Task 4 (development)** — DataStore-persisted preselection is a nice "we remember the user's choice" story for the report, and the one-session-at-a-time guard is a tight piece of state orchestration between the `TrackingSession` singleton and the sheet.

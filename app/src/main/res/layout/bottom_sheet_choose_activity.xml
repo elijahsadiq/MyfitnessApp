@@ -1,128 +1,283 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<!--
+  "Log a workout" bottom sheet (phase 8c step 4). Rebuilt from
+  Main.dc.html — one step, three activity tiles + context-sensitive
+  options below. Replaces the former two-step chain.
+-->
+<androidx.core.widget.NestedScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content">
+    android:layout_height="wrap_content"
+    android:background="@color/surface_white">
 
-    <!--
-      Two-step chooser. Running / Cycling land on step 2 (Track with GPS
-      vs enter manually); Weightlifting bypasses step 2 and routes
-      straight to manual logging.
-    -->
-
-    <!-- Step 1: activity picker. -->
     <LinearLayout
-        android:id="@+id/stepActivity"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:paddingHorizontal="@dimen/space_xl"
-        android:paddingTop="@dimen/space_xl"
-        android:paddingBottom="@dimen/space_lg">
+        android:paddingHorizontal="@dimen/screen_margin"
+        android:paddingTop="10dp"
+        android:paddingBottom="@dimen/space_xl">
 
+        <!-- Drag handle -->
+        <View
+            android:layout_width="40dp"
+            android:layout_height="4dp"
+            android:layout_gravity="center_horizontal"
+            android:background="@drawable/bg_goal_sheet_handle" />
+
+        <!-- Title + subtitle -->
         <TextView
             style="@style/TextAppearance.Fitness.HeadlineSm"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/choose_activity_title" />
+            android:layout_marginTop="@dimen/space_lg"
+            android:text="@string/log_sheet_title"
+            android:textSize="22sp" />
 
         <TextView
             style="@style/TextAppearance.Fitness.BodyMd"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/space_xs"
-            android:text="@string/choose_activity_subtitle"
+            android:layout_marginTop="4dp"
+            android:text="@string/log_sheet_subtitle"
             android:textColor="@color/text_secondary" />
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/optionRunning"
-            style="@style/Widget.Material3.Button.TonalButton.Icon"
+        <!-- 3-tile activity row -->
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/space_lg"
-            android:minHeight="@dimen/touch_target_min"
-            android:text="@string/activity_type_running"
-            app:icon="@drawable/ic_run_24"
-            app:iconTint="@color/text_primary" />
+            android:baselineAligned="false"
+            android:orientation="horizontal">
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/optionCycling"
-            style="@style/Widget.Material3.Button.TonalButton.Icon"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/space_sm"
-            android:minHeight="@dimen/touch_target_min"
-            android:text="@string/activity_type_cycling"
-            app:icon="@drawable/ic_bike_24"
-            app:iconTint="@color/text_primary" />
+            <include
+                android:id="@+id/logSheetActivityRun"
+                layout="@layout/view_log_sheet_activity_tile" />
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/optionWeightlifting"
-            style="@style/Widget.Material3.Button.TonalButton.Icon"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/space_sm"
-            android:minHeight="@dimen/touch_target_min"
-            android:text="@string/activity_type_weightlifting"
-            app:icon="@drawable/ic_dumbbell_24"
-            app:iconTint="@color/text_primary" />
-    </LinearLayout>
+            <Space
+                android:layout_width="10dp"
+                android:layout_height="match_parent" />
 
-    <!-- Step 2: tracking vs manual (only for distance activities). -->
-    <LinearLayout
-        android:id="@+id/stepMode"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:paddingHorizontal="@dimen/space_xl"
-        android:paddingTop="@dimen/space_xl"
-        android:paddingBottom="@dimen/space_lg"
-        android:visibility="gone">
+            <include
+                android:id="@+id/logSheetActivityRide"
+                layout="@layout/view_log_sheet_activity_tile" />
 
+            <Space
+                android:layout_width="10dp"
+                android:layout_height="match_parent" />
+
+            <include
+                android:id="@+id/logSheetActivityLift"
+                layout="@layout/view_log_sheet_activity_tile" />
+        </LinearLayout>
+
+        <!-- Options eyebrow -->
         <TextView
-            android:id="@+id/modeTitle"
-            style="@style/TextAppearance.Fitness.HeadlineSm"
+            style="@style/TextAppearance.Fitness.LabelSm"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/choose_mode_title" />
-
-        <TextView
-            style="@style/TextAppearance.Fitness.BodyMd"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/space_xs"
-            android:text="@string/choose_mode_subtitle"
-            android:textColor="@color/text_secondary" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/optionTrack"
-            style="@style/Widget.Material3.Button.TonalButton.Icon"
-            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/space_lg"
-            android:minHeight="@dimen/touch_target_min"
-            android:text="@string/choose_mode_track"
-            app:icon="@drawable/ic_location_pin_24"
-            app:iconTint="@color/text_primary" />
+            android:text="@string/log_sheet_options_label"
+            android:textColor="@color/text_secondary" />
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/optionManual"
-            style="@style/Widget.Material3.Button.TonalButton.Icon"
+        <!-- Running + Cycling options -->
+        <LinearLayout
+            android:id="@+id/logSheetDistanceOptions"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/space_sm"
-            android:minHeight="@dimen/touch_target_min"
-            android:text="@string/choose_mode_manual"
-            app:icon="@drawable/ic_add_24"
-            app:iconTint="@color/text_primary" />
+            android:layout_marginTop="10dp"
+            android:orientation="vertical">
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/modeBackButton"
-            style="@style/Widget.Fitness.Button.Text"
-            android:layout_width="wrap_content"
+            <LinearLayout
+                android:id="@+id/logSheetTrackGps"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_log_sheet_option_dark"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center_vertical"
+                android:minHeight="76dp"
+                android:orientation="horizontal"
+                android:paddingHorizontal="16dp"
+                android:paddingVertical="14dp">
+
+                <FrameLayout
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:background="@drawable/bg_log_sheet_option_icon_lime">
+
+                    <ImageView
+                        android:layout_width="22dp"
+                        android:layout_height="22dp"
+                        android:layout_gravity="center"
+                        android:contentDescription="@null"
+                        android:src="@drawable/ic_location_pin_24"
+                        app:tint="@color/text_on_lime" />
+                </FrameLayout>
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="14dp"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        style="@style/TextAppearance.Fitness.BodyLg"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/log_sheet_track_gps"
+                        android:textColor="@color/text_on_dark"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        style="@style/TextAppearance.Fitness.LabelMd"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:text="@string/log_sheet_track_gps_hint"
+                        android:textAllCaps="false"
+                        android:textColor="@color/goal_main_muted" />
+                </LinearLayout>
+
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:contentDescription="@null"
+                    android:src="@drawable/ic_arrow_forward_24"
+                    app:tint="@color/lime_accent" />
+            </LinearLayout>
+
+            <Space
+                android:layout_width="match_parent"
+                android:layout_height="10dp" />
+
+            <LinearLayout
+                android:id="@+id/logSheetEnterManual"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_log_sheet_option_light"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center_vertical"
+                android:minHeight="76dp"
+                android:orientation="horizontal"
+                android:paddingHorizontal="16dp"
+                android:paddingVertical="14dp">
+
+                <FrameLayout
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:background="@drawable/bg_icon_tile">
+
+                    <ImageView
+                        android:layout_width="22dp"
+                        android:layout_height="22dp"
+                        android:layout_gravity="center"
+                        android:contentDescription="@null"
+                        android:src="@drawable/ic_edit_24"
+                        app:tint="@color/text_primary" />
+                </FrameLayout>
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="14dp"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        style="@style/TextAppearance.Fitness.BodyLg"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/log_sheet_manual"
+                        android:textColor="@color/text_primary"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/logSheetManualHint"
+                        style="@style/TextAppearance.Fitness.LabelMd"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:textAllCaps="false"
+                        android:textColor="@color/text_secondary"
+                        tools:text="Add a run you have already done" />
+                </LinearLayout>
+
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:contentDescription="@null"
+                    android:src="@drawable/ic_arrow_forward_24"
+                    app:tint="@color/text_secondary" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Workout option -->
+        <LinearLayout
+            android:id="@+id/logSheetLiftOption"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_gravity="start"
-            android:layout_marginTop="@dimen/space_sm"
-            android:text="@string/choose_mode_back" />
+            android:layout_marginTop="10dp"
+            android:background="@drawable/bg_log_sheet_option_dark"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center_vertical"
+            android:minHeight="76dp"
+            android:orientation="horizontal"
+            android:paddingHorizontal="16dp"
+            android:paddingVertical="14dp"
+            android:visibility="gone"
+            tools:visibility="visible">
+
+            <FrameLayout
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:background="@drawable/bg_log_sheet_option_icon_lime">
+
+                <ImageView
+                    android:layout_width="22dp"
+                    android:layout_height="22dp"
+                    android:layout_gravity="center"
+                    android:contentDescription="@null"
+                    android:src="@drawable/ic_list_24"
+                    app:tint="@color/text_on_lime" />
+            </FrameLayout>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="14dp"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    style="@style/TextAppearance.Fitness.BodyLg"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/log_sheet_lift_option"
+                    android:textColor="@color/text_on_dark"
+                    android:textStyle="bold" />
+
+                <TextView
+                    style="@style/TextAppearance.Fitness.LabelMd"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:text="@string/log_sheet_lift_hint"
+                    android:textAllCaps="false"
+                    android:textColor="@color/goal_main_muted" />
+            </LinearLayout>
+
+            <ImageView
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:contentDescription="@null"
+                android:src="@drawable/ic_arrow_forward_24"
+                app:tint="@color/lime_accent" />
+        </LinearLayout>
     </LinearLayout>
-</FrameLayout>
+</androidx.core.widget.NestedScrollView>
