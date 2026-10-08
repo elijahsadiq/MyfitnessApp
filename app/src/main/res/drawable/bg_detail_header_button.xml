@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 44dp pale circle used by the detail-screen header back / share /
+     overflow buttons (phase 8c step 7). -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="oval">
+    <solid android:color="@color/surface_container_low" />
+</shape>

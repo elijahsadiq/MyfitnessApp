@@ -58,6 +58,44 @@ class FakeWorkoutRepository(
         }
     }
 
+    override suspend fun updateNotes(clientUuid: String, notes: String?): ApiResult<Workout> {
+        val existing = _workouts.value.firstOrNull { it.id == clientUuid }
+            ?: return ApiResult.Error(
+                message = "Workout not found",
+                status = 404,
+                fieldErrors = emptyMap(),
+            )
+        val cleaned = notes?.takeUnless { it.isBlank() }
+        val updated: Workout = when (existing) {
+            is RunningWorkout -> RunningWorkout(
+                id = existing.id,
+                startTime = existing.startTime,
+                duration = existing.duration,
+                distanceMeters = existing.distanceMeters,
+                notes = cleaned,
+            )
+            is CyclingWorkout -> CyclingWorkout(
+                id = existing.id,
+                startTime = existing.startTime,
+                duration = existing.duration,
+                distanceMeters = existing.distanceMeters,
+                notes = cleaned,
+            )
+            is StrengthWorkout -> StrengthWorkout(
+                id = existing.id,
+                startTime = existing.startTime,
+                duration = existing.duration,
+                sets = existing.sets,
+                notes = cleaned,
+            )
+            else -> existing
+        }
+        _workouts.update { current ->
+            current.map { if (it.id == clientUuid) updated else it }
+        }
+        return ApiResult.Success(updated)
+    }
+
     override suspend fun getWorkoutDetail(
         clientUuid: String,
     ): ApiResult<com.elijah.fitness.data.model.WorkoutDetail> {

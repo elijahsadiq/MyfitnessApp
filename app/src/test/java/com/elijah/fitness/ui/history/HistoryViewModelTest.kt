@@ -128,5 +128,13 @@ class HistoryViewModelTest {
                 com.elijah.fitness.data.remote.ApiResult.Success(Unit)
             }
         }
+
+        override suspend fun updateNotes(
+            clientUuid: String,
+            notes: String?,
+        ): com.elijah.fitness.data.remote.ApiResult<com.elijah.fitness.data.model.Workout> =
+            com.elijah.fitness.data.remote.ApiResult.Error(
+                "not supported in test fake", 404, emptyMap(),
+            )
     }
 }

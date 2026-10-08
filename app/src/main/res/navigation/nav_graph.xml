@@ -39,6 +39,20 @@
         <argument
             android:name="clientUuid"
             app:argType="string" />
+        <!-- Phase 8c step 7: expand the map card to full screen. -->
+        <action
+            android:id="@+id/action_detail_to_full_map"
+            app:destination="@id/fullScreenMapFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/fullScreenMapFragment"
+        android:name="com.elijah.fitness.ui.history.FullScreenMapFragment"
+        android:label="@string/detail_title_running"
+        tools:layout="@layout/fragment_full_screen_map">
+        <argument
+            android:name="clientUuid"
+            app:argType="string" />
     </fragment>
 
     <fragment

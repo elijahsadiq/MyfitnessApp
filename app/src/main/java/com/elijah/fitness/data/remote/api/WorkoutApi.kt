@@ -7,6 +7,7 @@ import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
+import retrofit2.http.PATCH
 import retrofit2.http.POST
 import retrofit2.http.Path
 import retrofit2.http.Query
@@ -28,4 +29,10 @@ interface WorkoutApi {
 
     @DELETE("workouts/{id}")
     suspend fun delete(@Path("id") id: Long): Response<Unit>
+
+    @PATCH("workouts/{id}")
+    suspend fun patch(
+        @Path("id") id: Long,
+        @Body body: Map<String, @JvmSuppressWildcards Any?>,
+    ): Response<ApiEnvelope<WorkoutDto>>
 }

@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  One stat card on the detail screen's 2 x 2 grid. The highlighted
+  variant (pace / speed) is driven from code — the fragment swaps
+  `background`, `textColor` on label + value, and the inner
+  `textColor` on the value to lime for the highlighted cell.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/detailStatCardRoot"
+    android:layout_width="0dp"
+    android:layout_height="wrap_content"
+    android:layout_weight="1"
+    android:background="@drawable/bg_detail_stat_card_light"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <TextView
+        android:id="@+id/detailStatCardLabel"
+        style="@style/TextAppearance.Fitness.LabelMd"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAllCaps="false"
+        android:textColor="@color/text_secondary"
+        tools:text="Distance" />
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:baselineAligned="true"
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/detailStatCardValue"
+            style="@style/TextAppearance.Fitness.DisplayMetric"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="@color/text_primary"
+            android:textSize="26sp"
+            tools:text="4.12" />
+
+        <TextView
+            android:id="@+id/detailStatCardUnit"
+            style="@style/TextAppearance.Fitness.LabelMd"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom"
+            android:layout_marginStart="4dp"
+            android:paddingBottom="4dp"
+            android:textAllCaps="false"
+            android:textColor="@color/text_secondary"
+            android:textSize="13sp"
+            tools:text="km" />
+    </LinearLayout>
+</LinearLayout>

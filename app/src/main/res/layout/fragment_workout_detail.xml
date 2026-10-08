@@ -1,226 +1,292 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.core.widget.NestedScrollView
+<!--
+  Finished workout screen (phase 8c step 7). Rebuilt from Detail.dc.html.
+  Header draws its own back + title + date + share + overflow; the
+  shared toolbar is hidden on this destination.
+-->
+<androidx.constraintlayout.widget.ConstraintLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/background_warm"
-    android:clipToPadding="false"
-    android:paddingBottom="@dimen/space_2xl"
     tools:context=".ui.history.WorkoutDetailFragment">
 
-    <LinearLayout
+    <androidx.core.widget.NestedScrollView
+        android:id="@+id/detailScroll"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:paddingHorizontal="@dimen/screen_margin"
-        android:paddingTop="@dimen/space_xl">
-
-        <!-- Loading / error -->
-        <com.google.android.material.progressindicator.LinearProgressIndicator
-            android:id="@+id/detailLoadingBar"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:indeterminate="true"
-            android:visibility="gone"
-            app:indicatorColor="@color/text_primary"
-            app:trackColor="@color/surface_container_high"
-            tools:visibility="visible" />
-
-        <!-- Header: activity type + date -->
-        <TextView
-            android:id="@+id/detailTitle"
-            style="@style/TextAppearance.Fitness.HeadlineLg"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            tools:text="Morning run" />
-
-        <TextView
-            android:id="@+id/detailSubtitle"
-            style="@style/TextAppearance.Fitness.LabelMd"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/space_xs"
-            android:textAllCaps="false"
-            android:textColor="@color/text_secondary"
-            tools:text="Wed 2 Oct · 06:30" />
-
-        <!-- Map (visible only when route points exist) -->
-        <com.google.android.material.card.MaterialCardView
-            android:id="@+id/mapCard"
-            android:layout_width="match_parent"
-            android:layout_height="240dp"
-            android:layout_marginTop="@dimen/space_lg"
-            android:visibility="gone"
-            app:cardCornerRadius="@dimen/radius_card"
-            app:cardElevation="0dp"
-            app:strokeColor="@color/divider"
-            app:strokeWidth="@dimen/stroke_hairline"
-            tools:visibility="visible">
-
-            <org.osmdroid.views.MapView
-                android:id="@+id/mapView"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent" />
-        </com.google.android.material.card.MaterialCardView>
-
-        <!-- Stats grid -->
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/space_lg"
-            app:cardBackgroundColor="@color/surface_white"
-            app:cardCornerRadius="@dimen/radius_card"
-            app:cardElevation="0dp"
-            app:contentPadding="@dimen/space_lg"
-            app:strokeColor="@color/divider"
-            app:strokeWidth="@dimen/stroke_hairline">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal">
-
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:orientation="vertical">
-
-                        <TextView
-                            style="@style/TextAppearance.Fitness.LabelSm"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="@string/detail_distance_label"
-                            android:textColor="@color/text_secondary" />
-
-                        <TextView
-                            android:id="@+id/detailDistance"
-                            style="@style/TextAppearance.Fitness.HeadlineLg"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            tools:text="5.20 km" />
-                    </LinearLayout>
-
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:orientation="vertical">
-
-                        <TextView
-                            style="@style/TextAppearance.Fitness.LabelSm"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="@string/detail_duration_label"
-                            android:textColor="@color/text_secondary" />
-
-                        <TextView
-                            android:id="@+id/detailDuration"
-                            style="@style/TextAppearance.Fitness.HeadlineLg"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            tools:text="28 min" />
-                    </LinearLayout>
-                </LinearLayout>
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/space_md"
-                    android:orientation="horizontal">
-
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:orientation="vertical">
-
-                        <TextView
-                            android:id="@+id/detailPaceLabel"
-                            style="@style/TextAppearance.Fitness.LabelSm"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="@string/detail_pace_label"
-                            android:textColor="@color/text_secondary" />
-
-                        <TextView
-                            android:id="@+id/detailPace"
-                            style="@style/TextAppearance.Fitness.HeadlineLg"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            tools:text="5:23 /km" />
-                    </LinearLayout>
-
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:orientation="vertical">
-
-                        <TextView
-                            style="@style/TextAppearance.Fitness.LabelSm"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="@string/detail_calories_label"
-                            android:textColor="@color/text_secondary" />
-
-                        <TextView
-                            android:id="@+id/detailCalories"
-                            style="@style/TextAppearance.Fitness.HeadlineLg"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            tools:text="312 kcal" />
-                    </LinearLayout>
-                </LinearLayout>
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
-
-        <!-- Splits (only when a route exists) -->
-        <TextView
-            android:id="@+id/splitsHeader"
-            style="@style/TextAppearance.Fitness.HeadlineSm"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/space_xl"
-            android:text="@string/detail_splits_header"
-            android:visibility="gone"
-            tools:visibility="visible" />
+        android:layout_height="match_parent"
+        android:clipToPadding="false"
+        android:paddingBottom="@dimen/space_2xl"
+        app:layout_constraintTop_toTopOf="parent">
 
         <LinearLayout
-            android:id="@+id/splitsContainer"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/space_sm"
             android:orientation="vertical"
-            android:visibility="gone"
-            tools:visibility="visible" />
+            android:paddingHorizontal="@dimen/screen_margin">
 
-        <!-- Notes -->
-        <TextView
-            android:id="@+id/notesHeader"
-            style="@style/TextAppearance.Fitness.HeadlineSm"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/space_xl"
-            android:text="@string/detail_notes_header"
-            android:visibility="gone"
-            tools:visibility="visible" />
+            <!-- ================= Header ================= -->
+            <LinearLayout
+                android:id="@+id/detailHeader"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
 
-        <TextView
-            android:id="@+id/notesText"
-            style="@style/TextAppearance.Fitness.BodyLg"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/space_xs"
-            android:visibility="gone"
-            tools:text="Felt strong after kilometre three."
-            tools:visibility="visible" />
-    </LinearLayout>
-</androidx.core.widget.NestedScrollView>
+                <ImageView
+                    android:id="@+id/detailBackButton"
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:background="@drawable/bg_detail_header_button"
+                    android:clickable="true"
+                    android:contentDescription="@string/detail_header_back_content_description"
+                    android:focusable="true"
+                    android:padding="11dp"
+                    android:src="@drawable/ic_arrow_back_24"
+                    app:tint="@color/text_primary" />
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="@dimen/space_md"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/detailTitle"
+                        style="@style/TextAppearance.Fitness.HeadlineSm"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:ellipsize="end"
+                        android:maxLines="1"
+                        android:textSize="20sp"
+                        tools:text="Morning run" />
+
+                    <TextView
+                        android:id="@+id/detailSubtitle"
+                        style="@style/TextAppearance.Fitness.LabelMd"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:textAllCaps="false"
+                        android:textColor="@color/text_secondary"
+                        tools:text="Today, Wed 7 Oct · 06:30" />
+                </LinearLayout>
+
+                <ImageView
+                    android:id="@+id/detailShareButton"
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:layout_marginStart="@dimen/space_sm"
+                    android:background="@drawable/bg_detail_header_button"
+                    android:clickable="true"
+                    android:contentDescription="@string/detail_header_share_content_description"
+                    android:focusable="true"
+                    android:padding="11dp"
+                    android:src="@drawable/ic_share_24"
+                    app:tint="@color/text_primary" />
+
+                <ImageView
+                    android:id="@+id/detailOverflowButton"
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:layout_marginStart="@dimen/space_xs"
+                    android:background="@drawable/bg_detail_header_button"
+                    android:clickable="true"
+                    android:contentDescription="@string/detail_header_overflow_content_description"
+                    android:focusable="true"
+                    android:padding="11dp"
+                    android:src="@drawable/ic_overflow_24"
+                    app:tint="@color/text_primary" />
+            </LinearLayout>
+
+            <!-- Loading / error -->
+            <com.google.android.material.progressindicator.LinearProgressIndicator
+                android:id="@+id/detailLoadingBar"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_md"
+                android:indeterminate="true"
+                android:visibility="gone"
+                app:indicatorColor="@color/text_primary"
+                app:trackColor="@color/surface_container_high"
+                tools:visibility="visible" />
+
+            <!-- ================= Map card ================= -->
+            <FrameLayout
+                android:id="@+id/mapCard"
+                android:layout_width="match_parent"
+                android:layout_height="300dp"
+                android:layout_marginTop="@dimen/space_lg"
+                android:background="@drawable/bg_detail_map_card"
+                android:clipToOutline="true"
+                android:visibility="gone"
+                tools:visibility="visible">
+
+                <org.osmdroid.views.MapView
+                    android:id="@+id/mapView"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent" />
+
+                <!-- Top-left: "Running · GPS" pill with lime dot -->
+                <LinearLayout
+                    android:id="@+id/mapActivityPill"
+                    android:layout_width="wrap_content"
+                    android:layout_height="30dp"
+                    android:layout_gravity="top|start"
+                    android:layout_marginStart="12dp"
+                    android:layout_marginTop="12dp"
+                    android:background="@drawable/bg_detail_map_pill_light"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingHorizontal="12dp">
+
+                    <View
+                        android:layout_width="8dp"
+                        android:layout_height="8dp"
+                        android:background="@drawable/bg_tracking_gps_dot"
+                        android:backgroundTint="@color/lime_accent" />
+
+                    <TextView
+                        android:id="@+id/mapActivityPillLabel"
+                        style="@style/TextAppearance.Fitness.LabelMd"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="6dp"
+                        android:textAllCaps="false"
+                        android:textColor="@color/text_primary"
+                        android:textStyle="bold"
+                        tools:text="Running · GPS" />
+                </LinearLayout>
+
+                <!-- Top-right: expand button -->
+                <ImageView
+                    android:id="@+id/mapExpandButton"
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    android:layout_gravity="top|end"
+                    android:layout_marginTop="12dp"
+                    android:layout_marginEnd="12dp"
+                    android:background="@drawable/bg_detail_map_pill_light"
+                    android:clickable="true"
+                    android:contentDescription="@string/detail_map_expand_content_description"
+                    android:focusable="true"
+                    android:padding="9dp"
+                    android:src="@drawable/ic_expand_24"
+                    app:tint="@color/text_primary" />
+
+                <!-- Bottom-right: distance pill -->
+                <TextView
+                    android:id="@+id/mapDistancePill"
+                    style="@style/TextAppearance.Fitness.LabelMd"
+                    android:layout_width="wrap_content"
+                    android:layout_height="30dp"
+                    android:layout_gravity="bottom|end"
+                    android:layout_marginEnd="12dp"
+                    android:layout_marginBottom="12dp"
+                    android:background="@drawable/bg_detail_map_pill_dark"
+                    android:gravity="center_vertical"
+                    android:paddingHorizontal="12dp"
+                    android:textAllCaps="false"
+                    android:textColor="@color/text_on_dark"
+                    android:textStyle="bold"
+                    tools:text="4.12 km" />
+            </FrameLayout>
+
+            <!-- ================= 2x2 stat grid ================= -->
+            <LinearLayout
+                android:id="@+id/detailStatsRow1"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_lg"
+                android:baselineAligned="false"
+                android:orientation="horizontal">
+
+                <include
+                    android:id="@+id/detailStatCard0"
+                    layout="@layout/view_detail_stat_card" />
+
+                <Space
+                    android:layout_width="10dp"
+                    android:layout_height="match_parent" />
+
+                <include
+                    android:id="@+id/detailStatCard1"
+                    layout="@layout/view_detail_stat_card" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/detailStatsRow2"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:baselineAligned="false"
+                android:orientation="horizontal">
+
+                <include
+                    android:id="@+id/detailStatCard2"
+                    layout="@layout/view_detail_stat_card" />
+
+                <Space
+                    android:layout_width="10dp"
+                    android:layout_height="match_parent" />
+
+                <include
+                    android:id="@+id/detailStatCard3"
+                    layout="@layout/view_detail_stat_card" />
+            </LinearLayout>
+
+            <!-- ================= Notes card ================= -->
+            <LinearLayout
+                android:id="@+id/detailNotesCard"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_lg"
+                android:background="@drawable/bg_detail_stat_card_light"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        style="@style/TextAppearance.Fitness.HeadlineSm"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/detail_notes_title"
+                        android:textSize="16sp" />
+
+                    <TextView
+                        android:id="@+id/detailNotesEditButton"
+                        style="@style/TextAppearance.Fitness.LabelMd"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:background="?attr/selectableItemBackground"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:padding="4dp"
+                        android:text="@string/detail_notes_edit"
+                        android:textAllCaps="false"
+                        android:textColor="@color/text_primary"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/detailNotesText"
+                    style="@style/TextAppearance.Fitness.BodyLg"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:textColor="@color/text_primary"
+                    tools:text="Felt strong after kilometre three." />
+            </LinearLayout>
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+</androidx.constraintlayout.widget.ConstraintLayout>

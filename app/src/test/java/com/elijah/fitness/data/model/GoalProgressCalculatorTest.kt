@@ -200,5 +200,7 @@ class GoalProgressCalculatorTest {
         ): ApiResult<WorkoutDetail> = ApiResult.Error("not supported in test fake", 404, emptyMap())
         override suspend fun deleteWorkout(clientUuid: String): ApiResult<Unit> =
             ApiResult.Success(Unit)
+        override suspend fun updateNotes(clientUuid: String, notes: String?): ApiResult<Workout> =
+            ApiResult.Error("not supported in test fake", 404, emptyMap())
     }
 }

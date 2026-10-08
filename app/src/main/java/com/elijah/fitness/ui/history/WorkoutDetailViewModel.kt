@@ -6,14 +6,25 @@ import androidx.lifecycle.viewModelScope
 import com.elijah.fitness.AppContainer
 import com.elijah.fitness.data.model.WorkoutDetail
 import com.elijah.fitness.data.remote.ApiResult
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 
 /**
- * Fetches a workout + route for the detail screen. Reruns on explicit
- * [retry] so a transient network error doesn't need a navigation round-trip.
+ * Backs the finished-workout screen. Fetches the workout + route for a
+ * given `clientUuid`, exposes it as [state], and handles the two write
+ * actions the detail screen offers:
+ *
+ * - [updateNotes] — edit the user-visible notes string
+ * - [deleteWorkout] — remove the workout and its route entirely
+ *
+ * Transient side effects (snackbars, navigation back on delete success)
+ * are published through the [events] channel; multiple consecutive events
+ * of the same type are preserved so a quick double-tap can't drop one.
  */
 class WorkoutDetailViewModel(
     private val container: AppContainer,
@@ -26,8 +37,18 @@ class WorkoutDetailViewModel(
         data object Error : State
     }
 
+    sealed interface Event {
+        data object NotesUpdated : Event
+        data object UpdateNotesFailed : Event
+        data object Deleted : Event
+        data object DeleteFailed : Event
+    }
+
     private val _state: MutableStateFlow<State> = MutableStateFlow(State.Loading)
     val state: StateFlow<State> = _state.asStateFlow()
+
+    private val _events = Channel<Event>(capacity = Channel.BUFFERED)
+    val events: Flow<Event> = _events.receiveAsFlow()
 
     init { load() }
 
@@ -40,6 +61,36 @@ class WorkoutDetailViewModel(
                 is ApiResult.Success -> _state.value = State.Loaded(result.data)
                 is ApiResult.Error,
                 ApiResult.NetworkError -> _state.value = State.Error
+            }
+        }
+    }
+
+    fun updateNotes(notes: String?) {
+        viewModelScope.launch {
+            when (val result = container.workoutRepository.updateNotes(clientUuid, notes)) {
+                is ApiResult.Success -> {
+                    // Rebuild the loaded detail locally — route points
+                    // haven't changed, only the workout fields have.
+                    val currentDetail = (state.value as? State.Loaded)?.detail
+                    if (currentDetail != null) {
+                        _state.value = State.Loaded(
+                            currentDetail.copy(workout = result.data),
+                        )
+                    }
+                    _events.send(Event.NotesUpdated)
+                }
+                is ApiResult.Error,
+                ApiResult.NetworkError -> _events.send(Event.UpdateNotesFailed)
+            }
+        }
+    }
+
+    fun deleteWorkout() {
+        viewModelScope.launch {
+            when (container.workoutRepository.deleteWorkout(clientUuid)) {
+                is ApiResult.Success -> _events.send(Event.Deleted)
+                is ApiResult.Error,
+                ApiResult.NetworkError -> _events.send(Event.DeleteFailed)
             }
         }
     }

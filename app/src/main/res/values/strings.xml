@@ -75,10 +75,6 @@
     <string name="detail_speed_label">Avg speed</string>
     <string name="detail_calories_label">Energy</string>
     <string name="detail_calories_value">%1$d kcal</string>
-    <string name="detail_splits_header">Per-km splits</string>
-    <string name="detail_split_km_label">%1$d</string>
-    <string name="detail_split_km_partial_label">%1$d*</string>
-    <string name="detail_notes_header">Notes</string>
     <string name="detail_load_error">Could not load this workout.</string>
 
     <!-- Onboarding host placeholder (Step 5) — no longer used but kept
@@ -483,6 +479,59 @@
 
     <!-- Phase 8c step 3 — OpenStreetMap attribution (required by the tile licence) -->
     <string name="map_attribution_osm">© OpenStreetMap contributors</string>
+
+    <!-- Phase 8c step 7 — Finished workout detail rebuild -->
+    <string name="detail_header_back_content_description">Back</string>
+    <string name="detail_header_share_content_description">Share workout</string>
+    <string name="detail_header_overflow_content_description">More options</string>
+    <string name="detail_time_morning_run">Morning run</string>
+    <string name="detail_time_afternoon_run">Afternoon run</string>
+    <string name="detail_time_evening_run">Evening run</string>
+    <string name="detail_time_night_run">Night run</string>
+    <string name="detail_time_morning_ride">Morning ride</string>
+    <string name="detail_time_afternoon_ride">Afternoon ride</string>
+    <string name="detail_time_evening_ride">Evening ride</string>
+    <string name="detail_time_night_ride">Night ride</string>
+    <string name="detail_time_strength">Strength session</string>
+    <string name="detail_subtitle_today">Today, %1$s · %2$s</string>
+    <string name="detail_subtitle_yesterday">Yesterday, %1$s · %2$s</string>
+    <string name="detail_subtitle_default">%1$s · %2$s</string>
+    <string name="detail_map_pill_run">Running · GPS</string>
+    <string name="detail_map_pill_ride">Cycling · GPS</string>
+    <string name="detail_map_expand_content_description">View full-screen map</string>
+    <string name="detail_map_distance_value">%1$.2f km</string>
+    <string name="detail_stat_distance">Distance</string>
+    <string name="detail_stat_duration">Duration</string>
+    <string name="detail_stat_avg_pace">Avg pace</string>
+    <string name="detail_stat_avg_speed">Avg speed</string>
+    <string name="detail_stat_calories">Calories</string>
+    <string name="detail_stat_sets">Sets</string>
+    <string name="detail_stat_volume">Volume</string>
+    <string name="detail_stat_distance_value">%1$.2f km</string>
+    <string name="detail_stat_duration_hm_value">%1$dh %2$02dm</string>
+    <string name="detail_stat_duration_ms_value">%1$dm %2$02ds</string>
+    <string name="detail_stat_pace_unit">/km</string>
+    <string name="detail_stat_speed_unit">km/h</string>
+    <string name="detail_stat_calories_unit">kcal</string>
+    <string name="detail_stat_volume_unit">kg</string>
+    <string name="detail_stat_sets_unit">sets</string>
+    <string name="detail_notes_title">Notes</string>
+    <string name="detail_notes_edit">Edit</string>
+    <string name="detail_notes_add">Add a note</string>
+    <string name="detail_notes_placeholder">How did it feel?</string>
+    <string name="detail_notes_dialog_title">Edit notes</string>
+    <string name="detail_notes_dialog_save">Save</string>
+    <string name="detail_overflow_edit_notes">Edit notes</string>
+    <string name="detail_overflow_delete">Delete workout</string>
+    <string name="detail_delete_confirm_title">Delete this workout?</string>
+    <string name="detail_delete_confirm_body">The workout and its route will be removed. This can\'t be undone.</string>
+    <string name="detail_delete_confirm_positive">Delete</string>
+    <string name="detail_share_subject">My workout</string>
+    <string name="detail_share_body_distance">%1$s: %2$.2f km in %3$s (%4$s %5$s)</string>
+    <string name="detail_share_body_strength">%1$s: %2$d sets in %3$s</string>
+    <string name="detail_notes_updated_snackbar">Notes updated</string>
+    <string name="detail_delete_failed_snackbar">Could not delete this workout.</string>
+    <string name="full_map_close_content_description">Close</string>
 
     <!-- Phase 8c step 6 — Live tracking screen rebuild -->
     <string name="tracking_minimise_content_description">Minimise tracking</string>

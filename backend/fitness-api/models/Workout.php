@@ -197,6 +197,20 @@ final class Workout
     }
 
     /**
+     * Update the `notes` column for one workout. Returns true if the row
+     * existed and belonged to [$userId]. The `updated_at` column
+     * auto-advances via the `ON UPDATE CURRENT_TIMESTAMP` DDL.
+     */
+    public static function updateNotes(int $id, int $userId, ?string $notes): bool
+    {
+        $stmt = Database::pdo()->prepare(
+            'UPDATE workouts SET notes = ? WHERE id = ? AND user_id = ?'
+        );
+        $stmt->execute([$notes, $id, $userId]);
+        return $stmt->rowCount() > 0;
+    }
+
+    /**
      * @param array<string,mixed>          $row
      * @param array<int, array<string,mixed>> $sets
      * @param array<int, array<string,mixed>> $routePoints

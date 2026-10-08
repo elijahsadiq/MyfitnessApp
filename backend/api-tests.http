@@ -104,7 +104,16 @@ Authorization: Bearer {{token}}
 GET {{baseUrl}}/workouts/1
 Authorization: Bearer {{token}}
 
-### 13. Delete a workout (replace {id})
+### 13. Edit notes on a workout (replace {id}) — phase 8c step 7
+PATCH {{baseUrl}}/workouts/1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "notes": "Felt strong after kilometre three."
+}
+
+### 14. Delete a workout (replace {id})
 DELETE {{baseUrl}}/workouts/10
 Authorization: Bearer {{token}}
 

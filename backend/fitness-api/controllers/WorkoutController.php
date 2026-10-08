@@ -192,6 +192,51 @@ final class WorkoutController
         Response::success(null, 200);
     }
 
+    /**
+     * PATCH /workouts/{id} — partial update. For now only `notes` is
+     * editable (phase 8c step 7 adds the Edit-notes flow on the finished
+     * workout screen). Other fields are ignored so the endpoint can
+     * safely grow.
+     *
+     * Body: { "notes": "..." } — pass `null` or omit to clear it.
+     * Response: the updated workout DTO, same shape as GET /workouts/{id}.
+     */
+    public static function update(array $params, array $body): void
+    {
+        $userId = Auth::requireUser();
+        $id = (int) $params['id'];
+
+        if (!array_key_exists('notes', $body)) {
+            Response::error('Validation failed', 422,
+                ['notes' => 'Nothing to update']);
+        }
+
+        $notesRaw = $body['notes'];
+        $notes = $notesRaw === null ? null : (string) $notesRaw;
+        if ($notes !== null) {
+            $v = (new Validator(['notes' => $notes]))->maxLength('notes', 2000);
+            if ($v->fails()) {
+                Response::error('Validation failed', 422, $v->errors());
+            }
+            // Empty string is treated as "clear the note".
+            if (trim($notes) === '') {
+                $notes = null;
+            }
+        }
+
+        $ok = Workout::updateNotes($id, $userId, $notes);
+        if (!$ok) {
+            Response::error('Workout not found', 404);
+        }
+
+        $row = Workout::findById($id, $userId);
+        $sets = ($row !== null && $row['activity_type'] === 'WEIGHTLIFTING')
+            ? Workout::setsFor($id)
+            : [];
+        $route = Workout::routeFor($id);
+        Response::success(Workout::toDto($row ?? [], $sets, $route));
+    }
+
     private static function stringOrNull(mixed $v): ?string
     {
         if ($v === null) return null;

@@ -35,7 +35,7 @@ $path = '/' . ltrim($requestUri, '/');
 // CORS preflight — respond and exit.
 if ($method === 'OPTIONS') {
     header('Access-Control-Allow-Origin: *');
-    header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
+    header('Access-Control-Allow-Methods: GET, POST, PUT, PATCH, DELETE, OPTIONS');
     header('Access-Control-Allow-Headers: Authorization, Content-Type');
     http_response_code(204);
     exit;
@@ -74,6 +74,7 @@ try {
     $router->add('GET',    '/workouts',         [WorkoutController::class, 'index']);
     $router->add('POST',   '/workouts',         [WorkoutController::class, 'create']);
     $router->add('GET',    '/workouts/{id}',    [WorkoutController::class, 'show']);
+    $router->add('PATCH',  '/workouts/{id}',    [WorkoutController::class, 'update']);
     $router->add('DELETE', '/workouts/{id}',    [WorkoutController::class, 'destroy']);
 
     // Goals (phase 7 + phase 8b) — definitions only; progress is client-side.

@@ -143,24 +143,26 @@ class MainActivity : AppCompatActivity() {
             R.id.goalsFragment,
         )
 
-        /** Destinations that show the shared toolbar + Up arrow. */
+        /**
+         * Destinations that show the shared toolbar + Up arrow. Phase
+         * 8c step 7 drops `workoutDetailFragment` — the rebuilt detail
+         * screen draws its own header + back arrow (one header per
+         * screen, per the user's Step 0 note).
+         */
         val CHROME_DESTINATIONS = setOf(
             R.id.logDistanceWorkoutFragment,
             R.id.logStrengthWorkoutFragment,
             R.id.profileFragment,
-            // Workout detail currently relies on this toolbar for its
-            // back arrow. Phase 8c step 7 ships a new layout with its
-            // own back arrow + title and this entry gets removed then.
-            R.id.workoutDetailFragment,
         )
 
         /**
-         * Destinations whose top edge is a dark surface drawn behind the
-         * status bar. These need light status-bar icons for legibility.
-         * The full-screen map destination from step 3 will join the set.
+         * Destinations whose top edge is a dark surface drawn behind
+         * the status bar. These need light status-bar icons so the
+         * icons stay legible on the dark background.
          */
         val DARK_STATUS_DESTINATIONS: Set<Int> = setOf(
             R.id.liveTrackingFragment,
+            R.id.fullScreenMapFragment,
         )
     }
 }

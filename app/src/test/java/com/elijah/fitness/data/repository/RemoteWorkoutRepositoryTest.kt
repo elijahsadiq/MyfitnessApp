@@ -148,5 +148,6 @@ class RemoteWorkoutRepositoryTest {
         override suspend fun create(body: WorkoutRequestDto) = createResponse
         override suspend fun get(id: Long): Response<ApiEnvelope<WorkoutDto>> = createResponse
         override suspend fun delete(id: Long): Response<Unit> = Response.success(Unit)
+        override suspend fun patch(id: Long, body: Map<String, Any?>): Response<ApiEnvelope<WorkoutDto>> = createResponse
     }
 }

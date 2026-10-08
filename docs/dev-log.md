@@ -2282,3 +2282,64 @@ Suggested shots: `tracking-live.png`, `tracking-paused.png`, `tracking-locked.pn
 **Assignment task supported**
 - **Task 2a (UI implementation)** — the live tracking screen is the heaviest visual deliverable of Phase 8c and now matches `Tracking.dc.html`.
 - **Task 4 (development)** — Lock + hold-to-unlock + Back-gesture swallow is a small but visible piece of custom gesture handling; the save-success → detail-screen route closes the one-shot "log a GPS workout" loop end-to-end.
+
+---
+
+## Phase 8c — Step 7: Finished workout screen (Detail.dc.html)
+
+**Goal**
+Rebuild the workout-detail screen to match `Detail.dc.html`: a self-drawn header (back + time-of-day title + "Today, Wed 7 Oct · 06:30" date line + share + overflow), a 300dp dark route map card with a top-left activity pill, an expand button, and a bottom-right distance pill, a 2 × 2 stat grid with one highlighted lime-value card, and a Notes card with an Edit button. Delete the splits section — the brief removed it.
+
+**New files**
+- `app/src/main/res/layout/view_detail_stat_card.xml` — one 2 × 2 cell. The fragment flips `background`, label/value/unit colours to switch between the light cell and the highlighted dark cell. Keeping the include layout flat (plain LinearLayout root, no theme attributes on the children) means ViewBinding exposes it as `binding.detailStatCard0: ViewDetailStatCardBinding` with full type-safe field access.
+- `app/src/main/res/layout/fragment_full_screen_map.xml` + `app/src/main/java/.../ui/history/FullScreenMapFragment.kt` — the "expand" destination. Reuses the Step-3 `DarkMapStyler` / `RoutePolylineRenderer` / `MapCameraController` with multi-touch controls enabled this time; shares the same `WorkoutDetailViewModel` via the `clientUuid` nav arg, so no route points travel through the back stack.
+- `bg_detail_header_button`, `bg_detail_map_card`, `bg_detail_stat_card_light`, `bg_detail_stat_card_dark`, `bg_detail_map_pill_light`, `bg_detail_map_pill_dark`, `ic_expand_24`, `ic_share_24`, `ic_overflow_24`.
+
+**Rewritten files**
+- `fragment_workout_detail.xml` — now a `NestedScrollView` over a header row, the optional map card, the 2 × 2 stat grid (two `include`-based rows), and the notes card. No references to the (deleted) splits block.
+- `WorkoutDetailFragment.kt` — new header controls (back / share / overflow `PopupMenu`), time-of-day title selection (`Morning run` 05–11:59, `Afternoon run` 12–16:59, `Evening run` 17–20:59, `Night run` otherwise, mirrored for rides, static for strength), subtitle with "Today" / "Yesterday" / weekday, 2 × 2 stat binder, inline edit-notes dialog (`TextInputLayout` + `TextInputEditText`), confirm-delete dialog, and nav to `FullScreenMapFragment` via the new `action_detail_to_full_map` action. The shared toolbar is hidden on this destination (`CHROME_DESTINATIONS` no longer contains `workoutDetailFragment`) and `applySystemBarInsets(binding.root)` absorbs the status + nav bars directly.
+- `WorkoutDetailViewModel.kt` — gained `updateNotes(notes)` and `deleteWorkout()` plus an `events: Flow<Event>` channel (`NotesUpdated`, `UpdateNotesFailed`, `Deleted`, `DeleteFailed`). `State.Loaded.detail` is locally patched on notes-update success so the screen doesn't flash through a Loading state after the dialog closes.
+
+**Deleted**
+- `app/src/main/java/com/elijah/fitness/tracking/RouteSplits.kt` + `app/src/test/.../RouteSplitsTest.kt` + `app/src/main/res/layout/item_route_split.xml`. Only the pre-rewrite `WorkoutDetailFragment` consumed them; the design canvas drops the splits block on purpose.
+- Dead strings `detail_splits_header`, `detail_split_km_label`, `detail_split_km_partial_label`, `detail_notes_header` (replaced by `detail_notes_title`).
+
+**Backend addition — `PATCH /workouts/{id}`**
+`WorkoutController::update()` + `Workout::updateNotes()` + a new router line. Only the `notes` column is editable for now; other fields are ignored so the endpoint can grow safely. Empty / whitespace notes get stored as `NULL` (treated as "clear the note"). The route also gets added to the CORS `Allow-Methods` header. The in-repo router already dispatched methods generically so no `Router.php` change was needed.
+
+**Repository additions**
+- `WorkoutRepository.updateNotes(clientUuid, notes): ApiResult<Workout>` — the new method returns the refreshed domain `Workout` on success so the detail screen can rebuild without a second round trip. `_workouts` is also patched so the History list picks up the change immediately.
+- `RemoteWorkoutRepository.updateNotes` sends a JSON body of `{ "notes": … }` through a new `WorkoutApi.patch(id, body)` Retrofit method and decodes the returned `WorkoutDto` via the existing mapper.
+- `FakeWorkoutRepository.updateNotes` rebuilds the right typed workout (Running / Cycling / Strength) with the new notes and swaps it into the in-memory list.
+
+**Key design decision — share the detail VM with the full-screen map**
+`FullScreenMapFragment` takes the same `clientUuid` nav arg and resolves `WorkoutDetailViewModel.factory` with it. That means the full-screen view reads the same route points the repository already cached for the detail screen (both the Fake and the Remote repository re-use the `serverIds` lookup; the GET is only re-issued on cold open). Alternative was passing a `List<TrackPoint>` as a Parcelable through nav args; rejected because that bloats the saved-state Bundle for long routes and duplicates the data model shape.
+
+**Key design decision — rebuild notes locally instead of re-fetching**
+`PATCH /workouts/{id}` already returns the full updated DTO. Mapping it to a domain `Workout` and running `_state.value = State.Loaded(currentDetail.copy(workout = result.data))` keeps the UI stable; a `load()` call would flash the loading bar and dump the route back through the renderer. Route points haven't changed, so there's no reason to re-fit the map after an edit.
+
+**Rejected alternative — `PUT /workouts/{id}` for full-row replacement**
+Would have required the client to resend every field (start time, duration, distance, …) just to touch notes, which is both wasteful and dangerous (a stale client could overwrite server-side truth it didn't fetch first). `PATCH` with a single-field body is both tighter and matches the REST convention for a partial update.
+
+**Kotlin / Android concepts** *(for my notes)*
+- `<include android:id="@+id/...">` + layout with a plain `ViewGroup` root → ViewBinding exposes the include as `binding.<id>: <IncludedBinding>`. No `findViewById` / `.bind()` dance needed.
+- `PopupMenu(context, anchor).menu.add(...)` is the lightweight path for a 2-item overflow menu — no menu XML required when the menu items are generated at runtime.
+- `Channel<Event>(capacity = BUFFERED).receiveAsFlow()` for one-shot UI events: a replay-less, consume-once stream that survives configuration changes if collected inside `repeatOnLifecycle(STARTED)`.
+- `Intent.createChooser(..., title)` wraps a `ACTION_SEND` intent in the system share sheet.
+
+**Verified**
+- `./gradlew assembleDebug` — BUILD SUCCESSFUL.
+- `./gradlew testCloudDebugUnitTest` + `./gradlew testLocalDebugUnitTest` — BUILD SUCCESSFUL. Added `updateNotes` stubs to every in-test `WorkoutRepository` fake (`HistoryViewModelTest`, `GoalsViewModelTest`, `GoalProgressCalculatorTest`, `LogDistanceWorkoutViewModelTest`, `LogStrengthWorkoutViewModelTest`) plus a `patch` stub on the `RemoteWorkoutRepositoryTest.FakeWorkoutApi`.
+
+**Pending user action — walkthrough**
+1. Open a saved GPS run → confirm the header reads e.g. `Morning run` / `Today, Wed 7 Oct · 06:30`, the dark map card shows the glowing route with "Running · GPS" top-left + distance pill bottom-right, and the pace card is highlighted (lime value on dark).
+2. Tap the expand button → full-screen interactive map; pinch to zoom, close with the top-right pill.
+3. Tap Edit (or overflow → Edit notes) → write a note → Save. Snackbar reads "Notes updated"; re-opening the dialog shows the new text.
+4. Overflow → Delete workout → confirm → History list no longer contains that row.
+5. Share → the system share sheet opens with text like `Morning run: 4.12 km in 28:15 (5:40 /km)`.
+
+Suggested shots: `workout-detail.png`, `workout-detail-fullmap.png`.
+
+**Assignment task supported**
+- **Task 2a (UI implementation)** — the finished workout screen is the last big-ticket visual deliverable of Phase 8c and now matches `Detail.dc.html`.
+- **Task 4 (development)** — the Edit-notes flow is a new write path (dialog → ViewModel → repository → PHP `PATCH` → MySQL → observable list refresh), useful evidence of real CRUD against the backend.

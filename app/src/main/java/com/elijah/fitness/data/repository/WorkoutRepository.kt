@@ -65,4 +65,14 @@ interface WorkoutRepository {
      * as a soft no-op.
      */
     suspend fun deleteWorkout(clientUuid: String): ApiResult<Unit>
+
+    /**
+     * Partial update — only the user-visible notes string. Returns the
+     * refreshed [Workout] on success so the caller can rebuild its detail
+     * view without a second round trip. [observeWorkouts] also re-emits
+     * so other screens pick up the change.
+     *
+     * `notes` may be `null` or a blank string to clear a note.
+     */
+    suspend fun updateNotes(clientUuid: String, notes: String?): ApiResult<Workout>
 }

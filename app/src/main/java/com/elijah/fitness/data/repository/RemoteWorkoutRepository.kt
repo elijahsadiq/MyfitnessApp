@@ -109,6 +109,29 @@ class RemoteWorkoutRepository(
         }
     }
 
+    override suspend fun updateNotes(clientUuid: String, notes: String?): ApiResult<Workout> {
+        val serverId = serverIds[clientUuid]
+            ?: return ApiResult.Error(
+                message = "Workout not found locally",
+                status = 404,
+                fieldErrors = emptyMap(),
+            )
+        val body: Map<String, Any?> = mapOf("notes" to notes?.takeUnless { it.isBlank() })
+        return when (val result = apiCall { workoutApi.patch(serverId, body) }) {
+            is ApiResult.Success -> {
+                val dto = result.data
+                serverIds[dto.clientUuid] = dto.id
+                val updated = dto.toDomain()
+                _workouts.value = _workouts.value
+                    .map { if (it.id == updated.id) updated else it }
+                    .sortedByDescending { it.startTime }
+                ApiResult.Success(updated)
+            }
+            is ApiResult.Error -> result
+            ApiResult.NetworkError -> ApiResult.NetworkError
+        }
+    }
+
     override suspend fun getWorkoutDetail(clientUuid: String): ApiResult<WorkoutDetail> {
         val serverId = serverIds[clientUuid]
             ?: return ApiResult.Error(
