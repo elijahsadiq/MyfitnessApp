@@ -75,4 +75,10 @@ interface WorkoutRepository {
      * `notes` may be `null` or a blank string to clear a note.
      */
     suspend fun updateNotes(clientUuid: String, notes: String?): ApiResult<Workout>
+
+    /**
+     * Forget every cached workout. Called on sign-out so the next account
+     * to sign in on this phone never sees the previous user's history.
+     */
+    fun clearCache() {}
 }

@@ -1,15 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- "Add a set" dialog body: exercise, then reps + weight side by side.
+     Brand text fields (Widget.Fitness.TextField); 24dp side padding lines
+     the fields up with the dialog title. -->
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:paddingHorizontal="24dp"
-    android:paddingTop="8dp">
+    android:paddingHorizontal="@dimen/space_xl"
+    android:paddingTop="@dimen/space_md">
 
     <com.google.android.material.textfield.TextInputLayout
-        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+        android:id="@+id/exerciseLayout"
+        style="@style/Widget.Fitness.TextField"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:hint="@string/log_strength_field_exercise">
@@ -18,18 +22,22 @@
             android:id="@+id/exerciseInput"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:minHeight="48dp"
-            android:inputType="textCapWords" />
+            android:imeOptions="actionNext"
+            android:inputType="textCapWords"
+            android:maxLength="60"
+            android:minHeight="@dimen/touch_target_min" />
     </com.google.android.material.textfield.TextInputLayout>
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="12dp"
+        android:layout_marginTop="@dimen/space_md"
+        android:baselineAligned="false"
         android:orientation="horizontal">
 
         <com.google.android.material.textfield.TextInputLayout
-            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+            android:id="@+id/repsLayout"
+            style="@style/Widget.Fitness.TextField"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
@@ -39,28 +47,33 @@
                 android:id="@+id/repsInput"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:minHeight="48dp"
+                android:imeOptions="actionNext"
                 android:inputType="number"
-                android:maxLength="3" />
+                android:maxLength="3"
+                android:minHeight="@dimen/touch_target_min" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <Space
-            android:layout_width="12dp"
+            android:layout_width="@dimen/space_md"
             android:layout_height="wrap_content" />
 
         <com.google.android.material.textfield.TextInputLayout
-            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+            android:id="@+id/weightLayout"
+            style="@style/Widget.Fitness.TextField"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:hint="@string/log_strength_field_weight">
+            android:hint="@string/log_strength_field_weight"
+            app:suffixText="@string/auth_unit_suffix_kg">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/weightInput"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:minHeight="48dp"
-                android:inputType="numberDecimal" />
+                android:imeOptions="actionDone"
+                android:inputType="numberDecimal"
+                android:maxLength="6"
+                android:minHeight="@dimen/touch_target_min" />
         </com.google.android.material.textfield.TextInputLayout>
     </LinearLayout>
 </LinearLayout>

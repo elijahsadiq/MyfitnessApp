@@ -43,6 +43,11 @@ class UserSettings(
         _heightCm.value = heightCm
     }
 
+    /** Back to the defaults (sign-out). */
+    fun reset() {
+        hydrateFrom(weightKg = null, heightCm = null)
+    }
+
     companion object {
         const val DEFAULT_BODY_WEIGHT_KG: Double = 70.0
     }

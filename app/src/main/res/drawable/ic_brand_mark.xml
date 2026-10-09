@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The app's logo (docs/design/my_fitness_app_logo): dark rounded tile
+     with the lime "pulse" mark. Same artwork as the launcher icon. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+    <path
+        android:fillColor="#121411"
+        android:pathData="M14,0h20a14,14 0,0 1,14 14v20a14,14 0,0 1,-14 14h-20a14,14 0,0 1,-14 -14v-20a14,14 0,0 1,14 -14z" />
+    <path
+        android:pathData="M14,26L20,18L26,30L34,16"
+        android:strokeWidth="3.5"
+        android:strokeColor="#D4F26A"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+    <path
+        android:fillColor="#D4F26A"
+        android:pathData="M34,16m-2.5,0a2.5,2.5 0,1 1,5 0a2.5,2.5 0,1 1,-5 0" />
+</vector>

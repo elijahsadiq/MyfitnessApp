@@ -2424,3 +2424,204 @@ mark-scheme difference.
   section is the one-paragraph OSM / design-canvas credit the report
   needs to cite in both the "External libraries" and "Design
   methodology" subsections.
+
+---
+
+## Phase 9 — Full-app audit: bugs, layout, branding, GPS crash
+
+**Goal**
+One pass over every screen and every piece of logic: fix bugs, make the
+app behave like a standard Android app on any phone, keep the text
+short and well wrapped, follow Kinetic Glow everywhere, keep viewing
+content in the top half and actions in the bottom half (One UI), stop
+"Track with GPS" from crashing, and keep the content height identical
+on every screen.
+
+**Crash — "Track with GPS"**
+- *Root cause:* `DarkMapStyler` added the OpenStreetMap credit as a
+  plain `TextView` **inside** osmdroid's `MapView`. `MapView` lays out
+  every child at a map coordinate taken from `MapView.LayoutParams`; a
+  plain child has none, so `MapView.myOnLayout` hit a
+  `NullPointerException` on the first layout pass.
+- *Fix:* the credit is now an ordinary view in the screen layout (bottom
+  row, beside the re-centre button). `DarkMapStyler` only styles the map
+  and never touches the view tree.
+- *Hardening in the same area:*
+  - `LocationTrackingService` returns `START_NOT_STICKY`, wraps the
+    foreground promotion in try/catch (Android 12+
+    `ForegroundServiceStartNotAllowedException`, Android 14 permission
+    `SecurityException`) and starts the session only once promotion
+    succeeds.
+  - `LocationTracker` falls back from the fused provider to the platform
+    GPS provider when Play services is missing.
+  - Cached fixes from before Start / Resume are dropped
+    (`FilterResult.RejectedStale`), and the first fix after Resume opens
+    a new segment instead of being counted as a "jump".
+  - `stop()` is idempotent, and each session gets its own id, so a
+    double-tapped Save can't create two workouts.
+  - The controls follow the session state:
+    - Tracking / Paused: Finish · Pause or Resume · Lock.
+    - Stopped: Discard · Save.
+  - Under 10 m: a "Nothing to save" dialog instead of a junk workout.
+  - Location switched off: a snackbar.
+  - The ongoing notification reopens the tracking screen.
+  - Back from the saved workout now goes Home. Before, the
+    `popUpTo` was missing, so Back restarted tracking.
+
+**Consistent view height**
+- *Root cause:* `activity_main` was a CoordinatorLayout with
+  `appbar_scrolling_view_behavior` on the nav host. When the toolbar
+  is `GONE` on the tab screens, `HeaderScrollingViewBehavior` keeps its
+  last offset. So after a visit to Profile (toolbar shown), every tab
+  sat one toolbar-height lower and its bottom slid under the bottom nav.
+- *Fix:* a plain vertical stack — AppBarLayout (only on Log run / Log
+  lift / Profile / New goal) → FragmentContainerView (`0dp`, weight 1)
+  → BottomNavigationView. Every tab title now lands at the same y
+  position before and after visiting Profile.
+- `BaseFragment` inset helpers now pass insets on to sibling views and
+  include display cutouts and the keyboard. Android 8–10 stop
+  delivering insets after the first view that consumes them, so the old
+  behaviour starved the bottom nav there.
+
+**One UI layout — view at the top, act at the bottom**
+- Primary actions sit in the thumb zone:
+  - pinned Save bars on Log run, Log lift and New goal,
+  - FABs on History and Goals,
+  - the tracking controls in the bottom panel.
+- Snackbars anchor above the FAB, the Save bar or the bottom nav, so
+  they never cover the button you need next.
+- The History FAB hides while you scroll down and returns on the way up.
+
+**Branding (Kinetic Glow)**
+- Dialogs, sheets and pickers are white. `elevationOverlayEnabled=false`
+  plus a dialog overlay remove Material 3's tinted surfaces.
+- Text-field stroke states fixed, the cursor is dark, and chips have no
+  check-mark icon.
+- Buttons and dialog titles render SemiBold / Bold. The theme
+  `fontFamily` was overriding the widget weight; the styles now set the
+  font directly.
+- Brand launcher icon (dark tile + lime pulse) replaces the default
+  Android robot. It has a monochrome layer, so Android 13+ themed icons
+  work too.
+
+**Text**
+- Copy shortened across the app; 117 unused strings / plurals removed.
+- Plurals: "1 workout / 2 workouts", "1 set", "1 exercise".
+- Time follows the phone's 12/24-hour setting.
+- A duration under a minute reads "45 s" instead of "0 min".
+- Pace for a distance under 10 m reads "-".
+- Kilogram totals use a thousands separator: History, Progress, Detail
+  and goal cards all read "3,125 kg". Goal cards used to say
+  "3125.0 / 10000.0 kg".
+- A decimal comma is accepted when typing numbers.
+- Big metrics are one `TextView` with a smaller unit span
+  (`MetricText`), so auto-size shrinks the number and its unit together
+  on a 360dp phone at 130% font scale.
+
+**Logic fixes**
+- *Sign-out leak:* the next account briefly saw the previous account's
+  cached workouts and goals. `AppContainer.signOutLocally` now:
+  - stops tracking,
+  - cancels pending deletes,
+  - clears both repository caches and the user settings,
+  - then drops the token.
+  A 401 takes the same path.
+- *Goal titles:* titles went stale after Extend. They are now computed
+  from type, target and days (`GoalTitles.kt`).
+- *Goals:*
+  - "Days left" now counts today.
+  - Make main / Extend appear only on active goals.
+- *Progress:* the activity chip now filters the stat cards too, not
+  just the chart.
+- *Double Save:* manual logs reuse one client UUID and have an
+  `isSaving` guard.
+- *Avatar upload:* HEIC and over-2 MB camera photos were rejected.
+  `AvatarImage` now re-encodes them to a JPEG of at most 1024 px,
+  applying the EXIF rotation.
+- *History momentum pill:* it compared this week so far against **all**
+  of last week, so it read about −100% every Monday. It now compares
+  against the same point last week.
+
+**Standard Android behaviour**
+- Back always lands somewhere sensible:
+  - Register's back arrow returns to Login (it used to leave a blank
+    screen).
+  - Saved workout → Home.
+  - Manual log → detail → previous tab.
+- Portrait on phones (`screenOrientation="portrait"`). Android 16
+  ignores this on tablets and foldables.
+- Map overlay buttons and steppers are at least 48dp, and every icon
+  button has a content description.
+
+**Key design decision — a plain LinearLayout shell instead of
+CoordinatorLayout scrolling behaviour**
+The shell's only job is "toolbar (sometimes), content, bottom nav".
+A weighted LinearLayout does that with no hidden state, so the content
+box can't drift between screens. The collapsing-toolbar behaviour was
+never used; the AppBarLayout is pinned (`liftOnScroll=false`).
+
+**Rejected alternative — keep the map credit inside `MapView` with
+`MapView.LayoutParams`**
+That pins the view to a latitude/longitude, so it would slide around
+with the map. A credit belongs in a fixed corner, which is exactly what
+a sibling view gives.
+
+**Rejected alternative — pull-to-refresh**
+It needs `androidx.swiperefreshlayout`, a new library, and CLAUDE.md
+says to ask before adding one. Data refreshes whenever a screen opens,
+and network errors already offer a Retry action.
+
+**Kotlin / Android concepts** *(for my notes)*
+- *Window insets:* the sizes of the status bar, nav bar and keyboard
+  that Android hands to each view. "Consuming" them stops Android 8–10
+  passing them to the next sibling, so the helpers return them
+  untouched.
+- *`MetricAffectingSpan`:* a span styles part of a string, like a
+  `<span>` in HTML. This kind can change the font. The built-in
+  `TypefaceSpan(Typeface)` only exists from Android 9, and our minSdk
+  is 27.
+- *Auto-size text:* `autoSizeTextType="uniform"` lets a `TextView`
+  shrink its font to fit its box instead of cutting the text off.
+- *`callbackFlow`:* turns a callback API (location updates) into a
+  `Flow`. `awaitClose` unregisters when collection stops, much like a
+  Python generator's `finally` block.
+- *`elapsedRealtimeNanos`:* time since boot. It never jumps when the
+  wall clock changes, so a fix's age is reliable.
+- *Adaptive icon:* the launcher icon is a background layer plus a
+  foreground layer, so each phone maker can mask it to its own shape
+  (circle, squircle).
+
+**Verified**
+- `./gradlew assembleDebug`: BUILD SUCCESSFUL for both flavours.
+- `./gradlew testLocalDebugUnitTest testCloudDebugUnitTest`: 237 tests
+  each, 0 failures. New tests cover:
+  - stale fixes, resume segments and idempotent stop
+    (`TrackingSessionTest`),
+  - sub-minute durations (`FormattersTest`),
+  - tiny-distance pace (`WorkoutModelTest`),
+  - computed goal titles (`GoalTitlesTest`),
+  - the like-for-like momentum trend (`HistoryViewModelTest`).
+- On the emulator:
+  - Track with GPS → Pause → Resume → Finish → Save → detail → Back
+    lands Home; minimise and reopen from the notification; discard with
+    no distance.
+  - Every tab title at the same y position before and after Profile.
+  - 3-button navigation; a 360dp-wide screen at 130% font scale.
+  - Onboarding, Login and Register.
+  - The dialogs, pickers and bottom sheets.
+
+**Pending user action**
+- The emulator was left signed in as the seeded `alex@example.com`.
+  Sign back in with your own account.
+- Testing on the local Docker DB created:
+  - throwaway user `qa1791550241@example.com` (one goal),
+  - workouts 15–18 on `test@abc.com` (9 Oct).
+  Delete them in phpMyAdmin if they get in the way.
+- Auto-rotate was switched off on the emulator during testing.
+
+**Assignment task supported**
+- **Task 4 (geolocation):** the GPS flow no longer crashes and survives
+  pause / resume, stale fixes and missing Play services.
+- **Task 2a (UI implementation):** consistent screen height, a One UI
+  thumb-zone layout, Kinetic Glow on every surface, and a brand
+  launcher icon.

@@ -26,6 +26,7 @@ import com.elijah.fitness.data.repository.GoalDeleteCoordinator
 import com.elijah.fitness.data.repository.WorkoutDeleteCoordinator
 import com.elijah.fitness.insights.InsightEngine
 import com.elijah.fitness.tracking.LocationTracker
+import com.elijah.fitness.tracking.LocationTrackingService
 import com.elijah.fitness.tracking.TrackingSession
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -146,4 +147,33 @@ class AppContainer(applicationContext: Context) {
      * calls `rank(workouts, goalsWithProgress)` on each flow emission.
      */
     val insightEngine: InsightEngine = InsightEngine()
+
+    /**
+     * Forget everything about the signed-in user on this device: stop a
+     * GPS session, drop pending deletes, clear the cached workouts and
+     * goals, reset body metrics and remove the token. Used when the
+     * server already rejected the session (401) or the account was
+     * deleted — nothing is sent to the server.
+     */
+    suspend fun signOutLocally(context: Context) {
+        context.stopService(LocationTrackingService.serviceIntent(context))
+        trackingSession.reset()
+        workoutDeleteCoordinator.cancelAll()
+        goalDeleteCoordinator.cancelAll()
+        workoutRepository.clearCache()
+        goalRepository.clearCache()
+        userSettings.reset()
+        tokenStore.clear()
+    }
+
+    /**
+     * "Log out" from Profile: send any swipe-deletes still waiting on
+     * their Undo window, tell the server, then sign out locally.
+     */
+    suspend fun signOut(context: Context) {
+        workoutDeleteCoordinator.flushPending()
+        goalDeleteCoordinator.flushPending()
+        authRepository.logout()
+        signOutLocally(context)
+    }
 }

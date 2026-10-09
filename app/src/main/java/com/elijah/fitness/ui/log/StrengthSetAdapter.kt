@@ -7,12 +7,13 @@ import androidx.recyclerview.widget.RecyclerView
 import com.elijah.fitness.R
 import com.elijah.fitness.data.model.StrengthSet
 import com.elijah.fitness.databinding.ItemStrengthSetBinding
+import java.text.DecimalFormat
 
 /**
  * Simple adapter for the sets-being-added list. Kept intentionally basic
  * (no `DiffUtil`) because sets have no stable id, duplicate sets are
  * legitimate, and the list is short (a session is usually well under 20
- * sets). Insert + remove are surfaced explicitly so the adapter animates.
+ * sets).
  */
 class StrengthSetAdapter(
     private val onDelete: (Int) -> Unit
@@ -35,7 +36,7 @@ class StrengthSetAdapter(
     }
 
     override fun onBindViewHolder(holder: SetViewHolder, position: Int) {
-        holder.bind(items[position])
+        holder.bind(items[position], position)
     }
 
     override fun getItemCount(): Int = items.size
@@ -45,18 +46,28 @@ class StrengthSetAdapter(
         private val onDelete: (Int) -> Unit
     ) : RecyclerView.ViewHolder(binding.root) {
 
-        fun bind(set: StrengthSet) {
+        fun bind(set: StrengthSet, position: Int) {
             val ctx = binding.root.context
-            binding.setSummary.text = ctx.getString(
-                R.string.log_strength_set_summary,
-                set.exercise,
+            binding.setNumber.text = (position + 1).toString()
+            binding.setExercise.text = set.exercise
+            binding.setSummary.text = ctx.resources.getQuantityString(
+                R.plurals.log_strength_set_summary,
                 set.reps,
-                set.weightKg
+                set.reps,
+                WEIGHT_FORMAT.format(set.weightKg),
+            )
+            binding.deleteButton.contentDescription = ctx.getString(
+                R.string.log_strength_delete_set_content_description_numbered, position + 1,
             )
             binding.deleteButton.setOnClickListener {
                 val current = bindingAdapterPosition
                 if (current != RecyclerView.NO_POSITION) onDelete(current)
             }
+        }
+
+        private companion object {
+            /** "60", "62.5" — no trailing ".0" on whole kilograms. */
+            val WEIGHT_FORMAT = DecimalFormat("0.#")
         }
     }
 }

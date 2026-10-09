@@ -37,7 +37,7 @@ import java.time.temporal.TemporalAdjusters
  *
  * Step 9 additions:
  * - [momentum] — data for the dark "Weekly momentum" card (this week's
- *   total distance, per-day bar values, trend vs previous week).
+ *   total distance, per-day bar values, trend vs the same point last week).
  * - [sectioned] — `HistoryItem`s split into "This week" + "Earlier" so
  *   the adapter can render section headers with per-week summaries.
  */
@@ -144,11 +144,16 @@ class HistoryViewModel(
     // ---------- momentum + sectioning helpers ----------
 
     private fun computeMomentum(workouts: List<Workout>): Momentum {
-        val today = LocalDate.ofInstant(clock.instant(), zone)
+        val now = clock.instant()
+        val today = LocalDate.ofInstant(now, zone)
         val monday = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
         val prevMonday = monday.minusWeeks(1)
         val startOfWeek = monday.atStartOfDay(zone).toInstant()
         val startOfPrevWeek = prevMonday.atStartOfDay(zone).toInstant()
+        // Like-for-like trend: this week so far vs the same stretch of last
+        // week (Monday up to this moment, 7 days ago). Comparing against
+        // ALL of last week would read close to -100% every Monday.
+        val sameTimeLastWeek = now.atZone(zone).minusWeeks(1).toInstant()
 
         val perDay = DoubleArray(7)
         var thisWeekMeters = 0.0
@@ -163,7 +168,8 @@ class HistoryViewModel(
                     if (dayIndex in 0..6) perDay[dayIndex] += distanceMeters
                     thisWeekMeters += distanceMeters
                 }
-                !workout.startTime.isBefore(startOfPrevWeek) -> {
+                !workout.startTime.isBefore(startOfPrevWeek) &&
+                    workout.startTime.isBefore(sameTimeLastWeek) -> {
                     lastWeekMeters += distanceMeters
                 }
             }

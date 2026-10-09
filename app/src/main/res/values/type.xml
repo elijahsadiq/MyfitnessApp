@@ -33,6 +33,17 @@
         <item name="android:textColor">@color/text_primary</item>
     </style>
 
+    <!--
+      Title of a secondary screen (toolbar title, detail header, New goal
+      header): one size everywhere so every sub-screen header reads the
+      same.
+    -->
+    <style name="TextAppearance.Fitness.ScreenTitleSm" parent="TextAppearance.Fitness.HeadlineSm">
+        <item name="android:textSize">20sp</item>
+        <item name="android:fontFamily">@font/plus_jakarta_sans_bold</item>
+        <item name="fontFamily">@font/plus_jakarta_sans_bold</item>
+    </style>
+
     <!-- Body paragraphs (15sp Regular). -->
     <style name="TextAppearance.Fitness.BodyLg" parent="TextAppearance.Material3.BodyLarge">
         <item name="android:fontFamily">@font/plus_jakarta_sans</item>

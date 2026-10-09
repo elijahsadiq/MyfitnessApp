@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout
+<!--
+  History tab. Viewing area: header + this week's momentum card; the
+  list below; the "log a workout" FAB bottom-end in thumb reach.
+-->
+<FrameLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
@@ -8,40 +12,28 @@
     android:background="@color/background_warm"
     tools:context=".ui.history.WorkoutHistoryFragment">
 
-    <com.google.android.material.progressindicator.LinearProgressIndicator
-        android:id="@+id/loadingBar"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:indeterminate="true"
-        android:visibility="gone"
-        app:indicatorColor="@color/text_primary"
-        app:layout_constraintTop_toTopOf="parent"
-        app:trackColor="@color/surface_container_high"
-        tools:visibility="visible" />
-
     <androidx.core.widget.NestedScrollView
         android:id="@+id/scroll"
         android:layout_width="match_parent"
-        android:layout_height="0dp"
+        android:layout_height="match_parent"
         android:clipToPadding="false"
-        android:paddingBottom="@dimen/fab_margin_bottom"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/loadingBar">
+        android:paddingBottom="@dimen/fab_clearance">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
-            <!-- Screen header -->
-            <TextView
-                android:id="@+id/historyHeadline"
-                style="@style/TextAppearance.Fitness.HeadlineLg"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="@dimen/screen_margin"
-                android:layout_marginTop="@dimen/space_xl"
-                android:text="@string/history_headline" />
+            <!-- Screen header (same position and height on every tab) -->
+            <LinearLayout style="@style/Widget.Fitness.ScreenHeader">
+
+                <TextView
+                    android:id="@+id/historyHeadline"
+                    style="@style/Widget.Fitness.ScreenTitle"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:text="@string/history_headline" />
+            </LinearLayout>
 
             <!-- Weekly momentum dark card -->
             <com.google.android.material.card.MaterialCardView
@@ -241,10 +233,14 @@
         style="@style/Widget.Fitness.FAB"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginEnd="@dimen/fab_margin_end"
-        android:layout_marginBottom="@dimen/fab_margin_bottom"
+        android:layout_gravity="bottom|end"
+        android:layout_margin="@dimen/fab_margin_end"
         android:contentDescription="@string/history_fab_content_description"
-        android:src="@drawable/ic_add_24"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
-</androidx.constraintlayout.widget.ConstraintLayout>
+        android:src="@drawable/ic_add_24" />
+
+    <!-- Overlaid (not stacked) so showing it never shifts the content. -->
+    <com.google.android.material.progressindicator.LinearProgressIndicator
+        android:id="@+id/loadingBar"
+        style="@style/Widget.Fitness.TopLoadingBar"
+        tools:visibility="visible" />
+</FrameLayout>

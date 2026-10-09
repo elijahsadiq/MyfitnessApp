@@ -24,8 +24,10 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import java.time.Clock
 import java.time.Duration
 import java.time.Instant
+import java.time.ZoneOffset
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class HistoryViewModelTest {
@@ -66,6 +68,43 @@ class HistoryViewModelTest {
         vm.setFilter(HistoryViewModel.Filter.WEIGHTLIFTING)
         val list = vm.workouts.first { list -> list.size == 1 && list[0].type == ActivityType.WEIGHTLIFTING }
         assertEquals(1, list.size)
+    }
+
+    @Test
+    fun `momentum trend compares with the same point last week, not the whole week`() = runTest {
+        // "Now" is Wednesday 7 Oct, midday.
+        val clock = Clock.fixed(Instant.parse("2026-10-07T12:00:00Z"), ZoneOffset.UTC)
+        val repo = InMemoryTestRepo(
+            listOf(
+                // This week so far: 5 km.
+                RunningWorkout(
+                    id = "this-mon",
+                    startTime = Instant.parse("2026-10-05T08:00:00Z"),
+                    duration = Duration.ofMinutes(30),
+                    distanceMeters = 5_000.0,
+                ),
+                // Last week before Wed midday: 10 km — counts.
+                RunningWorkout(
+                    id = "last-mon",
+                    startTime = Instant.parse("2026-09-28T08:00:00Z"),
+                    duration = Duration.ofMinutes(60),
+                    distanceMeters = 10_000.0,
+                ),
+                // Last Saturday: later in the week than "now" — ignored.
+                CyclingWorkout(
+                    id = "last-sat",
+                    startTime = Instant.parse("2026-10-03T08:00:00Z"),
+                    duration = Duration.ofMinutes(90),
+                    distanceMeters = 40_000.0,
+                ),
+            )
+        )
+        val vm = HistoryViewModel(repo, newDeleteCoordinator(repo), clock, ZoneOffset.UTC)
+
+        val momentum = vm.momentum.first { it.trendPercent != null }
+
+        assertEquals(5_000.0, momentum.totalDistanceMeters, 0.001)
+        assertEquals(-50, momentum.trendPercent)
     }
 
     private fun fakeWorkouts(): List<Workout> = listOf(

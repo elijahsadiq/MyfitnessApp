@@ -27,6 +27,11 @@ class FormattersTest {
     }
 
     @Test
+    fun `formatDuration under a minute prints seconds`() {
+        assertEquals("45 s", Formatters.formatDuration(Duration.ofSeconds(45), locale))
+    }
+
+    @Test
     fun `formatDuration for hours prints h and mm`() {
         val d = Duration.ofMinutes(65)
         assertEquals("1h 05m", Formatters.formatDuration(d, locale))

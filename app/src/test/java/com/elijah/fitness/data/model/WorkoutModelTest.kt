@@ -27,6 +27,13 @@ class WorkoutModelTest {
     }
 
     @Test
+    fun `pace is zero for a few metres of GPS drift`() {
+        // 5 m in 10 minutes would otherwise read as 2000:00 /km.
+        val run = RunningWorkout(id, t0, Duration.ofMinutes(10), distanceMeters = 5.0)
+        assertEquals(0L, run.paceSecondsPerKm())
+    }
+
+    @Test
     fun `distance workout average speed`() {
         // 20 km in 60 minutes => 20 km/h
         val ride = CyclingWorkout(id, t0, Duration.ofMinutes(60), distanceMeters = 20_000.0)

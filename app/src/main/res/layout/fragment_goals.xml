@@ -1,36 +1,41 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Goals screen (phase 8b redesign). A single RecyclerView fills the
-  screen; the title header, main-goal card and all section rows are view
-  types inside the list, so the entire page scrolls as one.
+  Goals tab. A single RecyclerView fills the screen; the title header,
+  main-goal card and all section rows are view types inside the list, so
+  the entire page scrolls as one. "New goal" is the FAB bottom-end, the
+  same place as History's "Log a workout".
 -->
-<androidx.constraintlayout.widget.ConstraintLayout
+<FrameLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/background_warm"
     tools:context=".ui.goals.GoalsFragment">
 
-    <com.google.android.material.progressindicator.LinearProgressIndicator
-        android:id="@+id/goalsLoadingBar"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:indeterminate="true"
-        android:visibility="gone"
-        app:indicatorColor="@color/text_primary"
-        app:layout_constraintTop_toTopOf="parent"
-        app:trackColor="@color/surface_container_high"
-        tools:visibility="visible" />
-
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/goalsList"
         android:layout_width="match_parent"
-        android:layout_height="0dp"
+        android:layout_height="match_parent"
         android:clipToPadding="false"
-        android:paddingBottom="@dimen/fab_margin_bottom"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/goalsLoadingBar"
+        android:paddingBottom="@dimen/fab_clearance"
         tools:listitem="@layout/item_goal_active" />
-</androidx.constraintlayout.widget.ConstraintLayout>
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/newGoalFab"
+        style="@style/Widget.Fitness.FAB"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_margin="@dimen/fab_margin_end"
+        android:contentDescription="@string/goals_new_goal_button"
+        android:src="@drawable/ic_add_24"
+        android:visibility="gone"
+        tools:visibility="visible" />
+
+    <!-- Overlaid (not stacked) so showing it never shifts the content. -->
+    <com.google.android.material.progressindicator.LinearProgressIndicator
+        android:id="@+id/goalsLoadingBar"
+        style="@style/Widget.Fitness.TopLoadingBar"
+        tools:visibility="visible" />
+</FrameLayout>

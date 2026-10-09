@@ -38,13 +38,14 @@
 
                 <ImageView
                     android:id="@+id/detailBackButton"
-                    android:layout_width="44dp"
-                    android:layout_height="44dp"
+                    android:layout_width="@dimen/touch_target_min"
+                    android:layout_height="@dimen/touch_target_min"
                     android:background="@drawable/bg_detail_header_button"
                     android:clickable="true"
                     android:contentDescription="@string/detail_header_back_content_description"
                     android:focusable="true"
-                    android:padding="11dp"
+                    android:foreground="?attr/selectableItemBackgroundBorderless"
+                    android:padding="12dp"
                     android:src="@drawable/ic_arrow_back_24"
                     app:tint="@color/text_primary" />
 
@@ -57,12 +58,12 @@
 
                     <TextView
                         android:id="@+id/detailTitle"
-                        style="@style/TextAppearance.Fitness.HeadlineSm"
+                        style="@style/TextAppearance.Fitness.ScreenTitleSm"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:accessibilityHeading="true"
                         android:ellipsize="end"
                         android:maxLines="1"
-                        android:textSize="20sp"
                         tools:text="Morning run" />
 
                     <TextView
@@ -71,34 +72,37 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="2dp"
-                        android:textAllCaps="false"
+                        android:ellipsize="end"
+                        android:maxLines="1"
                         android:textColor="@color/text_secondary"
                         tools:text="Today, Wed 7 Oct · 06:30" />
                 </LinearLayout>
 
                 <ImageView
                     android:id="@+id/detailShareButton"
-                    android:layout_width="44dp"
-                    android:layout_height="44dp"
+                    android:layout_width="@dimen/touch_target_min"
+                    android:layout_height="@dimen/touch_target_min"
                     android:layout_marginStart="@dimen/space_sm"
                     android:background="@drawable/bg_detail_header_button"
                     android:clickable="true"
                     android:contentDescription="@string/detail_header_share_content_description"
                     android:focusable="true"
-                    android:padding="11dp"
+                    android:foreground="?attr/selectableItemBackgroundBorderless"
+                    android:padding="12dp"
                     android:src="@drawable/ic_share_24"
                     app:tint="@color/text_primary" />
 
                 <ImageView
                     android:id="@+id/detailOverflowButton"
-                    android:layout_width="44dp"
-                    android:layout_height="44dp"
+                    android:layout_width="@dimen/touch_target_min"
+                    android:layout_height="@dimen/touch_target_min"
                     android:layout_marginStart="@dimen/space_xs"
                     android:background="@drawable/bg_detail_header_button"
                     android:clickable="true"
                     android:contentDescription="@string/detail_header_overflow_content_description"
                     android:focusable="true"
-                    android:padding="11dp"
+                    android:foreground="?attr/selectableItemBackgroundBorderless"
+                    android:padding="12dp"
                     android:src="@drawable/ic_overflow_24"
                     app:tint="@color/text_primary" />
             </LinearLayout>
@@ -131,6 +135,17 @@
                     android:layout_width="match_parent"
                     android:layout_height="match_parent" />
 
+                <!-- The preview map isn't interactive: this covers it so a
+                     drag scrolls the page, and a tap opens the full map. -->
+                <View
+                    android:id="@+id/mapTapTarget"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="?attr/selectableItemBackground"
+                    android:clickable="true"
+                    android:contentDescription="@string/detail_map_expand_content_description"
+                    android:focusable="true" />
+
                 <!-- Top-left: "Running · GPS" pill with lime dot -->
                 <LinearLayout
                     android:id="@+id/mapActivityPill"
@@ -162,21 +177,38 @@
                         tools:text="Running · GPS" />
                 </LinearLayout>
 
-                <!-- Top-right: expand button -->
-                <ImageView
+                <!-- Top-right: expand button (40dp pill inside a 48dp target) -->
+                <FrameLayout
                     android:id="@+id/mapExpandButton"
-                    android:layout_width="36dp"
-                    android:layout_height="36dp"
+                    android:layout_width="@dimen/touch_target_min"
+                    android:layout_height="@dimen/touch_target_min"
                     android:layout_gravity="top|end"
-                    android:layout_marginTop="12dp"
-                    android:layout_marginEnd="12dp"
-                    android:background="@drawable/bg_detail_map_pill_light"
+                    android:layout_marginTop="8dp"
+                    android:layout_marginEnd="8dp"
                     android:clickable="true"
                     android:contentDescription="@string/detail_map_expand_content_description"
                     android:focusable="true"
-                    android:padding="9dp"
-                    android:src="@drawable/ic_expand_24"
-                    app:tint="@color/text_primary" />
+                    android:foreground="?attr/selectableItemBackgroundBorderless">
+
+                    <ImageView
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:layout_gravity="center"
+                        android:background="@drawable/bg_detail_map_pill_light"
+                        android:contentDescription="@null"
+                        android:importantForAccessibility="no"
+                        android:padding="9dp"
+                        android:src="@drawable/ic_expand_24"
+                        app:tint="@color/text_primary" />
+                </FrameLayout>
+
+                <!-- Bottom-left: OSM credit (required by the tile licence) -->
+                <TextView
+                    android:id="@+id/mapAttribution"
+                    style="@style/Widget.Fitness.MapAttribution"
+                    android:layout_gravity="bottom|start"
+                    android:layout_marginStart="12dp"
+                    android:layout_marginBottom="12dp" />
 
                 <!-- Bottom-right: distance pill -->
                 <TextView
@@ -237,6 +269,34 @@
                 <include
                     android:id="@+id/detailStatCard3"
                     layout="@layout/view_detail_stat_card" />
+            </LinearLayout>
+
+            <!-- ================= Sets (weightlifting only) ================= -->
+            <LinearLayout
+                android:id="@+id/detailSetsCard"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_lg"
+                android:background="@drawable/bg_detail_stat_card_light"
+                android:orientation="vertical"
+                android:padding="@dimen/card_padding"
+                android:visibility="gone"
+                tools:visibility="visible">
+
+                <TextView
+                    style="@style/TextAppearance.Fitness.HeadlineSm"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:accessibilityHeading="true"
+                    android:text="@string/detail_sets_title"
+                    android:textSize="16sp" />
+
+                <LinearLayout
+                    android:id="@+id/detailSetsContainer"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_sm"
+                    android:orientation="vertical" />
             </LinearLayout>
 
             <!-- ================= Notes card ================= -->

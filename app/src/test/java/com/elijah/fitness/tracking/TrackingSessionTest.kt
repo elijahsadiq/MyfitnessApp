@@ -99,6 +99,54 @@ class TrackingSessionTest {
         assertEquals(1, session.state.value.pointCount)
     }
 
+    @Test
+    fun `fix measured before resume is rejected as stale`() {
+        session.start(ActivityType.RUNNING)
+        session.onFix(51.5000, -0.1200, 5.0, clock.instant())
+        session.pause()
+        clock.advanceMs(60_000)
+        session.resume()
+        val resumedAt = clock.instant()
+        clock.advanceMs(1_000)
+        // A cached position measured during the pause, delivered now.
+        val result = session.onFix(
+            51.5050, -0.1200, 5.0,
+            recordedAt = clock.instant(),
+            measuredAt = resumedAt.minusMillis(5_000),
+        )
+        assertEquals(TrackingSession.FilterResult.RejectedStale, result)
+        assertEquals(1, session.state.value.pointCount)
+    }
+
+    @Test
+    fun `first fix after resume starts a new segment and skips the teleport check`() {
+        session.start(ActivityType.RUNNING)
+        session.onFix(51.5000, -0.1200, 5.0, clock.instant())
+        clock.advanceMs(10_000)
+        session.onFix(51.5005, -0.1200, 5.0, clock.instant())   // ~55 m
+        session.pause()
+        clock.advanceMs(120_000)                                // walked ~500 m while paused
+        session.resume()
+        clock.advanceMs(1_000)
+        val result = session.onFix(51.5050, -0.1200, 5.0, clock.instant())
+        assertEquals(TrackingSession.FilterResult.Accepted, result)
+        // Distance walked while paused is not counted.
+        val d = session.state.value.distanceMeters
+        assertTrue("expected ~55 m (pause gap excluded), got $d", d in 50.0..60.0)
+    }
+
+    @Test
+    fun `stop twice keeps the final elapsed time`() {
+        session.start(ActivityType.RUNNING)
+        clock.advanceMs(90_000)
+        session.stop()
+        val first = session.state.value.elapsedMs
+        clock.advanceMs(30_000)
+        session.stop()
+        assertEquals(first, session.state.value.elapsedMs)
+        assertEquals(90_000L, first)
+    }
+
     private class ControlledClock(private var now: Instant) : Clock() {
         override fun instant(): Instant = now
         override fun getZone() = ZoneOffset.UTC

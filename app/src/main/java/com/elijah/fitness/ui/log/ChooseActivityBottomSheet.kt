@@ -1,6 +1,9 @@
 package com.elijah.fitness.ui.log
 
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
+import android.provider.Settings
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -16,7 +19,6 @@ import com.elijah.fitness.data.model.ActivityType
 import com.elijah.fitness.databinding.BottomSheetChooseActivityBinding
 import com.elijah.fitness.databinding.ViewLogSheetActivityTileBinding
 import com.elijah.fitness.tracking.LocationPermissions
-import com.elijah.fitness.tracking.TrackingState
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.flow.first
@@ -67,6 +69,8 @@ class ChooseActivityBottomSheet : BottomSheetDialogFragment() {
 
     private val locationLauncher = LocationPermissions.registerLocationLauncher(this) { outcome ->
         when (outcome) {
+            // "Approximate" alone can't track a route, but the user chose
+            // it — start anyway; the screen will just show weak GPS.
             LocationPermissions.Outcome.FineGranted,
             LocationPermissions.Outcome.CoarseOnly -> onTrackWithGpsConfirmed()
             LocationPermissions.Outcome.Denied -> onLocationDenied()
@@ -87,12 +91,11 @@ class ChooseActivityBottomSheet : BottomSheetDialogFragment() {
 
         val container = (requireContext().applicationContext as FitnessApp).container
 
-        // One-session-at-a-time: if a tracking session is already live,
-        // skip the sheet entirely and jump back into it.
+        // One session at a time: if a GPS workout is running — or is
+        // finished but not saved yet — skip the sheet and jump back into
+        // it, so it can't be forgotten or overwritten.
         val liveState = container.trackingSession.state.value
-        if (liveState.status == TrackingState.Status.Tracking ||
-            liveState.status == TrackingState.Status.Paused
-        ) {
+        if (liveState.isActive) {
             findNavController().navigate(
                 R.id.action_choose_to_live_tracking,
                 bundleOf(ARG_ACTIVITY_TYPE to liveState.activityType.name),
@@ -170,8 +173,11 @@ class ChooseActivityBottomSheet : BottomSheetDialogFragment() {
 
     private fun onTrackWithGpsClicked() {
         when (LocationPermissions.outcome(requireContext())) {
-            LocationPermissions.Outcome.FineGranted,
-            LocationPermissions.Outcome.CoarseOnly -> onTrackWithGpsConfirmed()
+            LocationPermissions.Outcome.FineGranted -> onTrackWithGpsConfirmed()
+            // Only "approximate" location: GPS points would all be ~1 km
+            // off and get filtered out. Ask once more — Android 12+ shows
+            // a "use precise location" prompt.
+            LocationPermissions.Outcome.CoarseOnly,
             LocationPermissions.Outcome.Denied ->
                 locationLauncher.launch(LocationPermissions.LOCATION_PERMISSIONS)
         }
@@ -200,12 +206,27 @@ class ChooseActivityBottomSheet : BottomSheetDialogFragment() {
 
     private fun onLocationDenied() {
         // Keep the sheet open so the user can switch to Enter manually
-        // without reopening Home → sheet.
-        Snackbar.make(
+        // without reopening Home → sheet. If Android won't show the
+        // permission dialog any more ("Don't allow" twice), the only way
+        // back is the app's settings page — offer it.
+        val snack = Snackbar.make(
             binding.root,
             R.string.log_sheet_permission_denied_snackbar,
             Snackbar.LENGTH_LONG,
-        ).show()
+        )
+        if (!LocationPermissions.shouldShowRationale(this)) {
+            snack.setAction(R.string.auth_location_open_settings) {
+                runCatching {
+                    startActivity(
+                        Intent(
+                            Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                            Uri.fromParts("package", requireContext().packageName, null),
+                        )
+                    )
+                }
+            }
+        }
+        snack.show()
     }
 
     private fun rememberAndNavigate(type: ActivityType, action: Int) {

@@ -15,8 +15,9 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginHorizontal="@dimen/screen_margin"
-    android:layout_marginTop="@dimen/space_xl"
-    android:background="?attr/selectableItemBackground"
+    android:layout_marginTop="@dimen/space_lg"
+    android:clickable="true"
+    android:focusable="true"
     app:cardBackgroundColor="@color/goal_main_card"
     app:cardCornerRadius="@dimen/goal_main_card_radius"
     app:cardElevation="0dp"
@@ -115,35 +116,18 @@
                     style="@style/TextAppearance.Fitness.HeadlineSm"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:ellipsize="end"
+                    android:maxLines="3"
                     android:textColor="@color/text_on_dark"
                     tools:text="Run 50 km in 30 days" />
 
-                <LinearLayout
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
+                <!-- "32 / 50 km" in one auto-sizing line (see MetricText):
+                     never clips or wraps on small phones / large fonts. -->
+                <TextView
+                    android:id="@+id/goalMainValue"
+                    style="@style/Widget.Fitness.HeroMetricValue"
                     android:layout_marginTop="6dp"
-                    android:baselineAligned="true"
-                    android:gravity="bottom"
-                    android:orientation="horizontal">
-
-                    <TextView
-                        android:id="@+id/goalMainValue"
-                        style="@style/TextAppearance.Fitness.DisplayMetric"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:textColor="@color/text_on_dark"
-                        tools:text="32" />
-
-                    <TextView
-                        android:id="@+id/goalMainValueSuffix"
-                        style="@style/TextAppearance.Fitness.BodyLg"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="6dp"
-                        android:layout_marginBottom="6dp"
-                        android:textColor="@color/goal_main_muted"
-                        tools:text="/ 50 km" />
-                </LinearLayout>
+                    tools:text="32 / 50 km" />
             </LinearLayout>
 
             <FrameLayout

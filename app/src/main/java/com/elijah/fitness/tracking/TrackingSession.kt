@@ -6,6 +6,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import java.time.Clock
 import java.time.Instant
+import java.util.UUID
 
 /**
  * The pure in-memory state machine for a tracking session. Pure Kotlin —
@@ -40,6 +41,13 @@ class TrackingSession(
         RejectedTooClose,
         /** Dropped — implied speed above [TrackingConstants.MAX_PLAUSIBLE_SPEED_MPS]. */
         RejectedTeleport,
+        /**
+         * Dropped — measured before the session last started or resumed.
+         * Providers re-deliver a cached position on resume; accepting it
+         * would pin the new segment to where the user *paused* and count
+         * the distance walked while paused.
+         */
+        RejectedStale,
         /** Not tracking (idle / paused / stopped) — the fix is simply ignored. */
         Ignored,
     }
@@ -49,17 +57,26 @@ class TrackingSession(
     private var elapsedBeforePauseMs: Long = 0L
     /** Wall-clock moment of the last resume (or start) — null when paused/stopped. */
     private var runningSinceMs: Long? = null
+    /**
+     * True between a [resume] and the next accepted fix. That fix starts
+     * a new route segment: the user may have walked while paused, so the
+     * too-close / teleport checks against the pre-pause point don't
+     * apply (they would otherwise reject every fix after a long pause).
+     */
+    private var segmentStartPending: Boolean = false
 
     fun start(activityType: ActivityType) {
         val now = clock.instant()
         startedAtMs = now.toEpochMilli()
         elapsedBeforePauseMs = 0L
         runningSinceMs = startedAtMs
+        segmentStartPending = false
         _state.value = TrackingState.IDLE.copy(
             status = TrackingState.Status.Tracking,
             activityType = activityType,
             startedAt = now,
             gpsQuality = TrackingState.GpsQuality.Searching,
+            sessionId = UUID.randomUUID().toString(),
         )
     }
 
@@ -79,31 +96,40 @@ class TrackingSession(
         val current = _state.value
         if (current.status != TrackingState.Status.Paused) return
         runningSinceMs = clock.millis()
+        segmentStartPending = current.points.isNotEmpty()
         _state.value = current.copy(status = TrackingState.Status.Tracking)
     }
 
     /**
      * Finalise the session. State moves to [TrackingState.Status.Stopped]
-     * and the point list is preserved for the save screen to read.
+     * and the point list is preserved for the save step to read.
+     *
+     * Idempotent: the screen stops the session before saving and the
+     * service stops it again while tearing down. A second call must not
+     * touch the elapsed time (it used to drop the last running stretch,
+     * so a retried save could store a near-zero duration).
      */
     fun stop() {
         val current = _state.value
-        if (current.status == TrackingState.Status.Idle) return
+        if (current.status == TrackingState.Status.Idle ||
+            current.status == TrackingState.Status.Stopped
+        ) return
         val running = runningSinceMs
-        val finalElapsed = elapsedBeforePauseMs +
-            (if (running != null) clock.millis() - running else 0L)
+        if (running != null) elapsedBeforePauseMs += clock.millis() - running
         runningSinceMs = null
+        segmentStartPending = false
         _state.value = current.copy(
             status = TrackingState.Status.Stopped,
-            elapsedMs = finalElapsed,
+            elapsedMs = elapsedBeforePauseMs,
         )
     }
 
-    /** Reset to the IDLE state. Used when the user discards a stopped session. */
+    /** Reset to the IDLE state. Used after a save, or when the user discards. */
     fun reset() {
         startedAtMs = 0L
         elapsedBeforePauseMs = 0L
         runningSinceMs = null
+        segmentStartPending = false
         _state.value = TrackingState.IDLE
     }
 
@@ -114,16 +140,26 @@ class TrackingSession(
      * @param latitude WGS 84 degrees.
      * @param longitude WGS 84 degrees.
      * @param accuracyM horizontal accuracy in metres, or null if unknown.
-     * @param recordedAt wall-clock moment of the fix.
+     * @param recordedAt wall-clock moment the fix is accepted (stored with
+     *   the point; same clock as the session's elapsed time).
+     * @param measuredAt wall-clock moment the provider actually measured
+     *   the position — older than [recordedAt] for cached fixes.
      */
     fun onFix(
         latitude: Double,
         longitude: Double,
         accuracyM: Double?,
         recordedAt: Instant,
+        measuredAt: Instant = recordedAt,
     ): FilterResult {
         val current = _state.value
         if (current.status != TrackingState.Status.Tracking) return FilterResult.Ignored
+
+        // Filter 0 — stale: measured before we (re)started running.
+        val runningSince = runningSinceMs
+        if (runningSince != null && measuredAt.toEpochMilli() < runningSince) {
+            return FilterResult.RejectedStale
+        }
 
         // Filter 1 — accuracy band.
         if (accuracyM != null && accuracyM > TrackingConstants.ACCURACY_THRESHOLD_M) {
@@ -134,7 +170,7 @@ class TrackingSession(
 
         val previous = current.points.lastOrNull()
 
-        if (previous != null) {
+        if (previous != null && !segmentStartPending) {
             // Filter 2 — distance from previous point.
             val stepMeters = TrackCalculator.haversineMeters(
                 previous.latitude, previous.longitude, latitude, longitude,
@@ -165,13 +201,17 @@ class TrackingSession(
             recordedAt = recordedAt,
         )
         val newPoints = current.points + newPoint
+        // The pair (pre-pause point, first point after Resume) spans the
+        // pause, so it can't give a meaningful "current" speed.
+        val startsNewSegment = segmentStartPending && previous != null
+        segmentStartPending = false
 
         _state.value = current.copy(
             elapsedMs = elapsedMs,
             distanceMeters = TrackCalculator.totalDistanceMeters(newPoints),
             currentPaceMsPerKm = TrackCalculator.recentPaceMsPerKm(newPoints),
             averagePaceMsPerKm = TrackCalculator.averagePaceMsPerKm(newPoints),
-            currentSpeedKmh = currentSpeedKmhFrom(newPoints),
+            currentSpeedKmh = if (startsNewSegment) null else currentSpeedKmhFrom(newPoints),
             averageSpeedKmh = TrackCalculator.averageSpeedKmh(newPoints),
             pointCount = newPoints.size,
             gpsQuality = gpsBandFor(accuracyM),

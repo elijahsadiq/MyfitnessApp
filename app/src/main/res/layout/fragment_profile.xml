@@ -25,13 +25,18 @@
             android:orientation="vertical">
 
             <FrameLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content">
+
+            <FrameLayout
                 android:id="@+id/avatarContainer"
                 android:layout_width="@dimen/profile_avatar_size"
                 android:layout_height="@dimen/profile_avatar_size"
                 android:background="@drawable/bg_home_avatar"
                 android:clickable="true"
                 android:contentDescription="@string/profile_avatar_content_description"
-                android:focusable="true">
+                android:focusable="true"
+                android:foreground="?attr/selectableItemBackgroundBorderless">
 
                 <ImageView
                     android:id="@+id/avatarImage"
@@ -49,14 +54,28 @@
                     android:src="@drawable/ic_person_24"
                     app:tint="@color/text_secondary" />
 
-                <ProgressBar
+                <com.google.android.material.progressindicator.CircularProgressIndicator
                     android:id="@+id/avatarProgress"
-                    style="?android:attr/progressBarStyleSmall"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
+                    android:indeterminate="true"
                     android:visibility="gone"
+                    app:indicatorColor="@color/text_primary"
+                    app:indicatorSize="32dp"
                     tools:visibility="visible" />
+            </FrameLayout>
+
+                <ImageView
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:layout_gravity="bottom|end"
+                    android:background="@drawable/bg_profile_avatar_badge"
+                    android:contentDescription="@null"
+                    android:importantForAccessibility="no"
+                    android:padding="7dp"
+                    android:src="@drawable/ic_edit_24"
+                    app:tint="@color/text_on_lime" />
             </FrameLayout>
 
             <com.google.android.material.button.MaterialButton
@@ -86,15 +105,6 @@
                 android:textColor="@color/text_secondary"
                 tools:text="alex@example.com" />
 
-            <TextView
-                style="@style/TextAppearance.Fitness.LabelSm"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/space_xs"
-                android:gravity="center"
-                android:text="@string/profile_email_hint"
-                android:textAllCaps="false"
-                android:textColor="@color/text_secondary" />
         </LinearLayout>
 
         <!-- Summary tiles: workouts / distance / member since -->
@@ -230,14 +240,6 @@
                             android:layout_marginTop="2dp"
                             tools:text="72.0 kg" />
 
-                        <TextView
-                            style="@style/TextAppearance.Fitness.LabelSm"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="2dp"
-                            android:text="@string/profile_weight_hint"
-                            android:textAllCaps="false"
-                            android:textColor="@color/text_secondary" />
                     </LinearLayout>
 
                     <TextView

@@ -22,7 +22,17 @@ data class TrackingState(
     val pointCount: Int,
     val gpsQuality: GpsQuality,
     val points: List<TrackPoint>,
+    /**
+     * Stable id for this session, created on start. Becomes the saved
+     * workout's `clientUuid`, so a retried save (the server upserts on
+     * it) can never create a duplicate workout. `null` while idle.
+     */
+    val sessionId: String? = null,
 ) {
+
+    /** True while a session exists that hasn't been saved or discarded. */
+    val isActive: Boolean
+        get() = status != Status.Idle
 
     enum class Status { Idle, Tracking, Paused, Stopped }
 

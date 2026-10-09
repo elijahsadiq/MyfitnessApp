@@ -1,10 +1,12 @@
 package com.elijah.fitness.ui.log
 
 import android.os.Bundle
+import android.text.format.DateFormat
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.view.inputmethod.EditorInfo
+import androidx.core.content.ContextCompat
 import androidx.core.os.bundleOf
 import androidx.core.view.isVisible
 import androidx.core.widget.doAfterTextChanged
@@ -19,7 +21,8 @@ import com.elijah.fitness.ui.history.WorkoutDetailFragment
 import com.google.android.material.datepicker.CalendarConstraints
 import com.google.android.material.datepicker.DateValidatorPointBackward
 import com.google.android.material.datepicker.MaterialDatePicker
-import com.google.android.material.snackbar.Snackbar
+import com.elijah.fitness.util.Fonts
+import com.elijah.fitness.util.MetricText
 import com.google.android.material.timepicker.MaterialTimePicker
 import com.google.android.material.timepicker.TimeFormat
 import java.time.Instant
@@ -54,6 +57,10 @@ class LogDistanceWorkoutFragment : BaseFragment<FragmentLogDistanceWorkoutBindin
         )
     }
 
+    /** Lighter weight for the small unit next to a big number ("4.12 km"). */
+    private val unitFont: android.graphics.Typeface
+        get() = Fonts.medium(requireContext())
+
     override fun inflateBinding(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -75,6 +82,9 @@ class LogDistanceWorkoutFragment : BaseFragment<FragmentLogDistanceWorkoutBindin
 
         collectOnStart(viewModel.date) { renderDate(it) }
         collectOnStart(viewModel.time) { renderTime(it) }
+        collectOnStart(viewModel.isSaving) { saving ->
+            binding.saveButton.isEnabled = !saving
+        }
         collectOnStart(viewModel.events) { event ->
             when (event) {
                 is LogDistanceWorkoutViewModel.Event.Saved -> onSaved(event.clientUuid)
@@ -96,19 +106,17 @@ class LogDistanceWorkoutFragment : BaseFragment<FragmentLogDistanceWorkoutBindin
                 binding.logSummaryActivityIcon.setImageResource(R.drawable.ic_bike_24)
                 binding.logSummaryActivityLabel.setText(R.string.log_summary_eyebrow_cycling)
                 binding.logSummaryPrimaryLabel.setText(R.string.log_summary_metric_speed)
-                binding.logSummaryPrimaryUnit.setText(R.string.log_summary_unit_speed)
                 binding.logSummarySecondaryLabel.setText(R.string.log_summary_metric_pace)
-                binding.logSummarySecondaryUnit.setText(R.string.log_summary_unit_pace)
                 binding.saveButton.setText(R.string.log_save_ride_button)
+                requireActivity().setTitle(R.string.log_ride_title)
             }
             else -> {
                 binding.logSummaryActivityIcon.setImageResource(R.drawable.ic_run_24)
                 binding.logSummaryActivityLabel.setText(R.string.log_summary_eyebrow_running)
                 binding.logSummaryPrimaryLabel.setText(R.string.log_summary_metric_pace)
-                binding.logSummaryPrimaryUnit.setText(R.string.log_summary_unit_pace)
                 binding.logSummarySecondaryLabel.setText(R.string.log_summary_metric_speed)
-                binding.logSummarySecondaryUnit.setText(R.string.log_summary_unit_speed)
                 binding.saveButton.setText(R.string.log_save_run_button)
+                requireActivity().setTitle(R.string.log_run_title)
             }
         }
     }
@@ -159,8 +167,14 @@ class LogDistanceWorkoutFragment : BaseFragment<FragmentLogDistanceWorkoutBindin
     }
 
     private fun renderTime(time: LocalTime) {
-        binding.logTimeValue.text = time.format(TIME_FORMATTER)
+        // "14:31" or "2:31 PM", following the phone's 24-hour setting.
+        binding.logTimeValue.text = time.format(timeFormatter())
     }
+
+    private fun timeFormatter(): DateTimeFormatter = DateTimeFormatter.ofPattern(
+        if (DateFormat.is24HourFormat(requireContext())) "HH:mm" else "h:mm a",
+        Locale.getDefault(),
+    )
 
     private fun updateLiveSummary() {
         val hours = readInt(binding.hoursInput)
@@ -179,30 +193,31 @@ class LogDistanceWorkoutFragment : BaseFragment<FragmentLogDistanceWorkoutBindin
             bodyWeightKg = weightKg,
         )
 
-        if (summary == null) {
-            binding.logSummaryPrimaryValue.setText(R.string.log_summary_metric_dash)
-            binding.logSummarySecondaryValue.setText(R.string.log_summary_metric_dash)
-            binding.logSummaryCaloriesValue.setText(R.string.log_summary_metric_dash)
-            binding.logSummaryIncomplete.isVisible = true
-            return
+        val muted = ContextCompat.getColor(requireContext(), R.color.goal_main_muted)
+        val dash = getString(R.string.log_summary_metric_dash)
+        binding.logSummaryIncomplete.isVisible = summary == null
+        val pace = MetricText.of(
+            summary?.let { formatPace(it.paceSecondsPerKm) } ?: dash,
+            getString(R.string.log_summary_unit_pace), muted,
+            unitTypeface = unitFont,
+        )
+        val speed = MetricText.of(
+            summary?.let { String.format(Locale.getDefault(), "%.1f", it.speedKmh) } ?: dash,
+            getString(R.string.log_summary_unit_speed), muted,
+            unitTypeface = unitFont,
+        )
+        binding.logSummaryCaloriesValue.text = MetricText.of(
+            summary?.calories?.toString() ?: dash,
+            getString(R.string.log_summary_unit_kcal), muted,
+            unitTypeface = unitFont,
+        )
+        if (activityType == ActivityType.CYCLING) {
+            binding.logSummaryPrimaryValue.text = speed
+            binding.logSummarySecondaryValue.text = pace
+        } else {
+            binding.logSummaryPrimaryValue.text = pace
+            binding.logSummarySecondaryValue.text = speed
         }
-        binding.logSummaryIncomplete.isVisible = false
-
-        val paceText = formatPace(summary.paceSecondsPerKm)
-        val speedText = String.format(Locale.getDefault(), "%.1f", summary.speedKmh)
-        val kcalText = summary.calories.toString()
-
-        when (activityType) {
-            ActivityType.CYCLING -> {
-                binding.logSummaryPrimaryValue.text = speedText
-                binding.logSummarySecondaryValue.text = paceText
-            }
-            else -> {
-                binding.logSummaryPrimaryValue.text = paceText
-                binding.logSummarySecondaryValue.text = speedText
-            }
-        }
-        binding.logSummaryCaloriesValue.text = kcalText
     }
 
     private fun formatPace(secondsPerKm: Int): String {
@@ -237,7 +252,10 @@ class LogDistanceWorkoutFragment : BaseFragment<FragmentLogDistanceWorkoutBindin
     private fun showTimePicker() {
         val current = viewModel.time.value
         val picker = MaterialTimePicker.Builder()
-            .setTimeFormat(TimeFormat.CLOCK_24H)
+            .setTimeFormat(
+                if (DateFormat.is24HourFormat(requireContext())) TimeFormat.CLOCK_24H
+                else TimeFormat.CLOCK_12H
+            )
             .setHour(current.hour)
             .setMinute(current.minute)
             .setTitleText(R.string.log_time_picker_title)
@@ -306,7 +324,7 @@ class LogDistanceWorkoutFragment : BaseFragment<FragmentLogDistanceWorkoutBindin
     }
 
     private fun showSaveRetry(messageRes: Int) {
-        Snackbar.make(binding.root, messageRes, Snackbar.LENGTH_LONG)
+        snackbar(messageRes, anchor = binding.logSaveContainer)
             .setAction(R.string.log_error_save_retry) { attemptSave() }
             .show()
     }
@@ -316,7 +334,5 @@ class LogDistanceWorkoutFragment : BaseFragment<FragmentLogDistanceWorkoutBindin
             DateTimeFormatter.ofPattern("EEE d MMM", Locale.getDefault())
         val WEEKDAY_FORMATTER: DateTimeFormatter =
             DateTimeFormatter.ofPattern("EEEE", Locale.getDefault())
-        val TIME_FORMATTER: DateTimeFormatter =
-            DateTimeFormatter.ofPattern("HH:mm", Locale.getDefault())
     }
 }

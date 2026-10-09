@@ -5,6 +5,7 @@ import android.os.Bundle
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
+import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updatePadding
 import androidx.navigation.fragment.NavHostFragment
@@ -42,12 +43,18 @@ class AuthActivity : AppCompatActivity() {
         binding = ActivityAuthBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // Push bottom-anchored content up above the gesture-nav pill so
-        // buttons aren't trapped under it. Onboarding pages that need to
-        // reach the top edge (hero image) opt out via android:fitsSystemWindows.
+        // Push bottom-anchored content above the gesture / 3-button nav
+        // bar — and above the keyboard while it's open, so the form
+        // shrinks and the focused field scrolls into view instead of
+        // hiding behind the keyboard.
         ViewCompat.setOnApplyWindowInsetsListener(binding.authNavHost) { v, insets ->
             val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            v.updatePadding(bottom = bars.bottom)
+            val ime = insets.getInsets(WindowInsetsCompat.Type.ime())
+            v.updatePadding(
+                left = bars.left,
+                right = bars.right,
+                bottom = maxOf(bars.bottom, ime.bottom),
+            )
             insets
         }
 
@@ -64,6 +71,19 @@ class AuthActivity : AppCompatActivity() {
             }
         )
         navController.graph = graph
+
+        // Onboarding + location priming are dark screens: paint the host
+        // (which shows under the gesture / nav bar) to match, and flip the
+        // system-bar icons to light. Log in / Register are light.
+        val insetsController = WindowCompat.getInsetsController(window, window.decorView)
+        navController.addOnDestinationChangedListener { _, destination, _ ->
+            val dark = destination.id in DARK_DESTINATIONS
+            binding.authNavHost.setBackgroundResource(
+                if (dark) R.color.surface_dark else R.color.background_warm
+            )
+            insetsController.isAppearanceLightStatusBars = !dark
+            insetsController.isAppearanceLightNavigationBars = !dark
+        }
     }
 
     /** Called by child fragments after register / login succeeds. */
@@ -77,5 +97,10 @@ class AuthActivity : AppCompatActivity() {
 
     companion object {
         const val EXTRA_SHOW_ONBOARDING = "show_onboarding"
+
+        private val DARK_DESTINATIONS = setOf(
+            R.id.onboardingHostFragment,
+            R.id.locationPermissionFragment,
+        )
     }
 }

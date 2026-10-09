@@ -13,7 +13,8 @@
     android:layout_height="wrap_content"
     android:layout_marginHorizontal="@dimen/screen_margin"
     android:layout_marginBottom="10dp"
-    android:background="?attr/selectableItemBackground"
+    android:clickable="true"
+    android:focusable="true"
     app:cardBackgroundColor="@color/surface_white"
     app:cardCornerRadius="@dimen/radius_row"
     app:cardElevation="0dp"
@@ -42,47 +43,51 @@
                     android:layout_width="22dp"
                     android:layout_height="22dp"
                     android:layout_gravity="center"
-                    android:contentDescription="@string/goals_row_icon_content_description"
+                    android:contentDescription="@null"
                     app:tint="@color/text_primary"
                     tools:src="@drawable/ic_run_24" />
             </FrameLayout>
 
-            <LinearLayout
+            <!-- Title gets the full width and may wrap — never cut off. -->
+            <TextView
+                android:id="@+id/activeTitle"
+                style="@style/TextAppearance.Fitness.BodyLg"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="@dimen/space_md"
                 android:layout_weight="1"
-                android:orientation="vertical">
+                android:ellipsize="end"
+                android:maxLines="2"
+                android:textColor="@color/text_primary"
+                android:textStyle="bold"
+                tools:text="Ride 100 km in 30 days" />
+        </LinearLayout>
 
-                <TextView
-                    android:id="@+id/activeTitle"
-                    style="@style/TextAppearance.Fitness.BodyLg"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:ellipsize="end"
-                    android:maxLines="1"
-                    android:textColor="@color/text_primary"
-                    android:textStyle="bold"
-                    tools:text="Ride 100 km in 30 days" />
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_md"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
 
-                <TextView
-                    android:id="@+id/activeValue"
-                    style="@style/TextAppearance.Fitness.LabelMd"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="2dp"
-                    android:textAllCaps="false"
-                    android:textColor="@color/text_secondary"
-                    tools:text="58 / 100 km" />
-            </LinearLayout>
+            <TextView
+                android:id="@+id/activeValue"
+                style="@style/TextAppearance.Fitness.LabelMd"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:maxLines="1"
+                android:textColor="@color/text_secondary"
+                tools:text="58 / 100 km" />
 
             <LinearLayout
                 android:id="@+id/activeDaysPill"
                 android:layout_width="wrap_content"
-                android:layout_height="26dp"
+                android:layout_height="wrap_content"
                 android:layout_marginStart="@dimen/space_sm"
                 android:background="@drawable/bg_section_summary_pill"
                 android:gravity="center_vertical"
+                android:minHeight="26dp"
                 android:orientation="horizontal"
                 android:paddingHorizontal="10dp">
 
@@ -99,7 +104,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="5dp"
-                    android:textAllCaps="false"
+                    android:maxLines="1"
                     android:textColor="@color/text_secondary"
                     android:textStyle="bold"
                     tools:text="12 days left" />
@@ -110,10 +115,12 @@
             android:id="@+id/activeProgressBar"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="14dp"
+            android:layout_marginTop="10dp"
             app:indicatorColor="@color/lime_accent"
+            app:indicatorTrackGapSize="0dp"
             app:trackColor="@color/surface_container_high"
             app:trackCornerRadius="4dp"
+            app:trackStopIndicatorSize="0dp"
             app:trackThickness="8dp"
             tools:progress="58" />
     </LinearLayout>

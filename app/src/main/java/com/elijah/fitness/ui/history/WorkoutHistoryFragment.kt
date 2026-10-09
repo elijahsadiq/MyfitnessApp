@@ -14,8 +14,6 @@ import com.elijah.fitness.FitnessApp
 import com.elijah.fitness.R
 import com.elijah.fitness.databinding.FragmentWorkoutHistoryBinding
 import com.elijah.fitness.ui.base.BaseFragment
-import com.elijah.fitness.util.Formatters
-import com.google.android.material.snackbar.Snackbar
 
 /**
  * Workout history screen (Step 9 restyle).
@@ -50,8 +48,21 @@ class WorkoutHistoryFragment : BaseFragment<FragmentWorkoutHistoryBinding>() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        // The bottom nav sits below this screen: only the status bar
+        // (and side bars in landscape) need clearing.
         applySystemBarInsets(applyBottom = false)
-        applyBottomNavInset(binding.scroll)
+
+        // Standard FAB behaviour: tuck it away while scrolling down so it
+        // never sits on top of a row you're reading; bring it back on the
+        // way up.
+        binding.scroll.setOnScrollChangeListener(
+            androidx.core.widget.NestedScrollView.OnScrollChangeListener { _, _, y, _, oldY ->
+                when {
+                    y > oldY + FAB_SCROLL_SLOP -> binding.addWorkoutFab.hide()
+                    y < oldY - FAB_SCROLL_SLOP || y == 0 -> binding.addWorkoutFab.show()
+                }
+            }
+        )
 
         binding.workoutList.adapter = adapter
         binding.workoutList.layoutManager = LinearLayoutManager(requireContext())
@@ -97,16 +108,15 @@ class WorkoutHistoryFragment : BaseFragment<FragmentWorkoutHistoryBinding>() {
         collectOnStart(viewModel.errorEvents) { event ->
             when (event) {
                 is HistoryViewModel.ErrorEvent.Network ->
-                    Snackbar.make(binding.root, event.messageRes, Snackbar.LENGTH_LONG)
+                    snackbar(event.messageRes)
                         .setAction(R.string.workouts_retry) { viewModel.refresh() }
                         .show()
                 is HistoryViewModel.ErrorEvent.Generic ->
-                    Snackbar.make(binding.root, event.messageRes, Snackbar.LENGTH_LONG)
+                    snackbar(event.messageRes)
                         .setAction(R.string.workouts_retry) { viewModel.refresh() }
                         .show()
                 is HistoryViewModel.ErrorEvent.DeletedWithUndo -> {
-                    Snackbar.make(binding.root, R.string.history_deleted_snackbar,
-                        Snackbar.LENGTH_LONG)
+                    snackbar(R.string.history_deleted_snackbar)
                         .setAction(R.string.history_deleted_undo) {
                             viewModel.undoDelete(event.workoutId)
                         }
@@ -116,9 +126,16 @@ class WorkoutHistoryFragment : BaseFragment<FragmentWorkoutHistoryBinding>() {
         }
     }
 
+    override fun snackbarAnchorView(): View? = bindingOrNull?.addWorkoutFab
+
     override fun onDestroyView() {
         binding.workoutList.adapter = null
         super.onDestroyView()
+    }
+
+    private companion object {
+        /** Ignore tiny scroll jitters (px) before hiding / showing the FAB. */
+        const val FAB_SCROLL_SLOP = 8
     }
 
     private fun renderMomentum(m: HistoryViewModel.Momentum) {

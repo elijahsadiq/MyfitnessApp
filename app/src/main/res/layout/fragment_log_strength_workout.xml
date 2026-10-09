@@ -1,237 +1,340 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  Weightlifting log form. Same visual language as the run / ride form
+  (fragment_log_distance_workout.xml): "When" date + time cards, the
+  "How long?" duration card, a white card holding the sets, notes, and a
+  lime Save button pinned to the bottom (thumb reach, clears the gesture
+  bar and the keyboard via the fragment's inset helper).
+-->
 <androidx.constraintlayout.widget.ConstraintLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@color/background_warm"
     tools:context=".ui.log.LogStrengthWorkoutFragment">
 
-    <ScrollView
+    <androidx.core.widget.NestedScrollView
         android:id="@+id/formScroll"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:padding="16dp"
         android:clipToPadding="false"
-        app:layout_constraintBottom_toTopOf="@id/saveButton"
+        android:paddingBottom="@dimen/space_lg"
+        app:layout_constraintBottom_toTopOf="@id/logSaveContainer"
         app:layout_constraintTop_toTopOf="parent">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical">
+            android:orientation="vertical"
+            android:paddingHorizontal="@dimen/screen_margin"
+            android:paddingTop="@dimen/space_md">
 
-            <!-- Date + time -->
+            <!-- =========== When =========== -->
+            <TextView
+                style="@style/Widget.Fitness.FormSectionTitle"
+                android:layout_marginTop="0dp"
+                android:text="@string/log_when_header" />
+
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:baselineAligned="false"
                 android:orientation="horizontal">
 
-                <com.google.android.material.textfield.TextInputLayout
-                    android:id="@+id/dateFieldLayout"
-                    style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:hint="@string/log_field_date">
+                <LinearLayout
+                    android:id="@+id/logDateCard"
+                    style="@style/Widget.Fitness.WhenCard"
+                    android:contentDescription="@string/log_field_date">
 
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/dateField"
-                        android:layout_width="match_parent"
+                    <FrameLayout
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:background="@drawable/bg_log_when_icon">
+
+                        <ImageView
+                            android:layout_width="18dp"
+                            android:layout_height="18dp"
+                            android:layout_gravity="center"
+                            android:contentDescription="@null"
+                            android:src="@drawable/ic_calendar_24"
+                            app:tint="@color/text_primary" />
+                    </FrameLayout>
+
+                    <LinearLayout
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:minHeight="48dp"
-                        android:focusable="false"
-                        android:clickable="true"
-                        android:cursorVisible="false"
-                        android:inputType="none" />
-                </com.google.android.material.textfield.TextInputLayout>
+                        android:layout_marginStart="12dp"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:id="@+id/logDateEyebrow"
+                            style="@style/TextAppearance.Fitness.LabelMd"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:maxLines="1"
+                            android:textColor="@color/text_secondary"
+                            tools:text="Today" />
+
+                        <TextView
+                            android:id="@+id/logDateValue"
+                            style="@style/Widget.Fitness.WhenCardValue"
+                            tools:text="Wed 7 Oct" />
+                    </LinearLayout>
+                </LinearLayout>
 
                 <Space
-                    android:layout_width="12dp"
-                    android:layout_height="wrap_content" />
+                    android:layout_width="10dp"
+                    android:layout_height="match_parent" />
 
-                <com.google.android.material.textfield.TextInputLayout
-                    android:id="@+id/timeFieldLayout"
-                    style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:hint="@string/log_field_time">
+                <LinearLayout
+                    android:id="@+id/logTimeCard"
+                    style="@style/Widget.Fitness.WhenCard"
+                    android:contentDescription="@string/log_field_time">
 
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/timeField"
-                        android:layout_width="match_parent"
+                    <FrameLayout
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:background="@drawable/bg_log_when_icon">
+
+                        <ImageView
+                            android:layout_width="18dp"
+                            android:layout_height="18dp"
+                            android:layout_gravity="center"
+                            android:contentDescription="@null"
+                            android:src="@drawable/ic_history_24"
+                            app:tint="@color/text_primary" />
+                    </FrameLayout>
+
+                    <LinearLayout
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:minHeight="48dp"
-                        android:focusable="false"
-                        android:clickable="true"
-                        android:cursorVisible="false"
-                        android:inputType="none" />
-                </com.google.android.material.textfield.TextInputLayout>
+                        android:layout_marginStart="12dp"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            style="@style/TextAppearance.Fitness.LabelMd"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:maxLines="1"
+                            android:text="@string/log_time_eyebrow"
+                            android:textColor="@color/text_secondary" />
+
+                        <TextView
+                            android:id="@+id/logTimeValue"
+                            style="@style/Widget.Fitness.WhenCardValue"
+                            tools:text="18:30" />
+                    </LinearLayout>
+                </LinearLayout>
             </LinearLayout>
 
-            <!-- Duration -->
             <TextView
-                style="?attr/textAppearanceLabelLarge"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:text="@string/log_field_duration"
-                android:textColor="?attr/colorOnSurfaceVariant" />
+                android:id="@+id/logDateError"
+                style="@style/Widget.Fitness.FormError"
+                tools:text="Date can't be in the future."
+                tools:visibility="visible" />
+
+            <!-- =========== How long? =========== -->
+            <TextView
+                style="@style/Widget.Fitness.FormSectionTitle"
+                android:text="@string/log_how_long_header" />
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:orientation="horizontal">
+                android:layout_marginTop="10dp"
+                android:background="@drawable/bg_log_form_card"
+                android:baselineAligned="false"
+                android:gravity="top"
+                android:orientation="horizontal"
+                android:padding="@dimen/card_padding">
 
-                <com.google.android.material.textfield.TextInputLayout
-                    style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                <LinearLayout
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:hint="@string/log_field_hours">
+                    android:gravity="center_horizontal"
+                    android:orientation="vertical">
 
-                    <com.google.android.material.textfield.TextInputEditText
+                    <EditText
                         android:id="@+id/hoursInput"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:minHeight="48dp"
-                        android:inputType="number"
-                        android:maxLength="2"
-                        android:text="0" />
-                </com.google.android.material.textfield.TextInputLayout>
+                        style="@style/Widget.Fitness.DurationCell"
+                        android:contentDescription="@string/log_duration_hours_label"
+                        android:maxLength="2" />
 
-                <Space
-                    android:layout_width="8dp"
-                    android:layout_height="wrap_content" />
+                    <TextView
+                        style="@style/Widget.Fitness.DurationCellLabel"
+                        android:text="@string/log_duration_hours_label" />
+                </LinearLayout>
 
-                <com.google.android.material.textfield.TextInputLayout
-                    style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                <TextView style="@style/Widget.Fitness.DurationColon" />
+
+                <LinearLayout
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:hint="@string/log_field_minutes">
+                    android:gravity="center_horizontal"
+                    android:orientation="vertical">
 
-                    <com.google.android.material.textfield.TextInputEditText
+                    <EditText
                         android:id="@+id/minutesInput"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:minHeight="48dp"
-                        android:inputType="number"
-                        android:maxLength="2"
-                        android:text="45" />
-                </com.google.android.material.textfield.TextInputLayout>
+                        style="@style/Widget.Fitness.DurationCell"
+                        android:contentDescription="@string/log_duration_minutes_label"
+                        android:maxLength="2" />
 
-                <Space
-                    android:layout_width="8dp"
-                    android:layout_height="wrap_content" />
+                    <TextView
+                        style="@style/Widget.Fitness.DurationCellLabel"
+                        android:text="@string/log_duration_minutes_label" />
+                </LinearLayout>
 
-                <com.google.android.material.textfield.TextInputLayout
-                    style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                <TextView style="@style/Widget.Fitness.DurationColon" />
+
+                <LinearLayout
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:hint="@string/log_field_seconds">
+                    android:gravity="center_horizontal"
+                    android:orientation="vertical">
 
-                    <com.google.android.material.textfield.TextInputEditText
+                    <EditText
                         android:id="@+id/secondsInput"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:minHeight="48dp"
-                        android:inputType="number"
-                        android:maxLength="2"
-                        android:text="0" />
-                </com.google.android.material.textfield.TextInputLayout>
+                        style="@style/Widget.Fitness.DurationCell"
+                        android:contentDescription="@string/log_duration_seconds_label"
+                        android:imeOptions="actionDone"
+                        android:maxLength="2" />
+
+                    <TextView
+                        style="@style/Widget.Fitness.DurationCellLabel"
+                        android:text="@string/log_duration_seconds_label" />
+                </LinearLayout>
             </LinearLayout>
 
             <TextView
                 android:id="@+id/durationError"
-                style="?attr/textAppearanceBodySmall"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:textColor="?attr/colorError"
-                android:visibility="gone" />
+                style="@style/Widget.Fitness.FormError"
+                tools:text="Minutes and seconds must be between 0 and 59."
+                tools:visibility="visible" />
 
-            <!-- Sets header + list -->
+            <!-- =========== Sets =========== -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
+                android:layout_marginTop="22dp"
                 android:gravity="center_vertical"
                 android:orientation="horizontal">
 
                 <TextView
-                    style="?attr/textAppearanceTitleMedium"
+                    style="@style/Widget.Fitness.FormSectionTitle"
                     android:layout_width="0dp"
-                    android:layout_height="wrap_content"
+                    android:layout_marginTop="0dp"
                     android:layout_weight="1"
                     android:text="@string/log_strength_sets_title" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/addSetButton"
-                    style="@style/Widget.Material3.Button.TonalButton.Icon"
+                    style="@style/Widget.Fitness.Button.Outlined"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:minHeight="48dp"
+                    android:minHeight="@dimen/touch_target_min"
+                    android:paddingStart="@dimen/space_lg"
+                    android:paddingEnd="@dimen/space_lg"
                     android:text="@string/log_strength_add_set_button"
-                    app:icon="@android:drawable/ic_input_add" />
+                    app:icon="@drawable/ic_add_24"
+                    app:iconSize="18dp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:background="@drawable/bg_log_form_card"
+                android:orientation="vertical"
+                android:paddingVertical="@dimen/space_xs">
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/setsList"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:nestedScrollingEnabled="false"
+                    android:visibility="gone"
+                    tools:itemCount="3"
+                    tools:listitem="@layout/item_strength_set"
+                    tools:visibility="visible" />
+
+                <TextView
+                    android:id="@+id/setsEmptyHint"
+                    style="@style/TextAppearance.Fitness.BodyMd"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:minHeight="64dp"
+                    android:padding="@dimen/card_padding"
+                    android:text="@string/log_strength_sets_empty"
+                    android:textColor="@color/text_secondary" />
             </LinearLayout>
 
             <TextView
                 android:id="@+id/setsError"
-                style="?attr/textAppearanceBodySmall"
+                style="@style/Widget.Fitness.FormError"
+                tools:text="Add at least one set."
+                tools:visibility="visible" />
+
+            <!-- =========== Notes =========== -->
+            <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:textColor="?attr/colorError"
-                android:visibility="gone" />
+                android:layout_marginTop="22dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
 
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/setsList"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:nestedScrollingEnabled="false"
-                tools:itemCount="3"
-                tools:listitem="@layout/item_strength_set" />
+                <TextView
+                    style="@style/Widget.Fitness.FormSectionTitle"
+                    android:layout_marginTop="0dp"
+                    android:text="@string/log_notes_label" />
 
-            <TextView
-                android:id="@+id/setsEmptyHint"
-                style="?attr/textAppearanceBodyMedium"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:gravity="center"
-                android:text="@string/log_strength_sets_empty"
-                android:textColor="?attr/colorOnSurfaceVariant" />
-
-            <!-- Notes -->
-            <com.google.android.material.textfield.TextInputLayout
-                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:hint="@string/log_field_notes">
-
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/notesInput"
-                    android:layout_width="match_parent"
+                <TextView
+                    style="@style/TextAppearance.Fitness.LabelMd"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:minHeight="48dp"
-                    android:inputType="textMultiLine|textCapSentences"
-                    android:maxLines="4" />
-            </com.google.android.material.textfield.TextInputLayout>
-        </LinearLayout>
-    </ScrollView>
+                    android:layout_marginStart="6dp"
+                    android:text="@string/log_notes_optional_suffix"
+                    android:textColor="@color/text_secondary" />
+            </LinearLayout>
 
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/saveButton"
-        style="@style/Widget.Fitness.Button.Primary"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_margin="16dp"
-        android:text="@string/log_save_button"
-        app:layout_constraintBottom_toBottomOf="parent" />
+            <EditText
+                android:id="@+id/notesInput"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:background="@drawable/bg_log_form_card"
+                android:gravity="top|start"
+                android:hint="@string/log_notes_hint"
+                android:importantForAutofill="no"
+                android:inputType="textMultiLine|textCapSentences"
+                android:minLines="3"
+                android:padding="@dimen/card_padding"
+                android:textColor="@color/text_primary"
+                android:textColorHint="@color/text_secondary"
+                android:textSize="15sp" />
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+
+    <FrameLayout
+        android:id="@+id/logSaveContainer"
+        style="@style/Widget.Fitness.PinnedButtonBar"
+        app:layout_constraintBottom_toBottomOf="parent">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/saveButton"
+            style="@style/Widget.Fitness.Button.Primary"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:text="@string/log_save_button"
+            app:icon="@drawable/ic_check_24"
+            app:iconGravity="textStart" />
+    </FrameLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -1,49 +1,74 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  Single-activity shell. A plain vertical stack:
+
+      toolbar (secondary screens only)
+      current screen (fills the rest)
+      bottom navigation (top-level tabs only)
+
+  The stack is deliberate. The screen used to fill the whole window with
+  the bottom nav drawn over it, and the toolbar was positioned through a
+  CoordinatorLayout scrolling behaviour. That behaviour kept the hidden
+  toolbar's old height, so after visiting Profile or a log form every tab
+  slid down by a toolbar's worth of blank space, and content hid behind
+  the bottom nav on phones with 3-button navigation. Stacked, each piece
+  only ever takes the space it actually uses.
+
+  The CoordinatorLayout root stays as the Snackbar host.
+-->
 <androidx.coordinatorlayout.widget.CoordinatorLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/mainRoot"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/background_warm"
     tools:context=".ui.main.MainActivity">
 
-    <!--
-      The AppBarLayout is only shown on log destinations (which need the
-      Up arrow). Top-level destinations (Home / History / Progress /
-      Goals) draw their own headers per the Kinetic Glow design.
-    -->
-    <com.google.android.material.appbar.AppBarLayout
-        android:id="@+id/appBarLayout"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="@color/background_warm"
-        android:fitsSystemWindows="true"
-        android:visibility="gone">
-
-        <com.google.android.material.appbar.MaterialToolbar
-            android:id="@+id/toolbar"
-            android:layout_width="match_parent"
-            android:layout_height="?attr/actionBarSize"
-            android:background="@color/background_warm"
-            app:navigationIconTint="@color/text_primary"
-            app:titleTextColor="@color/text_primary" />
-    </com.google.android.material.appbar.AppBarLayout>
-
-    <androidx.fragment.app.FragmentContainerView
-        android:id="@+id/navHostFragment"
-        android:name="androidx.navigation.fragment.NavHostFragment"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        app:defaultNavHost="true"
-        app:layout_behavior="@string/appbar_scrolling_view_behavior"
-        app:navGraph="@navigation/nav_graph" />
+        android:orientation="vertical">
 
-    <com.google.android.material.bottomnavigation.BottomNavigationView
-        android:id="@+id/bottomNavigation"
-        style="@style/Widget.Fitness.BottomNav"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_gravity="bottom"
-        app:menu="@menu/bottom_nav_menu" />
+        <!--
+          Only shown on secondary screens that need the Up arrow (Profile,
+          the log forms). fitsSystemWindows pads it below the status bar;
+          the lift-on-scroll tint is off so the bar never turns a second
+          shade of grey under the status bar while scrolling.
+        -->
+        <com.google.android.material.appbar.AppBarLayout
+            android:id="@+id/appBarLayout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@color/background_warm"
+            android:fitsSystemWindows="true"
+            android:visibility="gone"
+            app:elevation="0dp"
+            app:liftOnScroll="false"
+            app:statusBarForeground="@color/background_warm">
+
+            <com.google.android.material.appbar.MaterialToolbar
+                android:id="@+id/toolbar"
+                style="@style/Widget.Fitness.Toolbar"
+                android:layout_width="match_parent"
+                android:layout_height="?attr/actionBarSize" />
+        </com.google.android.material.appbar.AppBarLayout>
+
+        <androidx.fragment.app.FragmentContainerView
+            android:id="@+id/navHostFragment"
+            android:name="androidx.navigation.fragment.NavHostFragment"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            app:defaultNavHost="true"
+            app:navGraph="@navigation/nav_graph" />
+
+        <com.google.android.material.bottomnavigation.BottomNavigationView
+            android:id="@+id/bottomNavigation"
+            style="@style/Widget.Fitness.BottomNav"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:menu="@menu/bottom_nav_menu" />
+    </LinearLayout>
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

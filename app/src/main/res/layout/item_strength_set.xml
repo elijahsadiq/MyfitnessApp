@@ -1,34 +1,68 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout
+<!--
+  One set in the weightlifting form's sets card: exercise on top,
+  "10 reps × 60 kg" under it, and a 48dp delete button.
+-->
+<LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:minHeight="48dp"
-    android:paddingHorizontal="16dp"
-    android:paddingVertical="8dp">
+    android:gravity="center_vertical"
+    android:minHeight="@dimen/row_min_height"
+    android:orientation="horizontal"
+    android:paddingStart="@dimen/card_padding"
+    android:paddingEnd="@dimen/space_xs">
 
     <TextView
-        android:id="@+id/setSummary"
-        style="?attr/textAppearanceBodyLarge"
+        android:id="@+id/setNumber"
+        style="@style/TextAppearance.Fitness.LabelMd"
+        android:layout_width="28dp"
+        android:layout_height="28dp"
+        android:background="@drawable/bg_log_when_icon"
+        android:gravity="center"
+        android:maxLines="1"
+        android:textColor="@color/text_primary"
+        android:textStyle="bold"
+        tools:text="1" />
+
+    <LinearLayout
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toStartOf="@id/deleteButton"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        tools:text="Bench Press · 10 × 60 kg" />
+        android:layout_marginStart="@dimen/space_md"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:paddingVertical="@dimen/space_sm">
 
-    <com.google.android.material.button.MaterialButton
+        <TextView
+            android:id="@+id/setExercise"
+            style="@style/TextAppearance.Fitness.BodyLg"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:maxLines="2"
+            android:textStyle="bold"
+            tools:text="Bench press" />
+
+        <TextView
+            android:id="@+id/setSummary"
+            style="@style/TextAppearance.Fitness.LabelMd"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:textColor="@color/text_secondary"
+            tools:text="10 reps × 60 kg" />
+    </LinearLayout>
+
+    <ImageButton
         android:id="@+id/deleteButton"
-        style="@style/Widget.Material3.Button.IconButton"
-        android:layout_width="48dp"
-        android:layout_height="48dp"
+        android:layout_width="@dimen/touch_target_min"
+        android:layout_height="@dimen/touch_target_min"
+        android:background="?attr/selectableItemBackgroundBorderless"
         android:contentDescription="@string/log_strength_delete_set_content_description"
-        app:icon="@android:drawable/ic_menu_delete"
-        app:iconTint="?attr/colorError"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
-</androidx.constraintlayout.widget.ConstraintLayout>
+        android:padding="12dp"
+        android:scaleType="fitCenter"
+        android:src="@drawable/ic_delete_24"
+        app:tint="@color/text_secondary" />
+</LinearLayout>

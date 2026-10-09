@@ -52,7 +52,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:ellipsize="end"
-            android:maxLines="1"
+            android:maxLines="2"
             android:textColor="@color/goal_ended_title"
             android:textStyle="bold"
             tools:text="Run 20 km in 14 days" />

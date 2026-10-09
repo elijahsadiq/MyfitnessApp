@@ -51,15 +51,13 @@
 
     <!-- Bottom-nav & FAB -->
     <dimen name="bottom_nav_height">64dp</dimen>
-    <!--
-      Baseline bottom padding for scrollable top-level fragments so the
-      last item isn't hidden behind the BottomNavigationView. The inset
-      listener adds the system nav-bar inset on top for three-button-nav
-      devices.
-    -->
-    <dimen name="bottom_nav_height_plus_breathing_room">96dp</dimen>
-    <dimen name="fab_margin_bottom">88dp</dimen>
     <dimen name="fab_margin_end">16dp</dimen>
+    <!--
+      Bottom padding for a scrolling list that has a FAB floating over its
+      end: FAB 56 + 16 margin + 16 breathing room, so the last row can be
+      scrolled fully clear of the FAB.
+    -->
+    <dimen name="fab_clearance">88dp</dimen>
 
     <!-- Onboarding page indicator -->
     <dimen name="page_indicator_dot_size">6dp</dimen>

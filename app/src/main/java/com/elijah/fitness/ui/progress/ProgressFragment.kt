@@ -18,7 +18,6 @@ import com.elijah.fitness.databinding.ItemProgressActivityCardBinding
 import com.elijah.fitness.databinding.ItemProgressStatRowBinding
 import com.elijah.fitness.ui.base.BaseFragment
 import com.elijah.fitness.util.Formatters
-import com.google.android.material.snackbar.Snackbar
 
 /**
  * Progress tab — period/activity filter, bar chart of active minutes
@@ -42,12 +41,20 @@ class ProgressFragment : BaseFragment<FragmentProgressBinding>() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        // The bottom nav sits below this screen: only the status bar
+        // (and side bars in landscape) need clearing.
         applySystemBarInsets(applyBottom = false)
-        applyBottomNavInset(binding.progressScroll)
 
-        binding.periodWeek.setOnClickListener { viewModel.setPeriod(AnalyticsPeriod.WEEK) }
-        binding.periodMonth.setOnClickListener { viewModel.setPeriod(AnalyticsPeriod.MONTH) }
-        binding.periodYear.setOnClickListener { viewModel.setPeriod(AnalyticsPeriod.YEAR) }
+        binding.periodGroup.addOnButtonCheckedListener { _, checkedId, isChecked ->
+            if (!isChecked) return@addOnButtonCheckedListener
+            viewModel.setPeriod(
+                when (checkedId) {
+                    R.id.periodMonth -> AnalyticsPeriod.MONTH
+                    R.id.periodYear -> AnalyticsPeriod.YEAR
+                    else -> AnalyticsPeriod.WEEK
+                }
+            )
+        }
 
         binding.filterChips.setOnCheckedStateChangeListener { _, checked ->
             val f = when (checked.firstOrNull()) {
@@ -62,28 +69,29 @@ class ProgressFragment : BaseFragment<FragmentProgressBinding>() {
         collectOnStart(viewModel.period) { syncPeriodButtons(it) }
         collectOnStart(viewModel.state) { render(it) }
         collectOnStart(viewModel.isLoading) { binding.progressLoadingBar.isVisible = it }
-        collectOnStart(viewModel.loadError) { err ->
-            if (err) {
-                Snackbar.make(binding.root, R.string.workouts_error_load_failed, Snackbar.LENGTH_LONG)
-                    .setAction(R.string.workouts_retry) { viewModel.refresh() }
-                    .show()
-            }
+        collectOnStart(viewModel.loadErrors) {
+            snackbar(R.string.workouts_error_load_failed)
+                .setAction(R.string.workouts_retry) { viewModel.refresh() }
+                .show()
         }
     }
 
     private fun syncPeriodButtons(period: AnalyticsPeriod) {
-        binding.periodGroup.check(
-            when (period) {
-                AnalyticsPeriod.WEEK -> R.id.periodWeek
-                AnalyticsPeriod.MONTH -> R.id.periodMonth
-                AnalyticsPeriod.YEAR -> R.id.periodYear
-            }
-        )
+        val id = when (period) {
+            AnalyticsPeriod.WEEK -> R.id.periodWeek
+            AnalyticsPeriod.MONTH -> R.id.periodMonth
+            AnalyticsPeriod.YEAR -> R.id.periodYear
+        }
+        if (binding.periodGroup.checkedButtonId != id) binding.periodGroup.check(id)
     }
 
     private fun render(state: ProgressViewModel.State) {
         binding.progressEmpty.isVisible = state.isEmpty
         binding.progressContent.isVisible = !state.isEmpty
+        binding.progressEmptyBody.setText(
+            if (state.hasAnyWorkouts) R.string.progress_empty_period_body
+            else R.string.progress_empty_body
+        )
         if (state.isEmpty) return
 
         binding.periodChart.setData(state.periodBars)

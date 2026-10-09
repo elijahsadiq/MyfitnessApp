@@ -48,6 +48,7 @@ Repository interface  ← phase 1: FakeWorkoutRepository (in-memory)
 | 7  (done) | Goals (hierarchy #4), per-user progress calculator, Goals tab UI, completion celebration |
 | 8a (done) | **Geolocation end-to-end** — foreground service, FusedLocationProviderClient, osmdroid map, route save + detail screen (hoisted ahead of phase 8 polish because the brief weights it at 40 marks) |
 | 8  (done) | Goal expiry as a third state, Home redesign (BMI → kcal, real streak, Goals section removed), Profile backend + rebuild, Progress + analytics screen, personalised insights, submission readiness |
+| 9  (done) | Full-app audit — GPS crash fix, consistent content height (new shell), One UI thumb-zone layout, branding pass, brand launcher icon, sign-out cache clearing, copy + plurals cleanup |
 | future    | Room offline cache + WorkManager sync (closes the "process-kill drops the GPS session" caveat); extra activity types if the assignment report calls for them |
 
 ## Package layout (target)
@@ -86,8 +87,35 @@ Gradle needs Android Studio's bundled JDK:
 ```bash
 export JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"
 ./gradlew assembleDebug
-./gradlew testDebugUnitTest
+# Two product flavours (local / cloud), so the plain testDebugUnitTest
+# task name is ambiguous — name both:
+./gradlew testLocalDebugUnitTest testCloudDebugUnitTest
 ```
+
+## App shell, insets and snackbars (from phase 9)
+- `activity_main.xml` is a plain vertical stack inside `mainRoot`:
+  AppBarLayout (GONE except on `MainActivity.TOOLBAR_DESTINATIONS` —
+  Log run, Log lift, Profile, New goal) → `FragmentContainerView`
+  (`0dp`, weight 1) → `BottomNavigationView`. **Do not** go back to
+  `appbar_scrolling_view_behavior`: with the toolbar GONE it keeps a
+  stale offset and the content height changes after visiting Profile.
+- `BaseFragment` inset helpers (`applyInsets`, `applySystemBarInsets`,
+  `applyBottomNavInset`, `applyStatusBarMargin`) return insets
+  **unconsumed** — Android 8–10 stop dispatching after the first
+  consumer. Tab screens clear only the top (`applyBottom = false`);
+  the bottom nav handles the bottom.
+- Snackbars go through `BaseFragment.snackbar(...)`. Anchor order: the
+  explicit `anchor` argument → `snackbarAnchorView()` (override it to
+  return a FAB or pinned Save bar) → the bottom nav via `SnackbarHost`.
+- Never add children to osmdroid's `MapView` (needs geo-anchored
+  `MapView.LayoutParams`, NPEs otherwise — this was the GPS crash). Put
+  overlays beside the map in the screen layout.
+- Activities are portrait-only on phones (manifest). Android 16+
+  ignores this on large screens, so layouts must still not assume a
+  fixed width.
+- Sign-out always goes through `AppContainer.signOut` /
+  `signOutLocally`, which stop tracking and clear every in-memory cache
+  before dropping the token.
 
 ## How to work in this repo
 - One phase-1 step at a time (see `phase-1-foundation.md` §4).
@@ -170,11 +198,25 @@ Deleted from phase 1: `brand_*` teal/orange palette, `accent_running/cycling/wei
 
 `Widget.Fitness.Button.Primary` (lime pill) · `Widget.Fitness.Button.Outlined` (white pill, 1dp divider border) · `Widget.Fitness.Button.Text` · `Widget.Fitness.Card` (white 24dp radius) · `Widget.Fitness.Card.Dark` (surface_dark hero) · `Widget.Fitness.Card.Inverse` (inverse_surface momentum card) · `Widget.Fitness.Chip.Filter` (selects lime) · `Widget.Fitness.TextField` (16dp radius outlined) · `Widget.Fitness.IconTile` (44×44 squircle) · `Widget.Fitness.FAB` (lime circle) · `Widget.Fitness.BottomNav` (+ `ActiveIndicator` lime pill).
 
+Shared since phase 9 — reuse these instead of restyling per screen:
+- Screen chrome: `ScreenHeader` / `ScreenTitle` (tab titles), `Toolbar`, `TopLoadingBar`.
+- Forms: `FormSectionTitle`, `WhenCard` / `WhenCardValue`, `DurationCell` / `DurationCellLabel` / `DurationColon`, `FormError`, `PinnedButtonBar` (bottom Save bar), `Button.Segment`.
+- Metrics: `HeroMetricValue`, `TrackingStatValue`, `SummaryStatValue` — auto-sizing; fill them with `util/MetricText.of(value, unit, …)` so number + unit shrink together.
+- Map: `MapOverlayButton` (48dp), `MapAttribution`.
+- Sheets / dialogs: `ThemeOverlay.Fitness.BottomSheetDialog`, `Widget.Fitness.BottomSheet`, `MaterialAlertDialog.Fitness.Title`; dialogs and sheets are white (`elevationOverlayEnabled=false`).
+- Scrolling lists under a FAB end with `@dimen/fab_clearance` (88dp) of bottom padding.
+
+**Widget fonts:** AppCompat lets the theme's `fontFamily` override the font
+from a `textAppearance`, so any style that needs a non-regular weight sets
+both `fontFamily` and `android:fontFamily` directly (see the button styles).
+
 **Layout rule from Step 1 onwards:** every layout resolves colours, sizes and radii through these styles / tokens. No hardcoded hex, sp or dp in any layout file.
 
 ### Icons
 
 Material Symbols style, vector drawables at 24dp. Phase-2 adds: `ic_home_24`, `ic_trending_up_24`, `ic_add_24`, `ic_search_24`, `ic_calendar_24`, `ic_notifications_24`, `ic_location_pin_24`, `ic_arrow_forward_24`, `ic_check_24`, `ic_play_arrow_24`, `ic_visibility_24`, `ic_visibility_off_24`, `ic_mail_24`, `ic_lock_24`, `ic_scale_24`. Phase-1 icons kept: `ic_run_24`, `ic_bike_24`, `ic_dumbbell_24`, `ic_history_24`, `ic_flag_24`, `ic_person_24`, `ic_dashboard_24`.
+
+Launcher icon (phase 9): adaptive icon in `mipmap-anydpi/ic_launcher*.xml` — `ic_launcher_background` (`surface_dark` tile), `ic_launcher_foreground` (lime pulse) and `ic_launcher_monochrome` (Android 13+ themed icons). There are no per-density webp mipmaps any more (minSdk 27 always uses the adaptive XML). `ic_brand_mark` is the same mark as an in-app logo tile.
 
 ### Onboarding imagery
 

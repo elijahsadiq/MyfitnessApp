@@ -12,7 +12,6 @@ import com.elijah.fitness.FitnessApp
 import com.elijah.fitness.R
 import com.elijah.fitness.databinding.FragmentLoginBinding
 import com.elijah.fitness.ui.base.BaseFragment
-import com.google.android.material.snackbar.Snackbar
 
 /**
  * Login screen — real form (Step 7 replaces the Step-5 placeholder).
@@ -91,7 +90,7 @@ class LoginFragment : BaseFragment<FragmentLoginBinding>() {
     }
 
     private fun showRetrySnackbar(messageRes: Int) {
-        Snackbar.make(binding.root, messageRes, Snackbar.LENGTH_LONG)
+        snackbar(messageRes)
             .setAction(R.string.auth_retry) { submit() }
             .show()
     }

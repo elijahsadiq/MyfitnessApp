@@ -41,9 +41,19 @@ object TrackCalculator {
         return TrackingConstants.EARTH_RADIUS_M * c
     }
 
-    /** Total distance in metres across all consecutive point pairs. */
+    /**
+     * Total distance in metres across consecutive point pairs. The
+     * straight line between the last fix before a Pause and the first
+     * fix after Resume is **not** counted — the user may have walked to
+     * a café while paused — using the same pause detector the map uses
+     * to leave a gap in the drawn route ([RouteGeometry.splitByPause]).
+     */
     fun totalDistanceMeters(points: List<TrackPoint>): Double {
         if (points.size < 2) return 0.0
+        return RouteGeometry.splitByPause(points).sumOf { segmentDistanceMeters(it) }
+    }
+
+    private fun segmentDistanceMeters(points: List<TrackPoint>): Double {
         var total = 0.0
         for (i in 1 until points.size) {
             val a = points[i - 1]
@@ -94,6 +104,11 @@ object TrackCalculator {
      * distance to be meaningful.
      */
     fun recentPaceMsPerKm(points: List<TrackPoint>, windowMeters: Double = 200.0): Long? {
+        if (points.size < 2) return null
+        // Only the stretch since the last Resume — pace across a pause
+        // gap would be meaningless.
+        @Suppress("NAME_SHADOWING")
+        val points = RouteGeometry.splitByPause(points).last()
         if (points.size < 2) return null
         var meters = 0.0
         var i = points.size - 1

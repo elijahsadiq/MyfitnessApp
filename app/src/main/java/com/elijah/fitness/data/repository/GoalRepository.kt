@@ -76,4 +76,7 @@ interface GoalRepository {
 
     /** Add [days] to an active goal, up to the 365-day server-side cap. */
     suspend fun extendGoal(id: String, days: Int): ApiResult<Unit>
+
+    /** Forget every cached goal (sign-out). */
+    fun clearCache() {}
 }

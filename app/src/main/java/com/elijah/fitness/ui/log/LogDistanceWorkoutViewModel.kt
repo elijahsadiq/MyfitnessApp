@@ -4,7 +4,6 @@ import androidx.annotation.StringRes
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.viewmodel.CreationExtras
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.elijah.fitness.AppContainer
@@ -54,6 +53,17 @@ class LogDistanceWorkoutViewModel(
     private val _events = Channel<Event>(Channel.BUFFERED)
     val events: Flow<Event> = _events.receiveAsFlow()
 
+    /** True while a save is in flight — the Save button disables itself. */
+    private val _isSaving = MutableStateFlow(false)
+    val isSaving: StateFlow<Boolean> = _isSaving.asStateFlow()
+
+    /**
+     * One id for this form, reused by every save attempt. The server
+     * upserts on it, so "Retry" after a timeout can never store the run
+     * twice.
+     */
+    private val workoutId: String = UUID.randomUUID().toString()
+
     sealed interface Event {
         /**
          * Save succeeded. [clientUuid] is the id of the just-saved workout
@@ -96,6 +106,8 @@ class LogDistanceWorkoutViewModel(
         distanceKm: Double?,
         notes: String
     ) {
+        // A double tap (or Save + the keyboard's Done) must not send twice.
+        if (_isSaving.value) return
         val startInstant = LocalDateTime.of(_date.value, _time.value)
             .atZone(zone)
             .toInstant()
@@ -113,8 +125,11 @@ class LogDistanceWorkoutViewModel(
             return
         }
         val workout = buildWorkout(startInstant, duration, distanceKm!!, notes)
+        _isSaving.value = true
         viewModelScope.launch {
-            when (repository.addWorkout(workout)) {
+            val result = repository.addWorkout(workout)
+            _isSaving.value = false
+            when (result) {
                 is ApiResult.Success -> _events.send(Event.Saved(workout.id))
                 ApiResult.NetworkError ->
                     _events.send(Event.SaveFailed(R.string.log_error_save_network))
@@ -160,7 +175,7 @@ class LogDistanceWorkoutViewModel(
         distanceKm: Double,
         notes: String
     ): Workout {
-        val id = UUID.randomUUID().toString()
+        val id = workoutId
         val distanceMeters = distanceKm * 1_000.0
         val trimmedNotes = notes.trim().takeIf { it.isNotEmpty() }
         return when (activityType) {

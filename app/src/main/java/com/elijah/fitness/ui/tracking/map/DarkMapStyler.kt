@@ -3,13 +3,9 @@ package com.elijah.fitness.ui.tracking.map
 import android.content.Context
 import android.graphics.ColorMatrix
 import android.graphics.ColorMatrixColorFilter
-import android.widget.FrameLayout
-import android.widget.TextView
-import androidx.core.content.ContextCompat
-import androidx.core.view.setPadding
-import com.elijah.fitness.R
 import org.osmdroid.config.Configuration
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
+import org.osmdroid.views.CustomZoomButtonsController
 import org.osmdroid.views.MapView
 
 /**
@@ -31,9 +27,16 @@ import org.osmdroid.views.MapView
  *    muted grey that stays legible.
  * 4. Hides osmdroid's default zoom buttons (the design doesn't use
  *    them).
- * 5. Overlays the "© OpenStreetMap contributors" attribution in the
- *    bottom-start corner — required by the OSM data licence, and
- *    mentioned in the README credits.
+ *
+ * ### Attribution lives in the layouts, not on the MapView
+ *
+ * The "© OpenStreetMap contributors" credit is a plain `TextView`
+ * (style `Widget.Fitness.MapAttribution`) placed next to the map in
+ * each layout. It must never be added as a child of the [MapView]:
+ * osmdroid lays its children out at a geo-point, and a child added
+ * with ordinary layout params has no geo-point — `MapView.onLayout`
+ * then crashes with a NullPointerException. That crash is what made
+ * "Track with GPS" close the app.
  *
  * ### Why a filter instead of a ready-made dark style?
  *
@@ -74,10 +77,17 @@ object DarkMapStyler {
 
     /**
      * Apply the dark-map treatment to [mapView]. Call once from
-     * `onViewCreated`; the overlays this adds survive rotation on
-     * the same `MapView` instance.
+     * `onViewCreated`.
+     *
+     * @param interactive `false` for preview maps (the workout-detail
+     *   card) — pinch-zoom is switched off there and the layout puts a
+     *   tap target over the map instead.
      */
-    fun apply(mapView: MapView, context: Context = mapView.context) {
+    fun apply(
+        mapView: MapView,
+        context: Context = mapView.context,
+        interactive: Boolean = true,
+    ) {
         // 1. Shared osmdroid config — user-agent + preference backing.
         //    `getSharedPreferences("osmdroid", 0)` matches the historical
         //    file osmdroid itself uses for cache / tile-usage limits.
@@ -94,43 +104,16 @@ object DarkMapStyler {
         //    filter affects only the raster tiles, not polylines or
         //    markers added later.
         mapView.overlayManager.tilesOverlay.setColorFilter(DARK_FILTER)
+        // Grid lines osmdroid shows while tiles load would flash white
+        // on the dark map; paint the loading state in the map colour.
+        mapView.overlayManager.tilesOverlay.setLoadingBackgroundColor(LOADING_COLOR)
+        mapView.overlayManager.tilesOverlay.setLoadingLineColor(LOADING_COLOR)
 
         // 4. No default zoom buttons; the design hides them.
-        @Suppress("DEPRECATION")
-        mapView.setBuiltInZoomControls(false)
-        mapView.setMultiTouchControls(true)
-
-        // 5. OSM attribution pill in the bottom-start corner.
-        //    Added as a FrameLayout child of the MapView so it moves
-        //    with the view and survives rotation naturally.
-        if (mapView.findViewById<TextView>(ATTRIBUTION_ID) == null) {
-            val attribution = TextView(context).apply {
-                id = ATTRIBUTION_ID
-                text = context.getString(R.string.map_attribution_osm)
-                setTextColor(ContextCompat.getColor(context, R.color.text_on_dark_muted))
-                textSize = 10f
-                background = ContextCompat.getDrawable(context, R.drawable.bg_map_attribution)
-                setPadding(dpToPx(context, 8f))
-                // Reduce horizontal padding slightly for a snug pill.
-                setPadding(
-                    dpToPx(context, 10f), dpToPx(context, 3f),
-                    dpToPx(context, 10f), dpToPx(context, 3f),
-                )
-            }
-            val lp = FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.WRAP_CONTENT,
-                FrameLayout.LayoutParams.WRAP_CONTENT,
-            ).apply {
-                gravity = android.view.Gravity.BOTTOM or android.view.Gravity.START
-                leftMargin = dpToPx(context, 8f)
-                bottomMargin = dpToPx(context, 8f)
-            }
-            mapView.addView(attribution, lp)
-        }
+        mapView.zoomController.setVisibility(CustomZoomButtonsController.Visibility.NEVER)
+        mapView.setMultiTouchControls(interactive)
     }
 
-    private const val ATTRIBUTION_ID = 0x0f1A_0001 // arbitrary unique id
-
-    private fun dpToPx(context: Context, dp: Float): Int =
-        (dp * context.resources.displayMetrics.density).toInt()
+    /** `map_background` (#0C0E0B) as an int, for the tile-loading state. */
+    private const val LOADING_COLOR = 0xFF0C0E0B.toInt()
 }

@@ -42,6 +42,10 @@
         <item name="rippleColor">@color/lime_dim</item>
         <item name="shapeAppearanceOverlay">@style/ShapeAppearance.Fitness.Pill</item>
         <item name="android:textAppearance">@style/TextAppearance.Fitness.Button</item>
+        <!-- Set on the widget itself: AppCompat lets the theme's default
+             font override a weight that only comes from textAppearance. -->
+        <item name="android:fontFamily">@font/plus_jakarta_sans_semibold</item>
+        <item name="fontFamily">@font/plus_jakarta_sans_semibold</item>
     </style>
 
     <!-- Ghost / secondary — white pill with 1dp divider border -->
@@ -57,6 +61,97 @@
         <item name="rippleColor">@color/surface_container_high</item>
         <item name="shapeAppearanceOverlay">@style/ShapeAppearance.Fitness.Pill</item>
         <item name="android:textAppearance">@style/TextAppearance.Fitness.Button</item>
+        <!-- Set on the widget itself: AppCompat lets the theme's default
+             font override a weight that only comes from textAppearance. -->
+        <item name="android:fontFamily">@font/plus_jakarta_sans_semibold</item>
+        <item name="fontFamily">@font/plus_jakarta_sans_semibold</item>
+    </style>
+
+    <!--
+      Header row at the top of every main tab (Home, History, Progress,
+      Goals). Same top gap, same height, same side margins everywhere so
+      the title never jumps when switching tabs.
+    -->
+    <style name="Widget.Fitness.ScreenHeader" parent="">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginTop">@dimen/space_lg</item>
+        <item name="android:minHeight">@dimen/touch_target_min</item>
+        <item name="android:paddingStart">@dimen/screen_margin</item>
+        <item name="android:paddingEnd">@dimen/screen_margin</item>
+        <item name="android:orientation">horizontal</item>
+        <item name="android:gravity">center_vertical</item>
+    </style>
+
+    <!-- The large title inside Widget.Fitness.ScreenHeader. -->
+    <style name="Widget.Fitness.ScreenTitle" parent="TextAppearance.Fitness.HeadlineLg">
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:maxLines">1</item>
+        <item name="android:ellipsize">end</item>
+        <item name="android:accessibilityHeading">true</item>
+    </style>
+
+    <!--
+      Home hero numbers ("3 workouts", "2148 kcal"). Number + unit live in
+      one TextView (see MetricText) so uniform auto-size can shrink the
+      pair on 360dp phones / large fonts instead of clipping the unit.
+    -->
+    <style name="Widget.Fitness.HeroMetricValue" parent="TextAppearance.Fitness.DisplayMetric">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">52dp</item>
+        <item name="android:gravity">start|center_vertical</item>
+        <item name="android:maxLines">1</item>
+        <item name="android:includeFontPadding">false</item>
+        <item name="android:lineSpacingExtra">0sp</item>
+        <item name="android:textColor">@color/text_on_dark</item>
+        <item name="autoSizeTextType">uniform</item>
+        <item name="autoSizeMinTextSize">18sp</item>
+        <item name="autoSizeMaxTextSize">40sp</item>
+        <item name="autoSizeStepGranularity">1sp</item>
+    </style>
+
+    <!-- Thin indeterminate bar overlaid on the top edge of a screen while
+         it refreshes. Overlaid, never stacked, so content doesn't shift. -->
+    <style name="Widget.Fitness.TopLoadingBar" parent="Widget.Material3.LinearProgressIndicator">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_gravity">top</item>
+        <item name="android:indeterminate">true</item>
+        <item name="android:visibility">gone</item>
+        <item name="indicatorColor">@color/text_primary</item>
+        <item name="trackColor">@color/surface_container_high</item>
+    </style>
+
+    <!--
+      Every bottom sheet: white, 28dp top corners (the root layouts no
+      longer paint a square white background over them), drawn behind the
+      navigation bar with its content padded clear of it — no grey strip
+      under the sheet.
+    -->
+    <style name="ThemeOverlay.Fitness.BottomSheetDialog" parent="ThemeOverlay.Material3.BottomSheetDialog">
+        <item name="enableEdgeToEdge">true</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="bottomSheetStyle">@style/Widget.Fitness.BottomSheet</item>
+    </style>
+
+    <style name="Widget.Fitness.BottomSheet" parent="Widget.Material3.BottomSheet.Modal">
+        <item name="backgroundTint">@color/surface_white</item>
+        <item name="shapeAppearance">@style/ShapeAppearance.Fitness.BottomSheet</item>
+        <item name="paddingBottomSystemWindowInsets">true</item>
+    </style>
+
+    <style name="ShapeAppearance.Fitness.BottomSheet" parent="ShapeAppearance.Material3.Corner.None">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSizeTopLeft">@dimen/radius_bottom_sheet_top</item>
+        <item name="cornerSizeTopRight">@dimen/radius_bottom_sheet_top</item>
+    </style>
+
+    <!-- Shared toolbar on secondary screens (Profile, log forms). -->
+    <style name="Widget.Fitness.Toolbar" parent="Widget.Material3.Toolbar">
+        <item name="android:background">@color/background_warm</item>
+        <item name="navigationIconTint">@color/text_primary</item>
+        <item name="titleTextColor">@color/text_primary</item>
+        <item name="titleTextAppearance">@style/TextAppearance.Fitness.ScreenTitleSm</item>
     </style>
 
     <!-- Text link button -->
@@ -64,6 +159,28 @@
         <item name="android:minHeight">@dimen/touch_target_min</item>
         <item name="android:textColor">@color/text_primary</item>
         <item name="android:textAppearance">@style/TextAppearance.Fitness.Button</item>
+        <!-- Set on the widget itself: AppCompat lets the theme's default
+             font override a weight that only comes from textAppearance. -->
+        <item name="android:fontFamily">@font/plus_jakarta_sans_semibold</item>
+        <item name="fontFamily">@font/plus_jakarta_sans_semibold</item>
+    </style>
+
+    <!-- One segment of a MaterialButtonToggleGroup (Week / Month / Year).
+         Selected = lime fill, like a selected chip. -->
+    <style name="Widget.Fitness.Button.Segment" parent="Widget.Material3.Button.OutlinedButton">
+        <item name="android:minHeight">@dimen/touch_target_min</item>
+        <item name="android:insetTop">0dp</item>
+        <item name="android:insetBottom">0dp</item>
+        <item name="backgroundTint">@color/segment_bg</item>
+        <item name="android:textColor">@color/segment_text</item>
+        <item name="strokeColor">@color/divider</item>
+        <item name="strokeWidth">@dimen/stroke_hairline</item>
+        <item name="rippleColor">@color/lime_dim</item>
+        <item name="android:textAppearance">@style/TextAppearance.Fitness.LabelMd</item>
+        <!-- Set on the widget itself: AppCompat lets the theme's default
+             font override a weight that only comes from textAppearance. -->
+        <item name="android:fontFamily">@font/plus_jakarta_sans_semibold</item>
+        <item name="fontFamily">@font/plus_jakarta_sans_semibold</item>
     </style>
 
     <!-- Card: white surface, 24dp radius, no elevation, 1dp divider stroke. -->
@@ -106,8 +223,10 @@
         <item name="android:textColor">@color/chip_text</item>
         <item name="rippleColor">@color/lime_dim</item>
         <item name="android:textAppearance">@style/TextAppearance.Fitness.LabelMd</item>
-        <item name="checkedIconEnabled">false</item>
-        <item name="closeIconEnabled">false</item>
+        <!-- `*Visible` are the attributes Material reads from a style
+             (`*Enabled` only work as XML attributes on the view). -->
+        <item name="checkedIconVisible">false</item>
+        <item name="closeIconVisible">false</item>
     </style>
 
     <!-- Text input: 16dp radius white pill-ish field with a 1dp divider stroke. -->
@@ -126,6 +245,9 @@
         <item name="boxStrokeErrorColor">@color/error_red</item>
         <item name="hintTextColor">@color/text_primary</item>
         <item name="errorTextColor">@color/error_red</item>
+        <!-- Dark cursor: lime is never a thin line on a light surface. -->
+        <item name="cursorColor">@color/text_primary</item>
+        <item name="cursorErrorColor">@color/error_red</item>
     </style>
 
     <!--
@@ -140,6 +262,19 @@
         <item name="colorPrimary">@color/text_primary</item>
         <item name="colorOnPrimary">@color/white</item>
         <item name="colorAccent">@color/text_primary</item>
+        <!-- Brand dialogs are white cards, like every other card (M3
+             would paint them surface-container-high grey). -->
+        <item name="colorSurfaceContainerHigh">@color/surface_white</item>
+        <item name="materialAlertDialogTitleTextStyle">@style/MaterialAlertDialog.Fitness.Title</item>
+    </style>
+
+    <style name="MaterialAlertDialog.Fitness.Title" parent="MaterialAlertDialog.Material3.Title.Text">
+        <item name="android:textAppearance">@style/TextAppearance.Fitness.ScreenTitleSm</item>
+        <item name="android:textColor">@color/text_primary</item>
+        <!-- Set on the widget itself: AppCompat lets the theme's default
+             font override a weight that only comes from textAppearance. -->
+        <item name="android:fontFamily">@font/plus_jakarta_sans_bold</item>
+        <item name="fontFamily">@font/plus_jakarta_sans_bold</item>
     </style>
 
     <style name="ThemeOverlay.Fitness.MaterialDatePicker" parent="ThemeOverlay.Material3.MaterialCalendar">
@@ -152,6 +287,184 @@
         <item name="colorPrimary">@color/text_primary</item>
         <item name="colorOnPrimary">@color/white</item>
         <item name="colorAccent">@color/text_primary</item>
+    </style>
+
+    <!--
+      "© OpenStreetMap contributors" credit drawn over every map. A plain
+      sibling of the MapView in each layout — never a child of the
+      MapView itself (osmdroid crashes laying out children that carry no
+      geo-point).
+    -->
+    <style name="Widget.Fitness.MapAttribution" parent="">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:background">@drawable/bg_map_attribution</item>
+        <item name="android:paddingStart">10dp</item>
+        <item name="android:paddingEnd">10dp</item>
+        <item name="android:paddingTop">3dp</item>
+        <item name="android:paddingBottom">3dp</item>
+        <item name="android:maxLines">1</item>
+        <item name="android:text">@string/map_attribution_osm</item>
+        <item name="android:textColor">@color/text_on_dark_muted</item>
+        <item name="android:textSize">10sp</item>
+    </style>
+
+    <!-- Round 48dp icon button floating over a dark map (minimise,
+         re-centre, close). -->
+    <style name="Widget.Fitness.MapOverlayButton" parent="">
+        <item name="android:layout_width">@dimen/touch_target_min</item>
+        <item name="android:layout_height">@dimen/touch_target_min</item>
+        <item name="android:background">@drawable/bg_tracking_overlay_pill</item>
+        <item name="android:foreground">?attr/selectableItemBackgroundBorderless</item>
+        <item name="android:clickable">true</item>
+        <item name="android:focusable">true</item>
+        <item name="android:padding">12dp</item>
+        <item name="android:scaleType">fitCenter</item>
+        <item name="tint">@color/text_on_dark</item>
+    </style>
+
+    <!--
+      One live-tracking stat value ("4.12 km", "5:52 /km", "288 kcal").
+      Fixed height + uniform auto-size so the value shrinks instead of
+      clipping on 360dp phones or with a large system font.
+    -->
+    <style name="Widget.Fitness.TrackingStatValue" parent="TextAppearance.Fitness.DisplayMetric">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">34dp</item>
+        <item name="android:layout_marginTop">@dimen/space_xs</item>
+        <item name="android:gravity">center</item>
+        <item name="android:maxLines">1</item>
+        <item name="android:includeFontPadding">false</item>
+        <item name="android:lineSpacingExtra">0sp</item>
+        <item name="android:textSize">24sp</item>
+        <item name="autoSizeTextType">uniform</item>
+        <item name="autoSizeMinTextSize">12sp</item>
+        <item name="autoSizeMaxTextSize">24sp</item>
+        <item name="autoSizeStepGranularity">1sp</item>
+    </style>
+
+    <!-- A value in the manual-log summary card ("5:30 /km"). Same
+         auto-size approach as Widget.Fitness.TrackingStatValue. -->
+    <style name="Widget.Fitness.SummaryStatValue" parent="TextAppearance.Fitness.DisplayMetric">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">36dp</item>
+        <item name="android:layout_marginTop">@dimen/space_xs</item>
+        <item name="android:gravity">start|center_vertical</item>
+        <item name="android:maxLines">1</item>
+        <item name="android:includeFontPadding">false</item>
+        <item name="android:lineSpacingExtra">0sp</item>
+        <item name="android:textSize">26sp</item>
+        <item name="android:textColor">@color/text_on_dark</item>
+        <item name="autoSizeTextType">uniform</item>
+        <item name="autoSizeMinTextSize">12sp</item>
+        <item name="autoSizeMaxTextSize">26sp</item>
+        <item name="autoSizeStepGranularity">1sp</item>
+    </style>
+
+    <!-- ================= Log-form building blocks =================
+         Shared by the run / ride form and the weightlifting form so both
+         read as one design. -->
+
+    <!-- Section title above a form card ("When", "How long?", "Sets"). -->
+    <style name="Widget.Fitness.FormSectionTitle" parent="TextAppearance.Fitness.HeadlineSm">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginTop">22dp</item>
+        <item name="android:textSize">16sp</item>
+        <item name="android:accessibilityHeading">true</item>
+    </style>
+
+    <!-- Tappable Date / Start-time card. -->
+    <style name="Widget.Fitness.WhenCard" parent="">
+        <item name="android:layout_width">0dp</item>
+        <!-- match_parent inside a wrap_content row: both cards take the
+             taller one's height when a value wraps (large fonts). -->
+        <item name="android:layout_height">match_parent</item>
+        <item name="android:layout_weight">1</item>
+        <item name="android:minHeight">64dp</item>
+        <item name="android:background">@drawable/bg_log_when_card</item>
+        <item name="android:foreground">?attr/selectableItemBackground</item>
+        <item name="android:clickable">true</item>
+        <item name="android:focusable">true</item>
+        <item name="android:gravity">center_vertical</item>
+        <item name="android:orientation">horizontal</item>
+        <item name="android:paddingStart">14dp</item>
+        <item name="android:paddingEnd">14dp</item>
+        <item name="android:paddingTop">@dimen/space_sm</item>
+        <item name="android:paddingBottom">@dimen/space_sm</item>
+    </style>
+
+    <style name="Widget.Fitness.WhenCardValue" parent="TextAppearance.Fitness.LabelMd">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:maxLines">1</item>
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:textSize">15sp</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <!-- Inline validation message under a form card. -->
+    <style name="Widget.Fitness.FormError" parent="TextAppearance.Fitness.LabelMd">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginTop">@dimen/space_xs</item>
+        <item name="android:textColor">@color/error_material</item>
+        <item name="android:visibility">gone</item>
+        <item name="android:accessibilityLiveRegion">polite</item>
+    </style>
+
+    <!-- One big hours / minutes / seconds box. -->
+    <style name="Widget.Fitness.DurationCell" parent="">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:minHeight">64dp</item>
+        <item name="android:background">@drawable/bg_log_duration_cell</item>
+        <item name="android:gravity">center</item>
+        <item name="android:imeOptions">actionNext</item>
+        <item name="android:importantForAutofill">no</item>
+        <item name="android:inputType">number</item>
+        <item name="android:maxLines">1</item>
+        <!-- Both attributes: AppCompat prefers the app-namespace font, and
+             the theme sets that one to the regular family. -->
+        <item name="android:fontFamily">@font/plus_jakarta_sans_extrabold</item>
+        <item name="fontFamily">@font/plus_jakarta_sans_extrabold</item>
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:textSize">34sp</item>
+        <item name="android:hint">@string/log_duration_hint</item>
+        <item name="android:textColorHint">@color/outline_variant</item>
+    </style>
+
+    <style name="Widget.Fitness.DurationCellLabel" parent="TextAppearance.Fitness.LabelMd">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginTop">6dp</item>
+        <item name="android:textColor">@color/text_secondary</item>
+        <item name="android:importantForAccessibility">no</item>
+    </style>
+
+    <style name="Widget.Fitness.DurationColon" parent="TextAppearance.Fitness.DisplayMetric">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">64dp</item>
+        <item name="android:gravity">center</item>
+        <item name="android:paddingStart">@dimen/space_xs</item>
+        <item name="android:paddingEnd">@dimen/space_xs</item>
+        <item name="android:text">:</item>
+        <item name="android:textColor">@color/goal_main_muted</item>
+        <item name="android:textSize">28sp</item>
+        <item name="android:importantForAccessibility">no</item>
+    </style>
+
+    <!-- Bar holding a form's main button, pinned to the bottom of the
+         screen (thumb reach). The fragment adds the nav-bar / keyboard
+         inset to its bottom padding. -->
+    <style name="Widget.Fitness.PinnedButtonBar" parent="">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:background">@color/background_warm</item>
+        <item name="android:paddingStart">@dimen/screen_margin</item>
+        <item name="android:paddingEnd">@dimen/screen_margin</item>
+        <item name="android:paddingTop">@dimen/space_md</item>
+        <item name="android:paddingBottom">@dimen/space_lg</item>
     </style>
 
     <!-- Icon tile: 44x44 squircle, surface-container-low fill. -->

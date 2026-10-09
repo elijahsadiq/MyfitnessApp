@@ -1,68 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Goals v2 header: uppercase eyebrow ("3 active · 1 completed") above
-  the "Goals" headline, with a lime "+ New goal" pill aligned to the
-  trailing edge of the row.
+  Goals tab header — first row of the goals list. Same style (top gap,
+  height, margins) as the header on every other tab, so the title never
+  jumps when switching tabs. "New goal" lives in the FAB at the bottom,
+  within thumb reach.
 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:layout_marginHorizontal="@dimen/screen_margin"
-    android:layout_marginTop="@dimen/space_2xl"
-    android:gravity="bottom"
-    android:orientation="horizontal">
+    style="@style/Widget.Fitness.ScreenHeader">
 
-    <LinearLayout
+    <TextView
+        android:id="@+id/goalsHeaderTitle"
+        style="@style/Widget.Fitness.ScreenTitle"
         android:layout_width="0dp"
-        android:layout_height="wrap_content"
         android:layout_weight="1"
-        android:orientation="vertical">
-
-        <TextView
-            android:id="@+id/goalsHeaderEyebrow"
-            style="@style/TextAppearance.Fitness.LabelSm"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textColor="@color/text_secondary"
-            tools:text="3 ACTIVE · 1 COMPLETED" />
-
-        <TextView
-            android:id="@+id/goalsHeaderTitle"
-            style="@style/TextAppearance.Fitness.HeadlineLg"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/space_xs"
-            android:text="@string/goals_headline" />
-    </LinearLayout>
-
-    <LinearLayout
-        android:id="@+id/goalsHeaderNewButton"
-        android:layout_width="wrap_content"
-        android:layout_height="44dp"
-        android:background="@drawable/bg_goal_new_pill"
-        android:clickable="true"
-        android:focusable="true"
-        android:foreground="?attr/selectableItemBackground"
-        android:gravity="center_vertical"
-        android:orientation="horizontal"
-        android:paddingHorizontal="18dp">
-
-        <ImageView
-            android:layout_width="18dp"
-            android:layout_height="18dp"
-            android:contentDescription="@null"
-            android:src="@drawable/ic_add_24"
-            app:tint="@color/text_on_lime" />
-
-        <TextView
-            style="@style/TextAppearance.Fitness.LabelMd"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="6dp"
-            android:text="@string/goals_new_goal_button"
-            android:textColor="@color/text_on_lime"
-            android:textStyle="bold" />
-    </LinearLayout>
+        android:text="@string/goals_headline" />
 </LinearLayout>

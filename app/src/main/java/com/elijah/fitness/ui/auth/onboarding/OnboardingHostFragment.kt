@@ -4,7 +4,6 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.core.view.WindowCompat
 import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
@@ -25,9 +24,8 @@ import kotlinx.coroutines.launch
  * account". Both terminal paths mark onboarding as completed so a
  * relaunch doesn't repeat this flow.
  *
- * Forces light status-bar icons while attached because the surface is
- * `surface_dark`; restores the default on detach so the light-bg
- * login/register screens still see dark icons.
+ * System-bar icon colours for this dark screen are set by
+ * [com.elijah.fitness.ui.auth.AuthActivity] per destination.
  */
 class OnboardingHostFragment : BaseFragment<FragmentOnboardingHostBinding>() {
 
@@ -39,6 +37,10 @@ class OnboardingHostFragment : BaseFragment<FragmentOnboardingHostBinding>() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
+        // The hero art runs up under the status bar; only Skip needs to
+        // clear it.
+        applyStatusBarMargin(binding.skipButton)
 
         binding.onboardingPager.adapter = OnboardingPagerAdapter(this)
         binding.pageIndicator.count = PAGE_COUNT
@@ -63,27 +65,10 @@ class OnboardingHostFragment : BaseFragment<FragmentOnboardingHostBinding>() {
         }
     }
 
-    override fun onResume() {
-        super.onResume()
-        setLightStatusBarIcons(false)
-    }
-
-    override fun onPause() {
-        super.onPause()
-        // Reset for the next destination in case it uses a light surface.
-        setLightStatusBarIcons(true)
-    }
-
     override fun onDestroyView() {
         binding.onboardingPager.unregisterOnPageChangeCallback(pageChangeCallback)
         binding.onboardingPager.adapter = null
         super.onDestroyView()
-    }
-
-    private fun setLightStatusBarIcons(lightIcons: Boolean) {
-        val window = requireActivity().window
-        WindowCompat.getInsetsController(window, window.decorView)
-            .isAppearanceLightStatusBars = lightIcons
     }
 
     private fun renderControls(page: Int) {

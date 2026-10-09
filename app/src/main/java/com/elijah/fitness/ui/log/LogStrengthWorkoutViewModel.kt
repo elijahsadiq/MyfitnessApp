@@ -28,11 +28,11 @@ import java.time.ZoneId
 import java.util.UUID
 
 /**
- * State holder for the strength-log form. Same date/time model as the
- * distance form (a real MVVM piece — pickers need something that survives
- * rotation) plus the sets list, which the fragment mutates through
- * [addSet] and [removeSetAt] because sets are added via a dialog, not
- * typed into a RecyclerView row.
+ * State holder for the weightlifting form. Same date/time model as the
+ * distance form (pickers need something that survives rotation) plus the
+ * sets list, which the fragment mutates through [addSet] and
+ * [removeSetAt] because sets are added via a dialog, not typed into a
+ * RecyclerView row.
  */
 class LogStrengthWorkoutViewModel(
     private val repository: WorkoutRepository,
@@ -49,11 +49,19 @@ class LogStrengthWorkoutViewModel(
     private val _sets = MutableStateFlow<List<StrengthSet>>(emptyList())
     val sets: StateFlow<List<StrengthSet>> = _sets.asStateFlow()
 
+    /** True while a save is in flight — the Save button disables itself. */
+    private val _isSaving = MutableStateFlow(false)
+    val isSaving: StateFlow<Boolean> = _isSaving.asStateFlow()
+
     private val _events = Channel<Event>(Channel.BUFFERED)
     val events: Flow<Event> = _events.receiveAsFlow()
 
+    /** One id per form, reused on retry — the server upserts on it. */
+    private val workoutId: String = UUID.randomUUID().toString()
+
     sealed interface Event {
-        data object Saved : Event
+        /** Saved; the fragment opens the detail screen for [clientUuid]. */
+        data class Saved(val clientUuid: String) : Event
         data class ValidationFailed(val errors: List<FieldError>) : Event
         data class SaveFailed(@StringRes val messageRes: Int) : Event
     }
@@ -86,6 +94,7 @@ class LogStrengthWorkoutViewModel(
         seconds: Int,
         notes: String
     ) {
+        if (_isSaving.value) return
         val startInstant = LocalDateTime.of(_date.value, _time.value)
             .atZone(zone)
             .toInstant()
@@ -98,7 +107,11 @@ class LogStrengthWorkoutViewModel(
             if (startInstant.isAfter(clock.instant())) {
                 add(FieldError(Field.DATE, R.string.log_error_date_in_future))
             }
-            if (duration.isZero || duration.isNegative) {
+            // Same value checks as the run / ride form: 75 minutes is not
+            // a valid "minutes" entry, it's 1 h 15 min.
+            if (minutes !in 0..59 || seconds !in 0..59 || hours < 0) {
+                add(FieldError(Field.DURATION, R.string.log_error_duration_out_of_range))
+            } else if (duration.isZero || duration.isNegative) {
                 add(FieldError(Field.DURATION, R.string.log_error_duration_zero))
             }
             if (currentSets.isEmpty()) {
@@ -111,15 +124,18 @@ class LogStrengthWorkoutViewModel(
         }
 
         val workout = StrengthWorkout(
-            id = UUID.randomUUID().toString(),
+            id = workoutId,
             startTime = startInstant,
             duration = duration,
             sets = currentSets.toList(),
             notes = notes.trim().takeIf { it.isNotEmpty() }
         )
+        _isSaving.value = true
         viewModelScope.launch {
-            when (repository.addWorkout(workout)) {
-                is ApiResult.Success -> _events.send(Event.Saved)
+            val result = repository.addWorkout(workout)
+            _isSaving.value = false
+            when (result) {
+                is ApiResult.Success -> _events.send(Event.Saved(workout.id))
                 ApiResult.NetworkError ->
                     _events.send(Event.SaveFailed(R.string.log_error_save_network))
                 is ApiResult.Error ->

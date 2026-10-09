@@ -100,14 +100,17 @@ class SectionHeaderViewHolder(
     override fun bind(item: HistoryItem.SectionHeader) {
         val ctx = binding.root.context
         binding.sectionTitle.setText(item.labelRes)
+        val count = ctx.resources.getQuantityString(
+            R.plurals.history_section_workout_count, item.count, item.count,
+        )
         binding.sectionSummary.text = if (item.distanceMeters > 0.0) {
             ctx.getString(
                 R.string.history_section_summary_with_distance,
-                item.count,
+                count,
                 Formatters.formatDistanceKm(item.distanceMeters),
             )
         } else {
-            ctx.getString(R.string.history_section_summary_count_only, item.count)
+            count
         }
     }
 }
@@ -162,12 +165,12 @@ class StrengthWorkoutViewHolder(
             Formatters.formatDate(item.startTime),
         )
 
-        val distinctExercises = item.sets.map { it.exercise }.distinct().size
-        binding.strengthSummary.text = ctx.resources.getQuantityString(
-            R.plurals.history_row_strength_summary,
-            item.sets.size,
-            distinctExercises,
-            item.sets.size,
+        val distinctExercises = item.sets.map { it.exercise.lowercase() }.distinct().size
+        val res = ctx.resources
+        binding.strengthSummary.text = ctx.getString(
+            R.string.history_row_strength_summary,
+            res.getQuantityString(R.plurals.history_row_exercise_count, distinctExercises, distinctExercises),
+            res.getQuantityString(R.plurals.history_row_set_count, item.sets.size, item.sets.size),
         )
         binding.totalVolume.text = ctx.getString(
             R.string.history_row_total_volume,

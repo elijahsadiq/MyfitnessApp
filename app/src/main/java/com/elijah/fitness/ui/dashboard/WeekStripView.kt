@@ -13,6 +13,9 @@ import com.elijah.fitness.R
 import com.elijah.fitness.databinding.ItemWeekStripDayBinding
 import java.time.DayOfWeek
 import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import java.time.format.TextStyle
+import java.util.Locale
 
 /**
  * The horizontal week strip on Home. Seven day cells (M..S) with:
@@ -51,11 +54,17 @@ class WeekStripView @JvmOverloads constructor(
                     root.setBackgroundResource(R.drawable.bg_week_strip_today)
                     dayLetter.setTextColor(ContextCompat.getColor(context, R.color.text_on_dark_muted))
                     dayNumber.setTextColor(ContextCompat.getColor(context, R.color.text_on_dark))
+                    // Lime only on the dark pill — a lime dot on white is
+                    // close to invisible.
+                    dayDot.backgroundTintList = ContextCompat.getColorStateList(context, R.color.lime_accent)
                 } else {
                     root.background = null
                     dayLetter.setTextColor(ContextCompat.getColor(context, R.color.text_secondary))
                     dayNumber.setTextColor(ContextCompat.getColor(context, R.color.text_primary))
+                    dayDot.backgroundTintList = ContextCompat.getColorStateList(context, R.color.text_primary)
                 }
+                root.contentDescription = date.format(CELL_DESCRIPTION) +
+                    if (hasWorkout) context.getString(R.string.home_week_strip_active_suffix) else ""
             }
             val lp = LayoutParams(0, LayoutParams.WRAP_CONTENT, 1f).apply {
                 gravity = Gravity.CENTER
@@ -64,14 +73,13 @@ class WeekStripView @JvmOverloads constructor(
         }
     }
 
-    private fun DayOfWeek.letter(): String = when (this) {
-        DayOfWeek.MONDAY -> "M"
-        DayOfWeek.TUESDAY -> "T"
-        DayOfWeek.WEDNESDAY -> "W"
-        DayOfWeek.THURSDAY -> "T"
-        DayOfWeek.FRIDAY -> "F"
-        DayOfWeek.SATURDAY -> "S"
-        DayOfWeek.SUNDAY -> "S"
+    /** "M", "T", "W"… in the phone's language. */
+    private fun DayOfWeek.letter(): String =
+        getDisplayName(TextStyle.NARROW, Locale.getDefault())
+
+    private companion object {
+        val CELL_DESCRIPTION: DateTimeFormatter =
+            DateTimeFormatter.ofPattern("EEEE d MMMM", Locale.getDefault())
     }
 
     private fun dpToPx(dp: Float): Int =

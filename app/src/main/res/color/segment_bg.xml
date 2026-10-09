@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Segmented control (Week / Month / Year): selected segment is the
+     brand lime fill, the same as a selected filter chip. -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:color="@color/lime_accent" android:state_checked="true" />
+    <item android:color="@color/surface_white" />
+</selector>

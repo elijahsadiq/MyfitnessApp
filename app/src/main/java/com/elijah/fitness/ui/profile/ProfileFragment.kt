@@ -24,10 +24,13 @@ import com.elijah.fitness.databinding.FragmentProfileBinding
 import com.elijah.fitness.ui.base.BaseFragment
 import com.elijah.fitness.ui.launcher.LauncherActivity
 import com.elijah.fitness.util.BmiCategory
+import com.elijah.fitness.util.AvatarImage
 import com.elijah.fitness.util.BodyMetrics
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -169,14 +172,15 @@ class ProfileFragment : BaseFragment<FragmentProfileBinding>() {
                 snack(R.string.profile_avatar_failed)
             ProfileViewModel.Event.Network ->
                 snack(R.string.profile_network_snackbar)
-            is ProfileViewModel.Event.DeleteFailed -> {
-                Snackbar.make(
-                    binding.root,
-                    getString(R.string.profile_delete_account_failed, event.message),
-                    Snackbar.LENGTH_LONG,
-                ).show()
+            is ProfileViewModel.Event.DeleteFailed ->
+                snackbar(getString(R.string.profile_delete_account_failed, event.message)).show()
+            ProfileViewModel.Event.AccountDeleted -> {
+                val ctx = requireContext().applicationContext
+                viewLifecycleOwner.lifecycleScope.launch {
+                    (ctx as FitnessApp).container.signOutLocally(ctx)
+                    goToAuth()
+                }
             }
-            ProfileViewModel.Event.AccountDeleted -> goToAuth()
         }
     }
 
@@ -209,13 +213,13 @@ class ProfileFragment : BaseFragment<FragmentProfileBinding>() {
     }
 
     private fun showEditWeightDialog() {
-        val current = viewModel.user.value?.weightKg?.toString() ?: ""
+        val current = viewModel.user.value?.weightKg?.let(NUMBER_FORMAT::format).orEmpty()
         showEditDialog(
             titleRes = R.string.profile_edit_weight_title,
             initial = current,
             inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL,
             validate = { candidate ->
-                val v = candidate.toDoubleOrNull()
+                val v = parseDecimal(candidate)
                 if (v == null || v < 20.0 || v > 300.0) {
                     getString(R.string.profile_weight_error_range)
                 } else null
@@ -224,7 +228,7 @@ class ProfileFragment : BaseFragment<FragmentProfileBinding>() {
                 val existing = viewModel.user.value ?: return@showEditDialog
                 viewModel.updateProfile(
                     fullName = existing.fullName,
-                    weightKg = candidate.toDouble(),
+                    weightKg = parseDecimal(candidate),
                     heightCm = null,
                 )
             }
@@ -232,13 +236,13 @@ class ProfileFragment : BaseFragment<FragmentProfileBinding>() {
     }
 
     private fun showEditHeightDialog() {
-        val current = viewModel.user.value?.heightCm?.toString() ?: ""
+        val current = viewModel.user.value?.heightCm?.let(NUMBER_FORMAT::format).orEmpty()
         showEditDialog(
             titleRes = R.string.profile_edit_height_title,
             initial = current,
             inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL,
             validate = { candidate ->
-                val v = candidate.toDoubleOrNull()
+                val v = parseDecimal(candidate)
                 if (v == null || v < 80.0 || v > 260.0) {
                     getString(R.string.profile_height_error_range)
                 } else null
@@ -248,11 +252,15 @@ class ProfileFragment : BaseFragment<FragmentProfileBinding>() {
                 viewModel.updateProfile(
                     fullName = existing.fullName,
                     weightKg = null,
-                    heightCm = candidate.toDouble(),
+                    heightCm = parseDecimal(candidate),
                 )
             }
         )
     }
+
+    /** Accepts "72.5" and "72,5" — keyboards in many locales type a comma. */
+    private fun parseDecimal(raw: String): Double? =
+        raw.trim().replace(',', '.').toDoubleOrNull()
 
     private fun showEditDialog(
         titleRes: Int,
@@ -330,17 +338,17 @@ class ProfileFragment : BaseFragment<FragmentProfileBinding>() {
     }
 
     private fun onPhotoPicked(uri: Uri) {
+        val resolver = requireContext().contentResolver
+        binding.avatarProgress.isVisible = true
         viewLifecycleOwner.lifecycleScope.launch {
-            val resolver = requireContext().contentResolver
-            val bytes = try {
-                resolver.openInputStream(uri)?.use { it.readBytes() }
-            } catch (_: Exception) {
-                null
-            }
-            val mime = resolver.getType(uri) ?: "image/jpeg"
-            if (bytes != null && bytes.isNotEmpty()) {
-                viewModel.uploadAvatar(bytes, mime)
+            // Shrink + convert to JPEG off the main thread: camera photos
+            // are bigger than the server's 2 MB limit, and HEIC (Samsung's
+            // default) isn't accepted at all.
+            val jpeg = withContext(Dispatchers.Default) { AvatarImage.prepareJpeg(resolver, uri) }
+            if (jpeg != null && jpeg.isNotEmpty()) {
+                viewModel.uploadAvatar(jpeg, "image/jpeg")
             } else {
+                binding.avatarProgress.isVisible = false
                 snack(R.string.profile_avatar_failed)
             }
         }
@@ -352,9 +360,11 @@ class ProfileFragment : BaseFragment<FragmentProfileBinding>() {
 
     private fun logOut() {
         binding.logoutButton.isEnabled = false
+        val ctx = requireContext().applicationContext
         viewLifecycleOwner.lifecycleScope.launch {
-            val container = (requireContext().applicationContext as FitnessApp).container
-            container.authRepository.logout()
+            // Clears the token AND every cached workout / goal, and stops
+            // a GPS session, so the next account on this phone starts clean.
+            (ctx as FitnessApp).container.signOut(ctx)
             goToAuth()
         }
     }
@@ -368,11 +378,14 @@ class ProfileFragment : BaseFragment<FragmentProfileBinding>() {
     }
 
     private fun snack(messageRes: Int) {
-        Snackbar.make(binding.root, messageRes, Snackbar.LENGTH_SHORT).show()
+        snackbar(messageRes, Snackbar.LENGTH_SHORT).show()
     }
 
     companion object {
         private val memberSinceFormatter: DateTimeFormatter =
-            DateTimeFormatter.ofPattern("MMM yyyy")
+            DateTimeFormatter.ofPattern("MMM yyyy", Locale.getDefault())
+
+        /** "82" or "82.5" — no trailing ".0". */
+        private val NUMBER_FORMAT = java.text.DecimalFormat("0.#")
     }
 }

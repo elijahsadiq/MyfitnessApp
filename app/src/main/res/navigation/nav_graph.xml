@@ -98,18 +98,23 @@
         android:name="com.elijah.fitness.ui.log.ChooseActivityBottomSheet"
         android:label="@string/choose_activity_title"
         tools:layout="@layout/bottom_sheet_choose_activity">
+        <!-- Each option replaces the sheet, so Back from the form returns
+             to whichever screen opened the sheet (Home or History). -->
         <action
             android:id="@+id/action_choose_to_log_distance"
             app:destination="@id/logDistanceWorkoutFragment"
-            app:popUpTo="@id/workoutHistoryFragment" />
+            app:popUpTo="@id/chooseActivityBottomSheet"
+            app:popUpToInclusive="true" />
         <action
             android:id="@+id/action_choose_to_log_strength"
             app:destination="@id/logStrengthWorkoutFragment"
-            app:popUpTo="@id/workoutHistoryFragment" />
+            app:popUpTo="@id/chooseActivityBottomSheet"
+            app:popUpToInclusive="true" />
         <action
             android:id="@+id/action_choose_to_live_tracking"
             app:destination="@id/liveTrackingFragment"
-            app:popUpTo="@id/workoutHistoryFragment" />
+            app:popUpTo="@id/chooseActivityBottomSheet"
+            app:popUpToInclusive="true" />
     </dialog>
 
     <fragment
@@ -121,12 +126,15 @@
             android:name="activityType"
             app:argType="string"
             android:defaultValue="RUNNING" />
-        <!-- Phase 8c step 6: on Finish → save success, open the finished
-             workout screen for the just-saved workout. -->
+        <!-- On Finish → save success, the finished-workout screen replaces
+             the tracking screen. Back from it returns to wherever tracking
+             was started from (Home or History) — never back into tracking,
+             which would start a brand-new session. -->
         <action
             android:id="@+id/action_live_tracking_to_detail"
             app:destination="@id/workoutDetailFragment"
-            app:popUpTo="@id/workoutHistoryFragment" />
+            app:popUpTo="@id/liveTrackingFragment"
+            app:popUpToInclusive="true" />
     </fragment>
 
     <fragment
@@ -138,13 +146,13 @@
             android:name="activityType"
             app:argType="string"
             android:defaultValue="RUNNING" />
-        <!-- Phase 8c step 5: on save success, open the finished workout
-             detail screen for the just-saved workout rather than popping
-             back to the History list. -->
+        <!-- On save success the finished-workout screen replaces the form,
+             so Back doesn't return to an already-saved form. -->
         <action
             android:id="@+id/action_log_distance_to_detail"
             app:destination="@id/workoutDetailFragment"
-            app:popUpTo="@id/workoutHistoryFragment" />
+            app:popUpTo="@id/logDistanceWorkoutFragment"
+            app:popUpToInclusive="true" />
     </fragment>
 
     <fragment
@@ -156,5 +164,12 @@
             android:name="activityType"
             app:argType="string"
             android:defaultValue="WEIGHTLIFTING" />
+        <!-- Same as the run / ride form: the saved workout's detail screen
+             replaces the form. -->
+        <action
+            android:id="@+id/action_log_strength_to_detail"
+            app:destination="@id/workoutDetailFragment"
+            app:popUpTo="@id/logStrengthWorkoutFragment"
+            app:popUpToInclusive="true" />
     </fragment>
 </navigation>

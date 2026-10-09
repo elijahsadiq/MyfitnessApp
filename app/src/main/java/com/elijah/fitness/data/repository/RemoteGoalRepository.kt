@@ -32,6 +32,10 @@ class RemoteGoalRepository(
 
     override fun observeGoals(): Flow<List<Goal>> = _goals.asStateFlow()
 
+    override fun clearCache() {
+        _goals.value = emptyList()
+    }
+
     override suspend fun refresh(): ApiResult<Unit> =
         when (val result = apiCall { goalApi.list() }) {
             is ApiResult.Success -> {

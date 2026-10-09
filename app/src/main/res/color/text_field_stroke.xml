@@ -1,6 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  Outline of every Widget.Fitness.TextField. Material reads this as:
+  default (resting), focused, hovered and disabled colours. Errors use
+  boxStrokeErrorColor separately, so no red belongs in here (the old
+  first item matched *disabled* fields and painted them red).
+-->
 <selector xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:color="@color/error_red" android:state_focused="false" android:state_activated="false" android:state_hovered="false" />
     <item android:color="@color/text_primary" android:state_focused="true" />
-    <item android:color="@color/divider" />
+    <item android:color="@color/text_secondary" android:state_hovered="true" />
+    <item android:color="@color/divider" android:state_enabled="false" />
+    <item android:color="@color/outline_variant" />
 </selector>

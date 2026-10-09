@@ -98,9 +98,10 @@ class MapCameraController(
         animated: Boolean = false,
     ) {
         val bbox = RouteGeometry.boundingBox(points, padFraction) ?: return
+        val paddingPx = (FIT_SCREEN_PADDING_DP * mapView.resources.displayMetrics.density).toInt()
         mapView.post {
             lastPanWasProgrammatic = true
-            mapView.zoomToBoundingBox(bbox.toOsm(), animated, FIT_SCREEN_PADDING_PX)
+            mapView.zoomToBoundingBox(bbox.toOsm(), animated, paddingPx)
         }
     }
 
@@ -108,7 +109,10 @@ class MapCameraController(
         BoundingBox(north, east, south, west)
 
     private companion object {
-        /** Extra pixel padding for `zoomToBoundingBox`. */
-        const val FIT_SCREEN_PADDING_PX = 48
+        /**
+         * Breathing room around a fitted route, in dp — keeps the ends of
+         * the route clear of the pills and buttons drawn over the map.
+         */
+        const val FIT_SCREEN_PADDING_DP = 56
     }
 }

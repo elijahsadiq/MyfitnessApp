@@ -102,7 +102,7 @@ class GoalsViewModel(
     fun deleteWithUndo(goal: Goal) {
         deleteCoordinator.scheduleDelete(goal)
         viewModelScope.launch {
-            _errorEvents.send(ErrorEvent.DeletedWithUndo(goal.id, goal.title))
+            _errorEvents.send(ErrorEvent.DeletedWithUndo(goal.id, goal.displayTitle()))
         }
     }
 
@@ -133,7 +133,7 @@ class GoalsViewModel(
     private fun announceCompletion(gwp: GoalWithProgress) {
         celebratedThisSession.add(gwp.goal.id)
         viewModelScope.launch {
-            _errorEvents.send(ErrorEvent.GoalCompleted(gwp.goal.title))
+            _errorEvents.send(ErrorEvent.GoalCompleted(gwp.goal.displayTitle()))
             goalRepository.markCompletedNotified(gwp.goal.id)
         }
     }
@@ -145,7 +145,7 @@ class GoalsViewModel(
     fun makeMainGoal(id: String) {
         viewModelScope.launch {
             when (goalRepository.makeMainGoal(id)) {
-                is ApiResult.Success -> Unit
+                is ApiResult.Success -> _errorEvents.send(ErrorEvent.MainGoalChanged)
                 ApiResult.NetworkError ->
                     _errorEvents.send(ErrorEvent.Network(R.string.auth_error_network))
                 is ApiResult.Error ->
@@ -157,7 +157,7 @@ class GoalsViewModel(
     fun extendGoal(id: String, days: Int) {
         viewModelScope.launch {
             when (goalRepository.extendGoal(id, days)) {
-                is ApiResult.Success -> Unit
+                is ApiResult.Success -> _errorEvents.send(ErrorEvent.Extended)
                 ApiResult.NetworkError ->
                     _errorEvents.send(ErrorEvent.Network(R.string.auth_error_network))
                 is ApiResult.Error ->
@@ -212,7 +212,7 @@ class GoalsViewModel(
         if (otherActive.isNotEmpty()) {
             out += GoalListItem.SectionHeader(
                 labelRes = R.string.goals_active_title,
-                countPill = "${otherActive.size} in progress",
+                countPill = otherActive.size.toString(),
             )
             otherActive.forEach { out += GoalListItem.Active(it) }
         }
@@ -243,6 +243,10 @@ class GoalsViewModel(
          */
         data class DeletedWithUndo(val goalId: String, val title: String) : ErrorEvent
         data class GoalCompleted(val title: String) : ErrorEvent
+        /** The server confirmed a new main goal. */
+        data object MainGoalChanged : ErrorEvent
+        /** The server confirmed "Add 7 more days". */
+        data object Extended : ErrorEvent
     }
 
     companion object {

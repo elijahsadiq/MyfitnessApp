@@ -9,7 +9,6 @@ import com.elijah.fitness.data.model.CyclingWorkout
 import com.elijah.fitness.data.model.RunningWorkout
 import com.elijah.fitness.data.model.Workout
 import com.elijah.fitness.data.remote.ApiResult
-import com.elijah.fitness.tracking.TrackPoint
 import com.elijah.fitness.tracking.TrackingSession
 import com.elijah.fitness.tracking.TrackingState
 import kotlinx.coroutines.channels.Channel
@@ -20,19 +19,28 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import java.time.Duration
+import java.time.Instant
 import java.util.UUID
 
 /**
- * Owns the save path for a tracked workout. The *state* is produced by
- * [TrackingSession] (held on `AppContainer`) and consumed directly by the
- * fragment; this VM only steps in once the user hits Save or Discard, so
- * a rotation while tracking never touches it.
+ * Drives the live tracking screen's controls. The *state* is produced by
+ * [TrackingSession] (held on `AppContainer`, shared with the foreground
+ * service), so a rotation or a trip back to Home never loses the run.
+ *
+ * - [pause] / [resume] / [finish] act on the session directly — no
+ *   service round-trip, so they work instantly and can't be refused by
+ *   Android's background-start rules.
+ * - [save] uploads the finished session. The workout id is the session's
+ *   own id, so a retry after a failed upload replaces rather than
+ *   duplicates (the server upserts on `clientUuid`).
  */
 class LiveTrackingViewModel(
     private val container: AppContainer,
 ) : ViewModel() {
 
-    val trackingState: StateFlow<TrackingState> = container.trackingSession.state
+    private val session: TrackingSession get() = container.trackingSession
+
+    val trackingState: StateFlow<TrackingState> = session.state
 
     private val _isSaving: MutableStateFlow<Boolean> = MutableStateFlow(false)
     val isSaving: StateFlow<Boolean> = _isSaving.asStateFlow()
@@ -43,27 +51,45 @@ class LiveTrackingViewModel(
     sealed interface Event {
         /**
          * The workout went to the server; the fragment navigates straight
-         * to the finished-workout screen for [clientUuid] (phase 8c step
-         * 6 — notes are edited there, not here).
+         * to the finished-workout screen for [clientUuid].
          */
         data class Saved(val clientUuid: String) : Event
-        /** Save failed; the fragment keeps the data on screen with a Retry. */
+        /** Save failed; the screen keeps the finished session with a Retry. */
         data object SaveFailed : Event
-        /** The user cancelled a stopped session; discard the state and pop. */
+        /** The user threw the session away; the fragment pops back. */
         data object Discarded : Event
     }
 
-    fun save(notes: String = "") {
+    fun pause() = session.pause()
+
+    fun resume() = session.resume()
+
+    /**
+     * `true` once the session has covered enough ground to be worth
+     * saving. Below this the Finish flow offers Discard instead — a
+     * "0.00 km" workout with an absurd pace isn't useful history.
+     */
+    fun hasEnoughDistance(): Boolean =
+        trackingState.value.distanceMeters >= MIN_SAVE_DISTANCE_M
+
+    /** Stop the clock (idempotent) and upload the workout. */
+    fun finish() {
+        session.stop()
+        save()
+    }
+
+    fun save() {
         if (_isSaving.value) return
         val state = trackingState.value
+        if (state.status != TrackingState.Status.Stopped) return
         _isSaving.value = true
         viewModelScope.launch {
-            val workout = buildWorkout(state, notes.trim().ifEmpty { null })
+            val workout = buildWorkout(state)
             val result = container.workoutRepository.addWorkout(workout, state.points)
             _isSaving.value = false
             when (result) {
                 is ApiResult.Success -> {
-                    container.trackingSession.reset()
+                    session.reset()
                     _events.send(Event.Saved(workout.id))
                 }
                 is ApiResult.Error,
@@ -73,53 +99,38 @@ class LiveTrackingViewModel(
     }
 
     fun discard() {
-        container.trackingSession.reset()
+        session.reset()
         viewModelScope.launch { _events.send(Event.Discarded) }
     }
 
-    /**
-     * If the user navigates away while a session is active, reset the
-     * session so the next entry starts clean. Called from the fragment's
-     * confirmed-back / discard path, never on a plain rotation.
-     */
-    private fun buildWorkout(state: TrackingState, notes: String?): Workout {
-        val id = UUID.randomUUID().toString()
+    private fun buildWorkout(state: TrackingState): Workout {
+        val id = state.sessionId ?: UUID.randomUUID().toString()
         val duration = Duration.ofMillis(state.elapsedMs.coerceAtLeast(1_000L))
         val distanceMeters = state.distanceMeters.coerceAtLeast(1.0)
-        val startedAt = state.startedAt ?: java.time.Instant.now()
+        val startedAt = state.startedAt ?: Instant.now()
         return when (state.activityType) {
-            ActivityType.RUNNING -> RunningWorkout(
-                id = id,
-                startTime = startedAt,
-                duration = duration,
-                distanceMeters = distanceMeters,
-                notes = notes,
-            )
             ActivityType.CYCLING -> CyclingWorkout(
                 id = id,
                 startTime = startedAt,
                 duration = duration,
                 distanceMeters = distanceMeters,
-                notes = notes,
             )
             // Weightlifting is never routed through live tracking (the
-            // choose-activity sheet skips the "track" option for it), but
-            // falling back to a Running shell keeps the type signature
-            // total — the server validator would reject it anyway.
+            // log sheet only offers GPS for runs and rides); falling back
+            // to a run keeps the `when` total.
             else -> RunningWorkout(
                 id = id,
                 startTime = startedAt,
                 duration = duration,
                 distanceMeters = distanceMeters,
-                notes = notes,
             )
         }
     }
 
-    @Suppress("UNUSED_PARAMETER")
-    fun unused(points: List<TrackPoint>) {}
-
     companion object {
+        /** Below this a GPS workout is offered for discard, not saved. */
+        const val MIN_SAVE_DISTANCE_M: Double = 10.0
+
         fun factory(container: AppContainer): ViewModelProvider.Factory =
             object : ViewModelProvider.Factory {
                 @Suppress("UNCHECKED_CAST")

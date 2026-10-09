@@ -36,6 +36,11 @@
         android:theme="@style/Theme.MyFitnessApp">
 
         <!--
+          Portrait on phones: the big stat cards, the tracking panel and
+          the bottom nav leave only a sliver of content in landscape on a
+          phone. Android 16+ ignores this on tablets / foldables, where the
+          wider layouts have room to rotate.
+
           LAUNCHER is a tiny "router" activity: it reads TokenStore +
           OnboardingStore and starts either AuthActivity or MainActivity.
           Neither of those is exported as LAUNCHER themselves so the
@@ -43,6 +48,7 @@
         -->
         <activity
             android:name=".ui.launcher.LauncherActivity"
+            android:screenOrientation="portrait"
             android:exported="true"
             android:theme="@style/Theme.MyFitnessApp">
             <intent-filter>
@@ -53,11 +59,13 @@
 
         <activity
             android:name=".ui.auth.AuthActivity"
+            android:screenOrientation="portrait"
             android:exported="false"
             android:theme="@style/Theme.MyFitnessApp" />
 
         <activity
             android:name=".ui.main.MainActivity"
+            android:screenOrientation="portrait"
             android:exported="false"
             android:theme="@style/Theme.MyFitnessApp" />
 

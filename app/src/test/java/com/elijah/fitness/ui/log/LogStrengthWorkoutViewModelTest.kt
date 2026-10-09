@@ -53,12 +53,42 @@ class LogStrengthWorkoutViewModelTest {
         vm.save(hours = 0, minutes = 45, seconds = 0, notes = "upper day")
         dispatcher.scheduler.advanceUntilIdle()
 
-        val event = vm.events.first()
-        assertEquals(LogStrengthWorkoutViewModel.Event.Saved, event)
+        val event = vm.events.first() as LogStrengthWorkoutViewModel.Event.Saved
         val list = repo.observeWorkouts().first { it.isNotEmpty() }
         val w = list.first() as StrengthWorkout
+        assertEquals(event.clientUuid, w.id)
         assertEquals(1, w.sets.size)
         assertEquals("upper day", w.notes)
+    }
+
+    @Test
+    fun `minutes above 59 are rejected like on the run form`() = runTest {
+        val vm = LogStrengthWorkoutViewModel(InMemoryRepo(), clock, zone)
+        vm.setDate(LocalDate.of(2026, 9, 11))
+        vm.setTime(LocalTime.of(10, 0))
+        vm.addSet(StrengthSet("Squat", 5, 100.0))
+        vm.save(hours = 0, minutes = 75, seconds = 0, notes = "")
+        dispatcher.scheduler.advanceUntilIdle()
+
+        val event = vm.events.first() as LogStrengthWorkoutViewModel.Event.ValidationFailed
+        assertTrue(event.errors.any {
+            it.field == LogStrengthWorkoutViewModel.Field.DURATION &&
+                it.messageRes == R.string.log_error_duration_out_of_range
+        })
+    }
+
+    @Test
+    fun `a double tap on Save stores the workout once`() = runTest {
+        val repo = InMemoryRepo()
+        val vm = LogStrengthWorkoutViewModel(repo, clock, zone)
+        vm.setDate(LocalDate.of(2026, 9, 11))
+        vm.setTime(LocalTime.of(10, 0))
+        vm.addSet(StrengthSet("Squat", 5, 100.0))
+        vm.save(hours = 0, minutes = 30, seconds = 0, notes = "")
+        vm.save(hours = 0, minutes = 30, seconds = 0, notes = "")
+        dispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(1, repo.observeWorkouts().first().size)
     }
 
     @Test

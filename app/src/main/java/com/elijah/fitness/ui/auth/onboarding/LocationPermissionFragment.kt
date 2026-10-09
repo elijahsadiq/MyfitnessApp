@@ -8,7 +8,6 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
-import androidx.core.view.WindowCompat
 import androidx.navigation.fragment.findNavController
 import com.elijah.fitness.R
 import com.elijah.fitness.databinding.FragmentLocationPermissionBinding
@@ -42,6 +41,9 @@ class LocationPermissionFragment : BaseFragment<FragmentLocationPermissionBindin
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        // Edge-to-edge: keep the content below the status bar (the host
+        // already pads for the navigation bar).
+        applySystemBarInsets(binding.root, applyBottom = false)
 
         binding.bulletList.findViewById<View>(R.id.bullet1)
             .findViewById<TextView>(R.id.bulletText)
@@ -78,19 +80,11 @@ class LocationPermissionFragment : BaseFragment<FragmentLocationPermissionBindin
                 // settings deep-link in that case; otherwise just continue.
                 val canAskAgain = LocationPermissions.shouldShowRationale(this)
                 if (canAskAgain) {
-                    Snackbar.make(
-                        binding.root,
-                        R.string.auth_location_denied_snackbar,
-                        Snackbar.LENGTH_SHORT,
-                    ).show()
+                    snackbar(R.string.auth_location_denied_snackbar, Snackbar.LENGTH_SHORT).show()
                 } else {
-                    Snackbar.make(
-                        binding.root,
-                        R.string.auth_location_permanent_denied_snackbar,
-                        Snackbar.LENGTH_LONG,
-                    ).setAction(R.string.auth_location_open_settings) {
-                        openAppSettings()
-                    }.show()
+                    snackbar(R.string.auth_location_permanent_denied_snackbar)
+                        .setAction(R.string.auth_location_open_settings) { openAppSettings() }
+                        .show()
                 }
                 // Either way, don't block onboarding — manual logging works.
                 binding.allowLocationButton.postDelayed(::continueToRegister, 1500L)
@@ -104,22 +98,6 @@ class LocationPermissionFragment : BaseFragment<FragmentLocationPermissionBindin
             Uri.fromParts("package", requireContext().packageName, null),
         )
         startActivity(intent)
-    }
-
-    override fun onResume() {
-        super.onResume()
-        setLightStatusBarIcons(false)
-    }
-
-    override fun onPause() {
-        super.onPause()
-        setLightStatusBarIcons(true)
-    }
-
-    private fun setLightStatusBarIcons(lightIcons: Boolean) {
-        val window = requireActivity().window
-        WindowCompat.getInsetsController(window, window.decorView)
-            .isAppearanceLightStatusBars = lightIcons
     }
 
     private fun continueToRegister() {

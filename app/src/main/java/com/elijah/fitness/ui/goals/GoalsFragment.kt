@@ -4,13 +4,11 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.isVisible
-import androidx.core.view.updatePadding
 import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.elijah.fitness.FitnessApp
 import com.elijah.fitness.R
 import com.elijah.fitness.data.model.Goal
@@ -35,7 +33,6 @@ class GoalsFragment : BaseFragment<FragmentGoalsBinding>() {
 
     private val adapter = GoalsAdapter(
         onGoalTap = ::onGoalTap,
-        onNewGoalTap = ::openNewGoalSheet,
         onTryAgainTap = ::onTryAgainTap,
         onEmptyHeroCta = ::openNewGoalSheet,
         onQuickStartTap = ::openQuickStart,
@@ -50,22 +47,24 @@ class GoalsFragment : BaseFragment<FragmentGoalsBinding>() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        // Status-bar inset lives on the fragment root; nav-bar inset is
-        // applied to the list so it clears the bottom-nav rail without a
-        // hardcoded padding. Preserve the list's XML `paddingBottom =
-        // fab_margin_bottom` and ADD the inset on top (straight assignment
-        // would wipe + accumulate across re-dispatch).
+        // The bottom nav sits below this screen: only the status bar
+        // (and side bars in landscape) need clearing.
         applySystemBarInsets(target = binding.root, applyBottom = false)
-        val listBaseBottom = binding.goalsList.paddingBottom
-        ViewCompat.setOnApplyWindowInsetsListener(binding.goalsList) { v, insets ->
-            val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            v.updatePadding(bottom = listBaseBottom + bars.bottom)
-            WindowInsetsCompat.CONSUMED
-        }
-        ViewCompat.requestApplyInsets(binding.goalsList)
 
         binding.goalsList.layoutManager = LinearLayoutManager(requireContext())
         binding.goalsList.adapter = adapter
+
+        binding.newGoalFab.setOnClickListener { openNewGoalSheet() }
+        // Same FAB behaviour as History: out of the way while scrolling down.
+        binding.goalsList.addOnScrollListener(object : RecyclerView.OnScrollListener() {
+            override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
+                if (!binding.newGoalFab.isEnabled) return
+                when {
+                    dy > FAB_SCROLL_SLOP -> binding.newGoalFab.hide()
+                    dy < -FAB_SCROLL_SLOP -> binding.newGoalFab.show()
+                }
+            }
+        })
 
         parentFragmentManager.setFragmentResultListener(
             GoalActionsBottomSheet.FRAGMENT_RESULT_KEY, viewLifecycleOwner,
@@ -96,16 +95,18 @@ class GoalsFragment : BaseFragment<FragmentGoalsBinding>() {
             NewGoalFragment.FRAGMENT_RESULT_KEY, viewLifecycleOwner,
         ) { _, result ->
             if (result.getBoolean(NewGoalFragment.RESULT_SAVED_KEY, false)) {
-                Snackbar.make(binding.root, R.string.new_goal_saved_snackbar,
-                    Snackbar.LENGTH_SHORT).show()
+                snackbar(R.string.new_goal_saved_snackbar, Snackbar.LENGTH_SHORT).show()
             }
         }
 
         collectOnStart(viewModel.items) { items ->
-            // Phase-8b step 8: the list itself now carries the empty-state
-            // composition (Header + dark hero card + Quick Start rows), so
-            // the fragment no longer toggles a sibling view's visibility.
+            // The list itself carries the empty-state composition (header
+            // + dark hero card + Quick Start rows). With no goals the hero
+            // card's "Create a goal" is the one action, so the FAB hides.
             adapter.submitList(items)
+            val hasGoals = items.none { it is GoalListItem.EmptyHeroCard }
+            binding.newGoalFab.isEnabled = hasGoals
+            if (hasGoals) binding.newGoalFab.show() else binding.newGoalFab.hide()
         }
         collectOnStart(viewModel.isLoading) { loading ->
             binding.goalsLoadingBar.isVisible = loading
@@ -116,9 +117,15 @@ class GoalsFragment : BaseFragment<FragmentGoalsBinding>() {
                 is GoalsViewModel.ErrorEvent.Generic -> showRetrySnackbar(event.messageRes)
                 is GoalsViewModel.ErrorEvent.DeletedWithUndo -> showUndoSnackbar(event.goalId)
                 is GoalsViewModel.ErrorEvent.GoalCompleted -> showCompletionSnackbar(event.title)
+                GoalsViewModel.ErrorEvent.MainGoalChanged ->
+                    snackbar(R.string.goals_main_updated_snackbar, Snackbar.LENGTH_SHORT).show()
+                GoalsViewModel.ErrorEvent.Extended ->
+                    snackbar(R.string.goals_extended_snackbar, Snackbar.LENGTH_SHORT).show()
             }
         }
     }
+
+    override fun snackbarAnchorView(): View? = bindingOrNull?.newGoalFab
 
     private fun openNewGoalSheet() {
         findNavController().navigate(
@@ -167,23 +174,21 @@ class GoalsFragment : BaseFragment<FragmentGoalsBinding>() {
         )
     }
 
+    // Success snackbars arrive as ViewModel events once the server
+    // confirms — no "Added 7 days" for a request that then fails.
     private fun onMakeMainRequested(goalId: String) {
         viewModel.makeMainGoal(goalId)
-        Snackbar.make(binding.root, R.string.goals_main_updated_snackbar,
-            Snackbar.LENGTH_SHORT).show()
     }
 
     private fun onExtendRequested(goalId: String) {
         viewModel.extendGoal(goalId, EXTEND_DAYS)
-        Snackbar.make(binding.root, R.string.goals_extended_snackbar,
-            Snackbar.LENGTH_SHORT).show()
     }
 
     private fun showDeleteConfirm(goalId: String) {
         val goal = findGoalById(goalId) ?: return
         DeleteGoalConfirmDialog.newInstance(
             goalId = goal.id,
-            title = goal.title,
+            title = goal.displayTitle(),
             activityType = goal.activityType,
         ).show(parentFragmentManager, "delete_goal_confirm")
     }
@@ -208,23 +213,24 @@ class GoalsFragment : BaseFragment<FragmentGoalsBinding>() {
             .firstOrNull { it.id == id }
 
     private fun showUndoSnackbar(goalId: String) {
-        Snackbar.make(binding.root, R.string.goals_deleted_snackbar, Snackbar.LENGTH_LONG)
+        snackbar(R.string.goals_deleted_snackbar)
             .setAction(R.string.goals_deleted_undo) { viewModel.undoDelete(goalId) }
             .show()
     }
 
     private fun showRetrySnackbar(messageRes: Int) {
-        Snackbar.make(binding.root, messageRes, Snackbar.LENGTH_LONG)
+        snackbar(messageRes)
             .setAction(R.string.goals_retry) { viewModel.refresh() }
             .show()
     }
 
     private fun showCompletionSnackbar(title: String) {
-        val text = getString(R.string.goals_completed_snackbar, title)
-        Snackbar.make(binding.root, text, Snackbar.LENGTH_LONG).show()
+        snackbar(getString(R.string.goals_completed_snackbar, title)).show()
     }
 
     private companion object {
         const val EXTEND_DAYS = 7
+        /** Ignore tiny scroll jitters (px) before hiding / showing the FAB. */
+        const val FAB_SCROLL_SLOP = 8
     }
 }

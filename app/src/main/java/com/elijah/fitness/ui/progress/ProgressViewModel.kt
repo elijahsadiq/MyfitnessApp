@@ -13,11 +13,14 @@ import com.elijah.fitness.analytics.ProgressStats
 import com.elijah.fitness.data.model.ActivityType
 import com.elijah.fitness.data.model.Workout
 import com.elijah.fitness.data.remote.ApiResult
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.Clock
@@ -46,14 +49,19 @@ class ProgressViewModel(
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
-    private val _loadError = MutableStateFlow(false)
-    val loadError: StateFlow<Boolean> = _loadError.asStateFlow()
+    /** One-shot load failures — a Snackbar each, not a sticky flag. */
+    private val _loadErrors = Channel<Unit>(Channel.CONFLATED)
+    val loadErrors: Flow<Unit> = _loadErrors.receiveAsFlow()
 
     data class State(
         val periodBars: List<BarPoint>,
+        /** Stats cards to show — only the chip's activity unless "All". */
         val perActivity: Map<ActivityType, ProgressStats>,
         val personalRecords: PersonalRecords,
+        /** Nothing logged in the selected period. */
         val isEmpty: Boolean,
+        /** Anything logged at all (picks the empty-state wording). */
+        val hasAnyWorkouts: Boolean,
     ) {
         companion object {
             val EMPTY = State(
@@ -61,6 +69,7 @@ class ProgressViewModel(
                 perActivity = emptyMap(),
                 personalRecords = PersonalRecords.EMPTY,
                 isEmpty = true,
+                hasAnyWorkouts = false,
             )
         }
     }
@@ -85,9 +94,9 @@ class ProgressViewModel(
         viewModelScope.launch {
             _isLoading.value = true
             when (container.workoutRepository.refresh()) {
-                is ApiResult.Success -> _loadError.value = false
+                is ApiResult.Success -> Unit
                 is ApiResult.Error,
-                ApiResult.NetworkError -> _loadError.value = true
+                ApiResult.NetworkError -> _loadErrors.trySend(Unit)
             }
             _isLoading.value = false
         }
@@ -114,17 +123,19 @@ class ProgressViewModel(
             now = now,
             zone = zone,
         )
-        val perActivity = ActivityType.entries.associateWith { type ->
-            ProgressAnalytics.statsFor(inPeriod, type)
-        }
+        // The activity chip filters the stats cards as well as the chart.
+        val perActivity = ActivityType.entries
+            .filter { activityType == null || it == activityType }
+            .associateWith { type -> ProgressAnalytics.statsFor(inPeriod, type) }
         val personalRecords = ProgressAnalytics.personalRecords(all)
 
-        val isEmpty = inPeriod.isEmpty() && perActivity.values.all { it.workoutCount == 0 }
+        val isEmpty = inPeriod.isEmpty()
         return State(
             periodBars = periodBars,
             perActivity = perActivity,
             personalRecords = personalRecords,
             isEmpty = isEmpty,
+            hasAnyWorkouts = true,
         )
     }
 

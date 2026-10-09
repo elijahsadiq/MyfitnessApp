@@ -1,9 +1,12 @@
 package com.elijah.fitness.ui.main
 
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.view.View
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.os.bundleOf
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
@@ -12,7 +15,7 @@ import androidx.core.view.updatePadding
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
-import androidx.navigation.NavDestination
+import androidx.navigation.NavController
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.setupWithNavController
@@ -20,34 +23,41 @@ import com.elijah.fitness.FitnessApp
 import com.elijah.fitness.R
 import com.elijah.fitness.data.remote.AuthEventBus
 import com.elijah.fitness.databinding.ActivityMainBinding
+import com.elijah.fitness.tracking.TrackingState
 import com.elijah.fitness.ui.launcher.LauncherActivity
+import com.elijah.fitness.ui.tracking.LiveTrackingFragment
 import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.launch
 
 /**
- * Single-activity host. Owns the toolbar (only shown on log destinations),
- * the [NavHostFragment], and the bottom navigation.
+ * Single-activity host. Owns the toolbar (secondary screens only), the
+ * [NavHostFragment], and the bottom navigation, stacked vertically so
+ * every screen gets the same, predictable height.
  *
- * ### Chrome per destination (Step 9)
+ * ### Chrome per destination
  * Top-level destinations (Home / History / Progress / Goals) draw their
- * own headers, so the shared toolbar stays hidden on those. Log
- * destinations and the standalone Profile page show the toolbar with
- * the Up arrow, and hide the bottom nav.
+ * own large-title headers and show the bottom nav. Profile and the log
+ * forms show the shared toolbar with the Up arrow. Full-screen surfaces
+ * (workout detail, new goal, live tracking, full map) draw their own
+ * header and hide both.
  *
- * ### Central 401 handling (Step 5)
- * Subscribes to [AuthEventBus] and, on an `Unauthorized` event, clears
- * the local token and restarts the task through [LauncherActivity].
+ * ### Central 401 handling
+ * Subscribes to [AuthEventBus] and, on an `Unauthorized` event, signs
+ * the user out locally and restarts the task through [LauncherActivity].
+ *
+ * ### Tracking notification
+ * The ongoing GPS notification opens this activity with
+ * [EXTRA_OPEN_TRACKING]; it jumps straight to the live tracking screen.
  */
-class MainActivity : AppCompatActivity() {
+class MainActivity : AppCompatActivity(), SnackbarHost {
 
     private lateinit var binding: ActivityMainBinding
+    private lateinit var navController: NavController
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        // Phase 8c step 2 — enable edge-to-edge before the superclass so
-        // the window is already laid out behind the system bars by the
-        // time any view attaches. This replaces the pre-8c reliance on
-        // the theme's `android:statusBarColor` + `windowLightStatusBar`,
-        // both deprecated in SDK 35.
+        // Enable edge-to-edge before the superclass so the window is
+        // already laid out behind the system bars by the time any view
+        // attaches.
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
@@ -57,23 +67,13 @@ class MainActivity : AppCompatActivity() {
 
         val navHost = supportFragmentManager
             .findFragmentById(binding.navHostFragment.id) as NavHostFragment
-        val navController = navHost.navController
+        navController = navHost.navController
 
-        val topLevel = AppBarConfiguration(
-            setOf(
-                R.id.dashboardFragment,
-                R.id.workoutHistoryFragment,
-                R.id.progressFragment,
-                R.id.goalsFragment,
-            )
-        )
+        val topLevel = AppBarConfiguration(TOP_LEVEL_DESTINATIONS)
         binding.toolbar.setupWithNavController(navController, topLevel)
         binding.bottomNavigation.setupWithNavController(navController)
 
-        // Push the BottomNavigationView above the 3-button-nav gesture
-        // bar on devices that have one. Edge-to-edge means the activity
-        // owns the inset — the view was previously below an opaque
-        // navigation bar from the theme.
+        // The bottom nav sits above the gesture bar / 3-button nav bar.
         val bottomNavBasePadding = binding.bottomNavigation.paddingBottom
         ViewCompat.setOnApplyWindowInsetsListener(binding.bottomNavigation) { v, insets ->
             val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
@@ -84,32 +84,46 @@ class MainActivity : AppCompatActivity() {
         val insetsController = WindowInsetsControllerCompat(window, binding.root)
 
         navController.addOnDestinationChangedListener { _, destination, _ ->
-            val isTopLevel = destination.id in TOP_LEVEL_DESTINATIONS
-            val isImmersive = destination.id == R.id.liveTrackingFragment
-            binding.bottomNavigation.isVisible = isTopLevel && !isImmersive
-            // Toolbar only for the log flow; the standalone Profile and
-            // the workout-detail screen draw their own headers (phase 8c
-            // step 2 removes WorkoutDetail from this set — single header
-            // per screen).
-            binding.appBarLayout.isVisible =
-                destination.id in CHROME_DESTINATIONS && !isImmersive
-
-            // Status-bar icon colour — the handful of destinations that
-            // draw a dark surface up under the status bar want *light*
-            // icons; every other screen keeps the dark icons that work
-            // on the warm canvas. Flipping it per destination (rather
-            // than per top-level-only destination) means the switch
-            // fires correctly however the user navigates in.
+            binding.bottomNavigation.isVisible = destination.id in TOP_LEVEL_DESTINATIONS
+            binding.appBarLayout.isVisible = destination.id in TOOLBAR_DESTINATIONS
+            // Dark surfaces drawn up under the status bar need light icons;
+            // everything else keeps dark icons on the warm canvas.
             insetsController.isAppearanceLightStatusBars =
                 destination.id !in DARK_STATUS_DESTINATIONS
         }
 
         observeAuthEvents()
+
+        if (savedInstanceState == null) handleTrackingIntent(intent)
     }
 
-    /** Anchor a short Snackbar on the activity's CoordinatorLayout. */
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        handleTrackingIntent(intent)
+    }
+
+    /** Short Snackbar for messages that outlive the screen that raised them. */
     fun showSnackbar(message: CharSequence) {
-        Snackbar.make(binding.root, message, Snackbar.LENGTH_SHORT).show()
+        val snack = Snackbar.make(binding.mainRoot, message, Snackbar.LENGTH_SHORT)
+        snackbarAnchor()?.let { snack.anchorView = it }
+        snack.show()
+    }
+
+    /** Snackbars sit just above the bottom nav when it is showing. */
+    override fun snackbarAnchor(): View? =
+        binding.bottomNavigation.takeIf { it.isVisible }
+
+    private fun handleTrackingIntent(intent: Intent?) {
+        if (intent?.getBooleanExtra(EXTRA_OPEN_TRACKING, false) != true) return
+        intent.removeExtra(EXTRA_OPEN_TRACKING)
+        val container = (application as FitnessApp).container
+        val state = container.trackingSession.state.value
+        if (state.status == TrackingState.Status.Idle) return
+        if (navController.currentDestination?.id == R.id.liveTrackingFragment) return
+        navController.navigate(
+            R.id.liveTrackingFragment,
+            bundleOf(LiveTrackingFragment.ARG_ACTIVITY_TYPE to state.activityType.name),
+        )
     }
 
     private fun observeAuthEvents() {
@@ -127,32 +141,38 @@ class MainActivity : AppCompatActivity() {
 
     private fun handleUnauthorized() {
         val container = (application as FitnessApp).container
-        lifecycleScope.launch { container.tokenStore.clear() }
-        startActivity(
-            Intent(this, LauncherActivity::class.java)
-                .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK or Intent.FLAG_ACTIVITY_NEW_TASK)
-        )
-        finish()
+        lifecycleScope.launch {
+            container.signOutLocally(this@MainActivity)
+            startActivity(
+                Intent(this@MainActivity, LauncherActivity::class.java)
+                    .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK or Intent.FLAG_ACTIVITY_NEW_TASK)
+            )
+            finish()
+        }
     }
 
-    private companion object {
-        val TOP_LEVEL_DESTINATIONS = setOf(
+    companion object {
+        private const val EXTRA_OPEN_TRACKING = "open_tracking"
+
+        /** Opens (or brings back) the app on the live tracking screen. */
+        fun openTrackingIntent(context: Context): Intent =
+            Intent(context, MainActivity::class.java)
+                .putExtra(EXTRA_OPEN_TRACKING, true)
+                .addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+
+        private val TOP_LEVEL_DESTINATIONS = setOf(
             R.id.dashboardFragment,
             R.id.workoutHistoryFragment,
             R.id.progressFragment,
             R.id.goalsFragment,
         )
 
-        /**
-         * Destinations that show the shared toolbar + Up arrow. Phase
-         * 8c step 7 drops `workoutDetailFragment` — the rebuilt detail
-         * screen draws its own header + back arrow (one header per
-         * screen, per the user's Step 0 note).
-         */
-        val CHROME_DESTINATIONS = setOf(
+        /** Destinations that show the shared toolbar + Up arrow. */
+        private val TOOLBAR_DESTINATIONS = setOf(
             R.id.logDistanceWorkoutFragment,
             R.id.logStrengthWorkoutFragment,
             R.id.profileFragment,
+            R.id.newGoalFragment,
         )
 
         /**
@@ -160,9 +180,14 @@ class MainActivity : AppCompatActivity() {
          * the status bar. These need light status-bar icons so the
          * icons stay legible on the dark background.
          */
-        val DARK_STATUS_DESTINATIONS: Set<Int> = setOf(
+        private val DARK_STATUS_DESTINATIONS: Set<Int> = setOf(
             R.id.liveTrackingFragment,
             R.id.fullScreenMapFragment,
         )
     }
+}
+
+/** Implemented by activities that want Snackbars lifted above a bottom bar. */
+interface SnackbarHost {
+    fun snackbarAnchor(): View?
 }

@@ -105,7 +105,7 @@ class GoalActionsBottomSheet : BottomSheetDialogFragment() {
 
         // Header: icon · title · subtitle.
         binding.manageGoalIcon.setImageResource(iconFor(goal.activityType, type))
-        binding.manageGoalTitle.text = goal.title
+        binding.manageGoalTitle.text = goal.displayTitle()
         binding.manageGoalSubtitle.text = subtitleFor(goal, type)
 
         // Progress row.
@@ -125,13 +125,16 @@ class GoalActionsBottomSheet : BottomSheetDialogFragment() {
         binding.manageGoalStatSessionsLabel.setText(sessionsLabelRes(goal.activityType))
         binding.manageGoalStatSessions.text = snapshot.sessionsLogged.toString()
 
-        // Hide "Make main" when this goal already is the main goal.
-        val showMakeMain = !snapshot.isMain
+        // "Make main" only for an active goal that isn't already the main
+        // one — finished goals never appear on the main card.
+        val showMakeMain = snapshot.isActive && !snapshot.isMain
         binding.manageGoalActionMakeMain.isVisible = showMakeMain
         binding.manageGoalDividerAfterMakeMain.isVisible = showMakeMain
 
-        // Hide "Add 7 more days" when the goal already runs for a year.
-        val showExtend = goal.durationDays < 365
+        // "Add 7 more days" only while the goal is running (the server
+        // refuses ended goals) and while it stays within a year.
+        val showExtend = snapshot.isActive &&
+            goal.durationDays + EXTEND_DAYS <= NewGoalViewModel.DAYS_MAX
         binding.manageGoalActionExtend.isVisible = showExtend
         binding.manageGoalDividerAfterExtend.isVisible = showExtend
     }
@@ -200,9 +203,9 @@ class GoalActionsBottomSheet : BottomSheetDialogFragment() {
     }
 
     private fun formatValue(value: Double, type: GoalType): String = when (type) {
-        GoalType.COUNT, GoalType.DURATION ->
-            value.toLong().toString()
-        GoalType.DISTANCE, GoalType.VOLUME ->
+        GoalType.COUNT, GoalType.DURATION, GoalType.VOLUME ->
+            java.text.NumberFormat.getIntegerInstance(Locale.getDefault()).format(value.toLong())
+        GoalType.DISTANCE ->
             String.format(Locale.getDefault(), "%.1f", value)
     }
 
@@ -245,6 +248,7 @@ class GoalActionsBottomSheet : BottomSheetDialogFragment() {
         const val ACTION_DELETE = "delete"
 
         private const val ARG_GOAL_ID = "goal_id"
+        private const val EXTEND_DAYS = 7
 
         fun newInstance(goalId: String): GoalActionsBottomSheet =
             GoalActionsBottomSheet().apply {

@@ -21,6 +21,10 @@ import com.elijah.fitness.databinding.ItemGoalQuickStartBinding
 import com.elijah.fitness.databinding.ItemGoalsHeaderBinding
 import com.elijah.fitness.databinding.ItemGoalsSectionHeaderBinding
 import com.elijah.fitness.ui.base.BaseViewHolder
+import com.elijah.fitness.util.Fonts
+import com.elijah.fitness.util.MetricText
+import androidx.core.content.ContextCompat
+import java.text.NumberFormat
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
@@ -42,7 +46,6 @@ import java.util.Locale
  */
 class GoalsAdapter(
     private val onGoalTap: (GoalWithProgress) -> Unit,
-    private val onNewGoalTap: () -> Unit,
     private val onTryAgainTap: (GoalWithProgress) -> Unit,
     private val onEmptyHeroCta: () -> Unit,
     private val onQuickStartTap: (GoalSuggestion) -> Unit,
@@ -67,7 +70,6 @@ class GoalsAdapter(
         return when (viewType) {
             VIEW_TYPE_HEADER -> GoalsHeaderViewHolder(
                 ItemGoalsHeaderBinding.inflate(inflater, parent, false),
-                onNewGoalTap,
             )
             VIEW_TYPE_MAIN_CARD -> MainGoalCardViewHolder(
                 ItemGoalMainCardBinding.inflate(inflater, parent, false),
@@ -151,31 +153,11 @@ private object GoalListItemDiff : DiffUtil.ItemCallback<GoalListItem>() {
 // ---------------------------------------------------------------------
 
 class GoalsHeaderViewHolder(
-    private val binding: ItemGoalsHeaderBinding,
-    private val onNewGoalTap: () -> Unit,
+    binding: ItemGoalsHeaderBinding,
 ) : BaseViewHolder<GoalListItem.Header>(binding) {
-    override fun bind(item: GoalListItem.Header) {
-        val ctx = binding.root.context
-        binding.goalsHeaderEyebrow.text = formatEyebrow(ctx, item)
-        // Hide the "+ New goal" pill in the empty state — the dark hero
-        // card renders its own "Create a goal" button, so a second CTA
-        // in the header would be redundant.
-        val hasAnyGoals = item.activeCount > 0 || item.completedCount > 0
-        binding.goalsHeaderNewButton.visibility =
-            if (hasAnyGoals) android.view.View.VISIBLE else android.view.View.GONE
-        binding.goalsHeaderNewButton.setOnClickListener { onNewGoalTap() }
-    }
-
-    private fun formatEyebrow(ctx: Context, item: GoalListItem.Header): CharSequence {
-        val a = item.activeCount
-        val c = item.completedCount
-        return when {
-            a > 0 && c > 0 -> ctx.getString(R.string.goals_header_eyebrow_both, a, c)
-            a > 0 -> ctx.getString(R.string.goals_header_eyebrow_active_only, a)
-            c > 0 -> ctx.getString(R.string.goals_header_eyebrow_completed_only, c)
-            else -> ctx.getString(R.string.goals_header_eyebrow_empty)
-        }
-    }
+    // Static title only — "New goal" is the screen's FAB, and the section
+    // headers below already show the counts.
+    override fun bind(item: GoalListItem.Header) = Unit
 }
 
 class GoalsSectionHeaderViewHolder(
@@ -206,22 +188,23 @@ class MainGoalCardViewHolder(
         binding.goalMainPillActivityIcon.setImageResource(
             GoalFormatters.iconRes(goal.activityType, type)
         )
-        binding.goalMainPillActivityLabel.text = formatMainPill(ctx, goal.activityType)
+        binding.goalMainPillActivityLabel.text = formatMainPill(ctx, goal.activityType, goal.isMain)
 
         // Days-left pill (same wording as the active row's small pill).
         binding.goalMainPillDaysLeftLabel.text =
             GoalFormatters.formatTimeRemaining(ctx, gwp.daysLeft)
 
-        binding.goalMainTitle.text = goal.title
+        binding.goalMainTitle.text = goal.displayTitle()
 
-        // Big current value + "/ target unit" suffix.
-        binding.goalMainValue.text = GoalFormatters.formatValue(gwp.currentValue, type)
-        binding.goalMainValueSuffix.text = ctx.getString(
-            R.string.goal_value_over_target_decimal,
-            "",
-            GoalFormatters.formatValue(goal.targetValue, type),
-            GoalFormatters.unitLabel(ctx, type),
-        ).trimStart(' ', '/').let { "/ $it" }
+        // Big current value + smaller "/ target unit", one auto-sizing line.
+        binding.goalMainValue.text = MetricText.of(
+            GoalFormatters.formatValue(gwp.currentValue, type),
+            "/ " + GoalFormatters.formatValue(goal.targetValue, type) + " " +
+                GoalFormatters.unitLabel(ctx, type),
+            ContextCompat.getColor(ctx, R.color.goal_main_muted),
+            unitScale = 0.42f,
+            unitTypeface = Fonts.medium(ctx),
+        )
 
         // Progress ring + percent + "DONE" caption underneath.
         binding.goalMainProgressRing.progress = gwp.progressFraction.toFloat()
@@ -233,17 +216,23 @@ class MainGoalCardViewHolder(
         binding.goalMainCard.setOnClickListener { onGoalTap(gwp) }
         binding.goalMainCard.contentDescription = ctx.getString(
             R.string.goals_main_card_content_description,
-            goal.title,
+            goal.displayTitle(),
             (gwp.progressFraction * 100).toInt(),
         )
     }
 
-    private fun formatMainPill(ctx: Context, activity: ActivityType?): String =
-        if (activity == null) ctx.getString(R.string.goals_main_pill_any_activity)
-        else ctx.getString(
-            R.string.goals_main_pill_with_activity,
-            GoalFormatters.activityLabel(ctx, activity),
-        )
+    /**
+     * "Main goal · Running" only when the user actually chose this goal
+     * as their main one. A goal featured just because it ends soonest
+     * reads "Running" — otherwise the card says "Main goal" while the
+     * Manage sheet still offers "Make main goal".
+     */
+    private fun formatMainPill(ctx: Context, activity: ActivityType?, isMain: Boolean): String {
+        val activityLabel = activity?.let { GoalFormatters.activityLabel(ctx, it) }
+            ?: ctx.getString(R.string.new_goal_activity_any)
+        return if (isMain) ctx.getString(R.string.goals_main_pill_with_activity, activityLabel)
+        else activityLabel
+    }
 }
 
 class ActiveGoalViewHolder(
@@ -257,7 +246,7 @@ class ActiveGoalViewHolder(
         val type = goal.goalType()
 
         binding.activeIcon.setImageResource(GoalFormatters.iconRes(goal.activityType, type))
-        binding.activeTitle.text = goal.title
+        binding.activeTitle.text = goal.displayTitle()
         binding.activeValue.text = ctx.getString(
             R.string.goal_value_over_target_decimal,
             GoalFormatters.formatValue(gwp.currentValue, type),
@@ -281,7 +270,7 @@ class CompletedGoalViewHolder(
         val type = goal.goalType()
 
         binding.completedIcon.setImageResource(GoalFormatters.iconRes(goal.activityType, type))
-        binding.completedTitle.text = goal.title
+        binding.completedTitle.text = goal.displayTitle()
         // Phase-8b: we don't persist the exact completion date yet, so the
         // row shows the goal's `lastDay` as the "Finished …" date. The
         // actual value is the user's current measured total (which, for
@@ -333,7 +322,7 @@ class EndedGoalViewHolder(
         val type = goal.goalType()
 
         binding.endedIcon.setImageResource(GoalFormatters.iconRes(goal.activityType, type))
-        binding.endedTitle.text = goal.title
+        binding.endedTitle.text = goal.displayTitle()
         binding.endedCaption.text = ctx.getString(
             R.string.goal_ended_date_caption,
             GoalFormatters.formatDate(goal.lastDay),
@@ -356,10 +345,11 @@ private object GoalFormatters {
     private val DATE_FORMAT: DateTimeFormatter =
         DateTimeFormatter.ofPattern("EEE d MMM", Locale.getDefault())
 
+    /** Whole units ("10,000 kg", "45 min") except distance ("12.5 km"). */
     fun formatValue(value: Double, type: GoalType): String = when (type) {
-        GoalType.COUNT, GoalType.DURATION ->
-            value.toLong().toString()
-        GoalType.DISTANCE, GoalType.VOLUME ->
+        GoalType.COUNT, GoalType.DURATION, GoalType.VOLUME ->
+            NumberFormat.getIntegerInstance(Locale.getDefault()).format(value.toLong())
+        GoalType.DISTANCE ->
             String.format(Locale.getDefault(), "%.1f", value)
     }
 
@@ -394,14 +384,16 @@ private object GoalFormatters {
     fun formatDate(date: java.time.LocalDate): String = date.format(DATE_FORMAT)
 
     /**
-     * Phase-8b daysLeft semantics: 1 = "Last day" (today is `lastDay`),
-     * larger = days remaining including today, ≤ 0 = ended.
+     * `daysLeft` counts today: a 13-day goal created today shows "13 days
+     * left" (matching "… in 13 days"), the final day shows "Last day",
+     * and anything past the end shows "Ended".
      */
     fun formatTimeRemaining(ctx: Context, daysLeft: Long): String = when {
-        daysLeft <= 0L -> ctx.getString(R.string.goal_expired, "${-daysLeft + 1}d ago")
+        daysLeft <= 0L -> ctx.getString(R.string.goal_ended_pill)
         daysLeft == 1L -> ctx.getString(R.string.goal_last_day)
-        daysLeft == 2L -> ctx.getString(R.string.goal_one_day_remaining)
-        else -> ctx.getString(R.string.goal_days_remaining, (daysLeft - 1).toInt())
+        else -> ctx.resources.getQuantityString(
+            R.plurals.goal_days_left, daysLeft.toInt(), daysLeft.toInt(),
+        )
     }
 }
 

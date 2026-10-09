@@ -27,7 +27,7 @@
         android:layout_marginTop="@dimen/space_sm"
         android:layout_marginEnd="@dimen/space_md"
         android:text="@string/auth_onboarding_skip"
-        android:textColor="@color/onboarding_text_muted"
+        android:textColor="@color/text_on_dark"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 

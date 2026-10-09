@@ -1,16 +1,41 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!--
-      %1$d = distinct exercise count, %2$d = total set count.
-      Kept as plurals so future locales can supply proper pluralisation.
-    -->
-    <plurals name="history_row_strength_summary">
-        <item quantity="one">%1$d exercise · %2$d set</item>
-        <item quantity="other">%1$d exercises · %2$d sets</item>
+    <!-- History weightlifting row: "2 exercises · 6 sets". Two plurals,
+         because each word follows its own number. -->
+    <plurals name="history_row_exercise_count">
+        <item quantity="one">%1$d exercise</item>
+        <item quantity="other">%1$d exercises</item>
     </plurals>
 
-    <plurals name="dashboard_workout_count">
+    <plurals name="history_row_set_count">
+        <item quantity="one">%1$d set</item>
+        <item quantity="other">%1$d sets</item>
+    </plurals>
+
+    <plurals name="home_metric_sessions_unit">
+        <item quantity="one">workout</item>
+        <item quantity="other">workouts</item>
+    </plurals>
+
+    <plurals name="history_section_workout_count">
         <item quantity="one">%1$d workout</item>
         <item quantity="other">%1$d workouts</item>
+    </plurals>
+
+    <!-- Goal pill: counts today, so a 13-day goal starts at "13 days left". -->
+    <plurals name="goal_days_left">
+        <item quantity="one">%1$d day left</item>
+        <item quantity="other">%1$d days left</item>
+    </plurals>
+
+    <!-- One set in the weightlifting form: "10 reps × 60 kg". -->
+    <plurals name="log_strength_set_summary">
+        <item quantity="one">%1$d rep × %2$s kg</item>
+        <item quantity="other">%1$d reps × %2$s kg</item>
+    </plurals>
+
+    <plurals name="detail_stat_sets_unit">
+        <item quantity="one">set</item>
+        <item quantity="other">sets</item>
     </plurals>
 </resources>

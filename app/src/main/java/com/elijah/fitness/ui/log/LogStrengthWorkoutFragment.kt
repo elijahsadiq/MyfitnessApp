@@ -1,9 +1,14 @@
 package com.elijah.fitness.ui.log
 
 import android.os.Bundle
+import android.text.format.DateFormat
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.inputmethod.EditorInfo
+import android.widget.EditText
+import androidx.appcompat.app.AlertDialog
+import androidx.core.os.bundleOf
 import androidx.core.view.isVisible
 import androidx.core.widget.doAfterTextChanged
 import androidx.fragment.app.viewModels
@@ -15,7 +20,7 @@ import com.elijah.fitness.data.model.StrengthSet
 import com.elijah.fitness.databinding.DialogAddSetBinding
 import com.elijah.fitness.databinding.FragmentLogStrengthWorkoutBinding
 import com.elijah.fitness.ui.base.BaseFragment
-import com.elijah.fitness.ui.main.MainActivity
+import com.elijah.fitness.ui.history.WorkoutDetailFragment
 import com.google.android.material.datepicker.CalendarConstraints
 import com.google.android.material.datepicker.DateValidatorPointBackward
 import com.google.android.material.datepicker.MaterialDatePicker
@@ -27,11 +32,15 @@ import java.time.LocalDate
 import java.time.LocalTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 /**
- * Strength-log screen. Sets are added through a dialog and stored in the
- * ViewModel; the RecyclerView is a display-only view of that list, so the
- * classic "EditTexts inside recycled rows" trap is avoided.
+ * Weightlifting log form. Same look and flow as the run / ride form:
+ * When (date + time), How long?, Sets, Notes, and a Save button pinned
+ * to the bottom. Sets are added through a dialog and stored in the
+ * ViewModel; the RecyclerView only displays them, so the classic
+ * "EditTexts inside recycled rows" trap is avoided. Saving opens the new
+ * workout's detail screen, exactly like a saved run.
  */
 class LogStrengthWorkoutFragment : BaseFragment<FragmentLogStrengthWorkoutBinding>() {
 
@@ -54,16 +63,15 @@ class LogStrengthWorkoutFragment : BaseFragment<FragmentLogStrengthWorkoutBindin
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        // Phase 8c step 2 — edge-to-edge. Push the pinned Save button
-        // above the gesture bar and above the keyboard when a field is
-        // focused.
-        applyBottomNavInset(binding.saveButton)
+        // The shared toolbar handles the top; the pinned Save bar clears
+        // the gesture bar, or the keyboard while it's open.
+        applyBottomNavInset(binding.logSaveContainer)
 
         binding.setsList.adapter = setsAdapter
         binding.setsList.layoutManager = LinearLayoutManager(requireContext())
 
-        binding.dateField.setOnClickListener { showDatePicker() }
-        binding.timeField.setOnClickListener { showTimePicker() }
+        binding.logDateCard.setOnClickListener { showDatePicker() }
+        binding.logTimeCard.setOnClickListener { showTimePicker() }
         binding.addSetButton.setOnClickListener { showAddSetDialog() }
         binding.saveButton.setOnClickListener { attemptSave() }
 
@@ -73,6 +81,7 @@ class LogStrengthWorkoutFragment : BaseFragment<FragmentLogStrengthWorkoutBindin
 
         collectOnStart(viewModel.date) { renderDate(it) }
         collectOnStart(viewModel.time) { renderTime(it) }
+        collectOnStart(viewModel.isSaving) { saving -> binding.saveButton.isEnabled = !saving }
         collectOnStart(viewModel.sets) { sets ->
             setsAdapter.submitList(sets)
             binding.setsEmptyHint.isVisible = sets.isEmpty()
@@ -81,7 +90,7 @@ class LogStrengthWorkoutFragment : BaseFragment<FragmentLogStrengthWorkoutBindin
         }
         collectOnStart(viewModel.events) { event ->
             when (event) {
-                LogStrengthWorkoutViewModel.Event.Saved -> onSaved()
+                is LogStrengthWorkoutViewModel.Event.Saved -> onSaved(event.clientUuid)
                 is LogStrengthWorkoutViewModel.Event.ValidationFailed ->
                     showValidation(event.errors)
                 is LogStrengthWorkoutViewModel.Event.SaveFailed ->
@@ -96,11 +105,23 @@ class LogStrengthWorkoutFragment : BaseFragment<FragmentLogStrengthWorkoutBindin
     }
 
     private fun renderDate(date: LocalDate) {
-        binding.dateField.setText(dateFormatter.format(date))
+        val today = LocalDate.now(ZoneId.systemDefault())
+        binding.logDateEyebrow.text = when (date) {
+            today -> getString(R.string.log_date_eyebrow_today)
+            today.minusDays(1) -> getString(R.string.log_date_eyebrow_yesterday)
+            else -> date.format(WEEKDAY_FORMATTER)
+        }
+        binding.logDateValue.text = date.format(DATE_FORMATTER)
     }
 
     private fun renderTime(time: LocalTime) {
-        binding.timeField.setText(timeFormatter.format(time))
+        // "14:31" or "2:31 PM", following the phone's 24-hour setting.
+        binding.logTimeValue.text = time.format(
+            DateTimeFormatter.ofPattern(
+                if (DateFormat.is24HourFormat(requireContext())) "HH:mm" else "h:mm a",
+                Locale.getDefault(),
+            )
+        )
     }
 
     private fun showDatePicker() {
@@ -119,7 +140,7 @@ class LogStrengthWorkoutFragment : BaseFragment<FragmentLogStrengthWorkoutBindin
         picker.addOnPositiveButtonClickListener { millis ->
             val picked = Instant.ofEpochMilli(millis).atZone(ZoneId.of("UTC")).toLocalDate()
             viewModel.setDate(picked)
-            binding.dateFieldLayout.error = null
+            binding.logDateError.isVisible = false
         }
         picker.show(parentFragmentManager, "date-picker")
     }
@@ -127,42 +148,68 @@ class LogStrengthWorkoutFragment : BaseFragment<FragmentLogStrengthWorkoutBindin
     private fun showTimePicker() {
         val current = viewModel.time.value
         val picker = MaterialTimePicker.Builder()
-            .setTimeFormat(TimeFormat.CLOCK_24H)
+            .setTimeFormat(
+                if (DateFormat.is24HourFormat(requireContext())) TimeFormat.CLOCK_24H
+                else TimeFormat.CLOCK_12H
+            )
             .setHour(current.hour)
             .setMinute(current.minute)
             .setTitleText(R.string.log_time_picker_title)
             .build()
         picker.addOnPositiveButtonClickListener {
             viewModel.setTime(LocalTime.of(picker.hour, picker.minute))
-            binding.dateFieldLayout.error = null
+            binding.logDateError.isVisible = false
         }
         picker.show(parentFragmentManager, "time-picker")
     }
 
+    /**
+     * Add-a-set dialog. Each field shows its own error and the dialog
+     * stays open until the set is valid, so nothing typed is lost.
+     */
     private fun showAddSetDialog() {
-        val dialogBinding = DialogAddSetBinding.inflate(layoutInflater)
-        MaterialAlertDialogBuilder(requireContext())
+        val form = DialogAddSetBinding.inflate(layoutInflater)
+        val dialog = MaterialAlertDialogBuilder(requireContext())
             .setTitle(R.string.log_strength_add_set_title)
-            .setView(dialogBinding.root)
+            .setView(form.root)
             .setNegativeButton(R.string.common_cancel, null)
-            .setPositiveButton(R.string.log_strength_add_set_confirm) { _, _ ->
-                val exercise = dialogBinding.exerciseInput.text?.toString()?.trim().orEmpty()
-                val reps = dialogBinding.repsInput.text?.toString()?.toIntOrNull()
-                val weight = dialogBinding.weightInput.text?.toString()?.toDoubleOrNull()
-                val valid =
-                    exercise.isNotBlank() &&
-                        reps != null && reps in 1..MAX_REPS &&
-                        weight != null && weight in 0.0..MAX_WEIGHT_KG
-                if (!valid) {
-                    showError(getString(R.string.log_strength_invalid_set))
-                    return@setPositiveButton
-                }
+            .setPositiveButton(R.string.log_strength_add_set_confirm, null)
+            .create()
+
+        form.exerciseInput.doAfterTextChanged { form.exerciseLayout.error = null }
+        form.repsInput.doAfterTextChanged { form.repsLayout.error = null }
+        form.weightInput.doAfterTextChanged { form.weightLayout.error = null }
+
+        fun tryAdd() {
+            val exercise = form.exerciseInput.text?.toString()?.trim().orEmpty()
+            val reps = form.repsInput.text?.toString()?.trim()?.toIntOrNull()
+            val weight = form.weightInput.text?.toString()?.trim()
+                ?.replace(',', '.')?.toDoubleOrNull()
+            form.exerciseLayout.error =
+                if (exercise.isBlank()) getString(R.string.log_strength_error_exercise) else null
+            form.repsLayout.error =
+                if (reps == null || reps !in 1..MAX_REPS) getString(R.string.log_strength_error_reps) else null
+            form.weightLayout.error =
+                if (weight == null || weight !in 0.0..MAX_WEIGHT_KG) getString(R.string.log_strength_error_weight) else null
+            if (form.exerciseLayout.error == null && form.repsLayout.error == null &&
+                form.weightLayout.error == null
+            ) {
                 viewModel.addSet(StrengthSet(exercise, reps!!, weight!!))
+                dialog.dismiss()
             }
-            .show()
+        }
+
+        form.weightInput.setOnEditorActionListener { _, actionId, _ ->
+            if (actionId == EditorInfo.IME_ACTION_DONE) { tryAdd(); true } else false
+        }
+        dialog.setOnShowListener {
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener { tryAdd() }
+        }
+        dialog.show()
+        form.exerciseInput.requestFocus()
     }
 
-    private fun readInt(input: com.google.android.material.textfield.TextInputEditText): Int =
+    private fun readInt(input: EditText): Int =
         input.text?.toString()?.trim()?.toIntOrNull() ?: 0
 
     private fun attemptSave() {
@@ -175,36 +222,30 @@ class LogStrengthWorkoutFragment : BaseFragment<FragmentLogStrengthWorkoutBindin
     }
 
     private fun showValidation(errors: List<LogStrengthWorkoutViewModel.FieldError>) {
-        binding.dateFieldLayout.error = null
+        binding.logDateError.isVisible = false
         binding.durationError.isVisible = false
         binding.setsError.isVisible = false
 
         errors.forEach { err ->
-            val msg = getString(err.messageRes)
-            when (err.field) {
-                LogStrengthWorkoutViewModel.Field.DATE ->
-                    binding.dateFieldLayout.error = msg
-                LogStrengthWorkoutViewModel.Field.DURATION -> {
-                    binding.durationError.text = msg
-                    binding.durationError.isVisible = true
-                }
-                LogStrengthWorkoutViewModel.Field.SETS -> {
-                    binding.setsError.text = msg
-                    binding.setsError.isVisible = true
-                }
+            val target = when (err.field) {
+                LogStrengthWorkoutViewModel.Field.DATE -> binding.logDateError
+                LogStrengthWorkoutViewModel.Field.DURATION -> binding.durationError
+                LogStrengthWorkoutViewModel.Field.SETS -> binding.setsError
             }
+            target.text = getString(err.messageRes)
+            target.isVisible = true
         }
     }
 
-    private fun onSaved() {
-        (requireActivity() as? MainActivity)
-            ?.showSnackbar(getString(R.string.log_saved_strength))
-        findNavController().popBackStack()
+    private fun onSaved(clientUuid: String) {
+        findNavController().navigate(
+            R.id.action_log_strength_to_detail,
+            bundleOf(WorkoutDetailFragment.ARG_CLIENT_UUID to clientUuid),
+        )
     }
 
     private fun showSaveRetry(messageRes: Int) {
-        com.google.android.material.snackbar.Snackbar
-            .make(binding.root, messageRes, com.google.android.material.snackbar.Snackbar.LENGTH_LONG)
+        snackbar(messageRes, anchor = binding.logSaveContainer)
             .setAction(R.string.log_error_save_retry) { attemptSave() }
             .show()
     }
@@ -213,9 +254,9 @@ class LogStrengthWorkoutFragment : BaseFragment<FragmentLogStrengthWorkoutBindin
         private const val MAX_REPS = 100
         private const val MAX_WEIGHT_KG = 500.0
 
-        private val dateFormatter: DateTimeFormatter =
-            DateTimeFormatter.ofPattern("EEE d MMM")
-        private val timeFormatter: DateTimeFormatter =
-            DateTimeFormatter.ofPattern("HH:mm")
+        private val DATE_FORMATTER: DateTimeFormatter =
+            DateTimeFormatter.ofPattern("EEE d MMM", Locale.getDefault())
+        private val WEEKDAY_FORMATTER: DateTimeFormatter =
+            DateTimeFormatter.ofPattern("EEEE", Locale.getDefault())
     }
 }

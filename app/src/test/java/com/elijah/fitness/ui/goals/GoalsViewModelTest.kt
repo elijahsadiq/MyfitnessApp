@@ -99,7 +99,7 @@ class GoalsViewModelTest {
         assertTrue(items[1] is GoalListItem.MainGoalCard)
         assertTrue(items[2] is GoalListItem.SectionHeader)
         assertEquals(R.string.goals_active_title, (items[2] as GoalListItem.SectionHeader).labelRes)
-        assertEquals("2 in progress", (items[2] as GoalListItem.SectionHeader).countPill)
+        assertEquals("2", (items[2] as GoalListItem.SectionHeader).countPill)
         assertTrue(items[3] is GoalListItem.Active)
         assertTrue(items[4] is GoalListItem.Active)
     }
@@ -274,7 +274,9 @@ class GoalsViewModelTest {
 
         val completions = events.filterIsInstance<GoalsViewModel.ErrorEvent.GoalCompleted>()
         assertEquals(1, completions.size)
-        assertEquals("pending", completions[0].title)
+        // The snackbar shows the title rebuilt from the goal's fields
+        // (the stored title goes stale after "Add 7 more days").
+        assertEquals("1 session in 7 days", completions[0].title)
         assertEquals(1, repo.markNotifiedCallCount)
     }
 
@@ -309,7 +311,7 @@ class GoalsViewModelTest {
 
         val completions = events.filterIsInstance<GoalsViewModel.ErrorEvent.GoalCompleted>()
         assertEquals(1, completions.size)
-        assertEquals("grow", completions[0].title)
+        assertEquals("1 session in 7 days", completions[0].title)
         assertEquals(1, repo.markNotifiedCallCount)
     }
 

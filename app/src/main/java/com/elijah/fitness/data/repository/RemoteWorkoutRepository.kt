@@ -46,6 +46,11 @@ class RemoteWorkoutRepository(
 
     override fun observeWorkouts(): Flow<List<Workout>> = _workouts.asStateFlow()
 
+    override fun clearCache() {
+        serverIds.clear()
+        _workouts.value = emptyList()
+    }
+
     override suspend fun refresh(): ApiResult<Unit> =
         when (val result = apiCall { workoutApi.list() }) {
             is ApiResult.Success -> {

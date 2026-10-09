@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Full-screen interactive map of a saved route (phase 8c step 7). Opens
-  from the workout-detail map card's expand button. Dark map tiles,
-  glowing lime route, OSM attribution — all via the shared map
-  component — plus a close button that pops back.
+  Full-screen interactive map of a saved route. Opens from the workout-
+  detail map card. Dark map tiles, glowing lime route, the OSM credit in
+  the bottom-start corner and a close button top-end that pops back.
+  The overlay container takes the system-bar insets so both controls
+  clear the status bar and the gesture / navigation bar.
 -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -18,18 +18,22 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
-    <ImageView
-        android:id="@+id/fullMapCloseButton"
-        android:layout_width="44dp"
-        android:layout_height="44dp"
-        android:layout_gravity="top|end"
-        android:layout_marginTop="16dp"
-        android:layout_marginEnd="16dp"
-        android:background="@drawable/bg_tracking_overlay_pill"
-        android:clickable="true"
-        android:contentDescription="@string/full_map_close_content_description"
-        android:focusable="true"
-        android:padding="11dp"
-        android:src="@drawable/ic_close_24"
-        app:tint="@color/text_on_dark" />
+    <FrameLayout
+        android:id="@+id/fullMapOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:padding="@dimen/space_lg">
+
+        <ImageView
+            android:id="@+id/fullMapCloseButton"
+            style="@style/Widget.Fitness.MapOverlayButton"
+            android:layout_gravity="top|end"
+            android:contentDescription="@string/full_map_close_content_description"
+            android:src="@drawable/ic_close_24" />
+
+        <TextView
+            android:id="@+id/mapAttribution"
+            style="@style/Widget.Fitness.MapAttribution"
+            android:layout_gravity="bottom|start" />
+    </FrameLayout>
 </FrameLayout>

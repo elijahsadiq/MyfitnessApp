@@ -85,4 +85,6 @@
     <color name="tracking_panel">#121411</color>
     <color name="tracking_panel_border">#23271F</color>
     <color name="tracking_panel_button">#2A2E27</color>
+    <!-- Lock overlay over the live map: map_background at 80 % alpha. -->
+    <color name="tracking_lock_scrim">#CC0C0E0B</color>
 </resources>

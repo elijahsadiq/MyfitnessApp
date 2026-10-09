@@ -1,6 +1,6 @@
 package com.elijah.fitness.ui.goals
 
-import android.app.AlertDialog
+import androidx.appcompat.app.AlertDialog
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -10,21 +10,22 @@ import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
-import android.widget.EditText
 import androidx.annotation.StringRes
 import androidx.core.view.isVisible
+import androidx.core.widget.doAfterTextChanged
 import androidx.fragment.app.setFragmentResult
 import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
 import com.elijah.fitness.FitnessApp
 import com.elijah.fitness.R
 import com.elijah.fitness.data.model.GoalType
+import com.elijah.fitness.databinding.DialogEditProfileFieldBinding
 import com.elijah.fitness.databinding.FragmentNewGoalBinding
 import com.elijah.fitness.databinding.ViewGoalActivityTileBinding
 import com.elijah.fitness.databinding.ViewGoalMetricPillBinding
 import com.elijah.fitness.ui.auth.FieldError
 import com.elijah.fitness.ui.base.BaseFragment
-import com.google.android.material.snackbar.Snackbar
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import java.text.NumberFormat
 import java.time.LocalDate
 import java.time.ZoneId
@@ -106,10 +107,9 @@ class NewGoalFragment : BaseFragment<FragmentNewGoalBinding>() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        applySystemBarInsets(target = binding.root, applyBottom = false)
+        // The shared toolbar handles the top; the pinned button clears
+        // the gesture bar, or the keyboard while it's open.
         applyBottomNavInset(binding.newGoalSubmitContainer)
-
-        binding.newGoalCloseButton.setOnClickListener { findNavController().popBackStack() }
 
         wireActivityTiles()
         wireStepperControls()
@@ -126,7 +126,7 @@ class NewGoalFragment : BaseFragment<FragmentNewGoalBinding>() {
                     findNavController().popBackStack()
                 }
                 is NewGoalViewModel.Event.ShowError -> {
-                    Snackbar.make(binding.root, event.messageRes, Snackbar.LENGTH_LONG).show()
+                    snackbar(event.messageRes, anchor = binding.newGoalSubmitContainer).show()
                 }
             }
         }
@@ -179,8 +179,8 @@ class NewGoalFragment : BaseFragment<FragmentNewGoalBinding>() {
     // ---------------------------------------------------------------------
 
     private fun render(state: NewGoalViewModel.UiState) {
-        // Title + submit label switch between create / edit modes.
-        binding.newGoalTitle.setText(
+        // Toolbar title + submit label switch between create / edit modes.
+        requireActivity().title = getString(
             if (state.editingGoalId != null) R.string.new_goal_title_edit
             else R.string.new_goal_title_create
         )
@@ -299,6 +299,10 @@ class NewGoalFragment : BaseFragment<FragmentNewGoalBinding>() {
         )
     }
 
+    /**
+     * Type-a-number dialog. Out-of-range values show an inline error and
+     * keep the dialog open, so the user can fix the number in place.
+     */
     private fun showNumberDialog(
         @StringRes titleRes: Int,
         initial: Int,
@@ -307,26 +311,31 @@ class NewGoalFragment : BaseFragment<FragmentNewGoalBinding>() {
         @StringRes outOfRangeRes: Int,
         onPicked: (Int) -> Unit,
     ) {
-        val input = EditText(requireContext()).apply {
-            inputType = InputType.TYPE_CLASS_NUMBER
-            filters = arrayOf(InputFilter.LengthFilter(max.toString().length))
-            setText(initial.toString())
-            setSelection(text.length)
-        }
-        AlertDialog.Builder(requireContext())
+        val field = DialogEditProfileFieldBinding.inflate(layoutInflater)
+        field.fieldInput.inputType = InputType.TYPE_CLASS_NUMBER
+        field.fieldInput.filters = arrayOf(InputFilter.LengthFilter(max.toString().length))
+        field.fieldInput.setText(initial.toString())
+        field.fieldInput.setSelection(field.fieldInput.text?.length ?: 0)
+        field.fieldInput.doAfterTextChanged { field.fieldLayout.error = null }
+
+        val dialog = MaterialAlertDialogBuilder(requireContext())
             .setTitle(titleRes)
-            .setView(input)
-            .setPositiveButton(R.string.new_goal_dialog_ok) { dialog, _ ->
-                val raw = input.text.toString().toIntOrNull()
+            .setView(field.root)
+            .setPositiveButton(R.string.new_goal_dialog_ok, null)
+            .setNegativeButton(R.string.new_goal_dialog_cancel, null)
+            .create()
+        dialog.setOnShowListener {
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+                val raw = field.fieldInput.text?.toString()?.trim()?.toIntOrNull()
                 if (raw == null || raw < min || raw > max) {
-                    Snackbar.make(binding.root, outOfRangeRes, Snackbar.LENGTH_SHORT).show()
+                    field.fieldLayout.error = getString(outOfRangeRes)
                 } else {
                     onPicked(raw)
+                    dialog.dismiss()
                 }
-                dialog.dismiss()
             }
-            .setNegativeButton(R.string.new_goal_dialog_cancel) { dialog, _ -> dialog.dismiss() }
-            .show()
+        }
+        dialog.show()
     }
 
     // ---------------------------------------------------------------------
@@ -452,6 +461,11 @@ class NewGoalFragment : BaseFragment<FragmentNewGoalBinding>() {
         }
 
         init {
+            // Touch: step on press, repeat while held. The touch listener
+            // consumes the gesture, so this click listener only fires for
+            // accessibility services (TalkBack double-tap, Switch Access)
+            // and keyboards — one step per activation.
+            view.setOnClickListener { onStep() }
             @Suppress("ClickableViewAccessibility")
             view.setOnTouchListener { v, e ->
                 when (e.actionMasked) {
@@ -466,7 +480,6 @@ class NewGoalFragment : BaseFragment<FragmentNewGoalBinding>() {
                     MotionEvent.ACTION_UP,
                     MotionEvent.ACTION_CANCEL -> {
                         v.isPressed = false
-                        v.performClick() // for accessibility
                         handler.removeCallbacks(runnable)
                         true
                     }

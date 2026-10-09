@@ -2,6 +2,7 @@ package com.elijah.fitness.ui.history
 
 import android.content.Intent
 import android.os.Bundle
+import android.text.format.DateFormat
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -22,13 +23,17 @@ import com.elijah.fitness.data.model.StrengthWorkout
 import com.elijah.fitness.data.model.Workout
 import com.elijah.fitness.data.model.WorkoutDetail
 import com.elijah.fitness.databinding.FragmentWorkoutDetailBinding
+import com.elijah.fitness.databinding.ItemProgressStatRowBinding
 import com.elijah.fitness.databinding.ViewDetailStatCardBinding
 import com.elijah.fitness.tracking.TrackPoint
 import com.elijah.fitness.ui.base.BaseFragment
 import com.elijah.fitness.ui.tracking.map.DarkMapStyler
 import com.elijah.fitness.ui.tracking.map.MapCameraController
 import com.elijah.fitness.ui.tracking.map.RoutePolylineRenderer
+import com.elijah.fitness.ui.main.MainActivity
 import com.elijah.fitness.util.Formatters
+import com.elijah.fitness.util.Fonts
+import com.elijah.fitness.util.MetricText
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.textfield.TextInputEditText
@@ -73,6 +78,10 @@ class WorkoutDetailFragment : BaseFragment<FragmentWorkoutDetailBinding>() {
     private var routeRenderer: RoutePolylineRenderer? = null
     private var mapCamera: MapCameraController? = null
 
+    /** Lighter weight for the small unit next to a big number ("4.12 km"). */
+    private val unitFont: android.graphics.Typeface
+        get() = Fonts.medium(requireContext())
+
     override fun inflateBinding(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -86,17 +95,16 @@ class WorkoutDetailFragment : BaseFragment<FragmentWorkoutDetailBinding>() {
         // bottom) directly.
         applySystemBarInsets(binding.root)
 
-        DarkMapStyler.apply(binding.mapView, requireContext())
+        // Preview map: not interactive. A tap anywhere on the card (or
+        // the expand button) opens the full-screen interactive map.
+        DarkMapStyler.apply(binding.mapView, requireContext(), interactive = false)
         binding.mapView.controller.setZoom(14.0)
-        // Non-interactive on the detail screen — tap the expand button
-        // to open a full-screen interactive map instead.
-        binding.mapView.setMultiTouchControls(false)
-        binding.mapView.isClickable = false
 
         binding.detailBackButton.setOnClickListener { findNavController().navigateUp() }
         binding.detailShareButton.setOnClickListener { onShareClicked() }
         binding.detailOverflowButton.setOnClickListener { showOverflowMenu() }
         binding.mapExpandButton.setOnClickListener { onExpandClicked() }
+        binding.mapTapTarget.setOnClickListener { onExpandClicked() }
         binding.detailNotesEditButton.setOnClickListener { showNotesDialog() }
 
         collectOnStart(viewModel.state) { render(it) }
@@ -129,7 +137,7 @@ class WorkoutDetailFragment : BaseFragment<FragmentWorkoutDetailBinding>() {
         when (state) {
             WorkoutDetailViewModel.State.Loading -> Unit
             WorkoutDetailViewModel.State.Error -> {
-                Snackbar.make(binding.root, R.string.detail_load_error, Snackbar.LENGTH_LONG)
+                snackbar(R.string.detail_load_error, Snackbar.LENGTH_INDEFINITE)
                     .setAction(R.string.goals_retry) { viewModel.retry() }
                     .show()
             }
@@ -143,12 +151,15 @@ class WorkoutDetailFragment : BaseFragment<FragmentWorkoutDetailBinding>() {
     private fun onEvent(event: WorkoutDetailViewModel.Event) {
         when (event) {
             WorkoutDetailViewModel.Event.NotesUpdated ->
-                Snackbar.make(binding.root, R.string.detail_notes_updated_snackbar, Snackbar.LENGTH_SHORT).show()
+                snackbar(R.string.detail_notes_updated_snackbar, Snackbar.LENGTH_SHORT).show()
             WorkoutDetailViewModel.Event.UpdateNotesFailed ->
-                Snackbar.make(binding.root, R.string.detail_delete_failed_snackbar, Snackbar.LENGTH_LONG).show()
-            WorkoutDetailViewModel.Event.Deleted -> findNavController().navigateUp()
+                snackbar(R.string.detail_notes_failed_snackbar).show()
+            WorkoutDetailViewModel.Event.Deleted -> {
+                (activity as? MainActivity)?.showSnackbar(getString(R.string.history_deleted_snackbar))
+                findNavController().navigateUp()
+            }
             WorkoutDetailViewModel.Event.DeleteFailed ->
-                Snackbar.make(binding.root, R.string.detail_delete_failed_snackbar, Snackbar.LENGTH_LONG).show()
+                snackbar(R.string.detail_delete_failed_snackbar).show()
         }
     }
 
@@ -159,6 +170,7 @@ class WorkoutDetailFragment : BaseFragment<FragmentWorkoutDetailBinding>() {
         bindHeader(workout)
         bindMap(workout, detail.routePoints)
         bindStats(workout)
+        bindSets(workout)
         bindNotes(workout.notes)
     }
 
@@ -185,7 +197,10 @@ class WorkoutDetailFragment : BaseFragment<FragmentWorkoutDetailBinding>() {
         val localDate = workout.startTime.atZone(zone).toLocalDate()
         val today = LocalDate.now(zone)
         val dayFmt = subtitleDayFormatter
-        val timeFmt = subtitleTimeFormatter
+        val timeFmt = DateTimeFormatter.ofPattern(
+            if (DateFormat.is24HourFormat(requireContext())) "HH:mm" else "h:mm a",
+            Locale.getDefault(),
+        )
         val dayText = dayFmt.format(localDate)
         val timeText = timeFmt.format(workout.startTime.atZone(zone))
         return when (localDate) {
@@ -236,7 +251,7 @@ class WorkoutDetailFragment : BaseFragment<FragmentWorkoutDetailBinding>() {
             is RunningWorkout -> {
                 setStatCard(cards[0], R.string.detail_stat_distance, formatDistanceValue(workout.distanceKm()), getString(R.string.log_distance_unit), highlighted = false)
                 setStatCard(cards[1], R.string.detail_stat_duration, formatDurationValue(workout.duration.seconds), null, highlighted = false)
-                setStatCard(cards[2], R.string.detail_stat_avg_pace, Formatters.formatPace(workout.paceSecondsPerKm()), getString(R.string.detail_stat_pace_unit), highlighted = true)
+                setStatCard(cards[2], R.string.detail_stat_avg_pace, Formatters.formatPaceValue(workout.paceSecondsPerKm()), getString(R.string.detail_stat_pace_unit), highlighted = true)
                 setStatCard(cards[3], R.string.detail_stat_calories, caloriesText(workout), getString(R.string.detail_stat_calories_unit), highlighted = false)
             }
             is CyclingWorkout -> {
@@ -248,7 +263,7 @@ class WorkoutDetailFragment : BaseFragment<FragmentWorkoutDetailBinding>() {
             is StrengthWorkout -> {
                 setStatCard(cards[0], R.string.detail_stat_volume, formatVolumeValue(workout.totalVolumeKg()), getString(R.string.detail_stat_volume_unit), highlighted = false)
                 setStatCard(cards[1], R.string.detail_stat_duration, formatDurationValue(workout.duration.seconds), null, highlighted = false)
-                setStatCard(cards[2], R.string.detail_stat_sets, workout.sets.size.toString(), getString(R.string.detail_stat_sets_unit), highlighted = true)
+                setStatCard(cards[2], R.string.detail_stat_sets, workout.sets.size.toString(), resources.getQuantityString(R.plurals.detail_stat_sets_unit, workout.sets.size), highlighted = true)
                 setStatCard(cards[3], R.string.detail_stat_calories, caloriesText(workout), getString(R.string.detail_stat_calories_unit), highlighted = false)
             }
         }
@@ -261,32 +276,32 @@ class WorkoutDetailFragment : BaseFragment<FragmentWorkoutDetailBinding>() {
         unit: String?,
         highlighted: Boolean,
     ) {
+        val ctx = requireContext()
+        val labelColor = ContextCompat.getColor(ctx, if (highlighted) R.color.text_on_dark else R.color.text_secondary)
+        val valueColor = ContextCompat.getColor(ctx, if (highlighted) R.color.lime_accent else R.color.text_primary)
+        card.detailStatCardRoot.setBackgroundResource(
+            if (highlighted) R.drawable.bg_detail_stat_card_dark else R.drawable.bg_detail_stat_card_light
+        )
         card.detailStatCardLabel.setText(labelRes)
-        card.detailStatCardValue.text = value
-        card.detailStatCardUnit.isVisible = unit != null
-        card.detailStatCardUnit.text = unit.orEmpty()
-        if (highlighted) {
-            card.detailStatCardRoot.setBackgroundResource(R.drawable.bg_detail_stat_card_dark)
-            card.detailStatCardLabel.setTextColor(
-                ContextCompat.getColor(requireContext(), R.color.text_on_dark)
+        card.detailStatCardLabel.setTextColor(labelColor)
+        card.detailStatCardValue.setTextColor(valueColor)
+        card.detailStatCardValue.text = MetricText.of(value, unit, labelColor, unitTypeface = unitFont)
+    }
+
+    /** Weightlifting: list every set — exercise, then "8 reps × 80 kg". */
+    private fun bindSets(workout: Workout) {
+        val sets = (workout as? StrengthWorkout)?.sets.orEmpty()
+        binding.detailSetsCard.isVisible = sets.isNotEmpty()
+        val container = binding.detailSetsContainer
+        container.removeAllViews()
+        val weightFormat = java.text.DecimalFormat("0.#")
+        sets.forEach { set ->
+            val row = ItemProgressStatRowBinding.inflate(layoutInflater, container, false)
+            row.statLabel.text = set.exercise
+            row.statValue.text = resources.getQuantityString(
+                R.plurals.log_strength_set_summary, set.reps, set.reps, weightFormat.format(set.weightKg),
             )
-            card.detailStatCardValue.setTextColor(
-                ContextCompat.getColor(requireContext(), R.color.lime_accent)
-            )
-            card.detailStatCardUnit.setTextColor(
-                ContextCompat.getColor(requireContext(), R.color.text_on_dark)
-            )
-        } else {
-            card.detailStatCardRoot.setBackgroundResource(R.drawable.bg_detail_stat_card_light)
-            card.detailStatCardLabel.setTextColor(
-                ContextCompat.getColor(requireContext(), R.color.text_secondary)
-            )
-            card.detailStatCardValue.setTextColor(
-                ContextCompat.getColor(requireContext(), R.color.text_primary)
-            )
-            card.detailStatCardUnit.setTextColor(
-                ContextCompat.getColor(requireContext(), R.color.text_secondary)
-            )
+            container.addView(row.root)
         }
     }
 
@@ -294,7 +309,7 @@ class WorkoutDetailFragment : BaseFragment<FragmentWorkoutDetailBinding>() {
         String.format(Locale.getDefault(), "%.2f", km)
 
     private fun formatVolumeValue(kg: Double): String =
-        String.format(Locale.getDefault(), "%.0f", kg)
+        String.format(Locale.getDefault(), "%,.0f", kg)
 
     private fun formatDurationValue(totalSeconds: Long): String {
         val h = totalSeconds / 3_600
@@ -379,7 +394,7 @@ class WorkoutDetailFragment : BaseFragment<FragmentWorkoutDetailBinding>() {
                 title,
                 workout.distanceKm(),
                 Formatters.formatDuration(workout.duration),
-                Formatters.formatPace(workout.paceSecondsPerKm()),
+                Formatters.formatPaceValue(workout.paceSecondsPerKm()),
                 getString(R.string.detail_stat_pace_unit),
             )
             is CyclingWorkout -> getString(
@@ -442,7 +457,5 @@ class WorkoutDetailFragment : BaseFragment<FragmentWorkoutDetailBinding>() {
 
         private val subtitleDayFormatter: DateTimeFormatter =
             DateTimeFormatter.ofPattern("EEE d MMM", Locale.getDefault())
-        private val subtitleTimeFormatter: DateTimeFormatter =
-            DateTimeFormatter.ofPattern("HH:mm", Locale.getDefault())
     }
 }

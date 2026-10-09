@@ -8,12 +8,12 @@ import androidx.core.view.isVisible
 import androidx.core.widget.doAfterTextChanged
 import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
+import androidx.navigation.navOptions
 import com.elijah.fitness.FitnessApp
 import com.elijah.fitness.R
 import com.elijah.fitness.databinding.FragmentRegisterBinding
 import com.elijah.fitness.ui.base.BaseFragment
 import com.elijah.fitness.util.UnitSystem
-import com.google.android.material.snackbar.Snackbar
 
 /**
  * Register screen. Same state-machine shape as [LoginFragment] with a
@@ -61,10 +61,8 @@ class RegisterFragment : BaseFragment<FragmentRegisterBinding>() {
             submit(); true
         }
 
-        binding.backButton.setOnClickListener { findNavController().popBackStack() }
-        binding.goToLogin.setOnClickListener {
-            findNavController().navigate(R.id.action_register_to_login)
-        }
+        binding.backButton.setOnClickListener { goToLogin() }
+        binding.goToLogin.setOnClickListener { goToLogin() }
 
         collectOnStart(viewModel.uiState) { render(it) }
         collectOnStart(viewModel.events) { event ->
@@ -74,6 +72,24 @@ class RegisterFragment : BaseFragment<FragmentRegisterBinding>() {
                 is RegisterViewModel.Event.ShowNetworkError ->
                     showRetrySnackbar(event.messageRes)
             }
+        }
+    }
+
+    /**
+     * Back arrow and "Log in" link. From Log in → Register we just go
+     * back. Reached from onboarding, Register is the only screen on the
+     * stack (popping it would leave a blank window), so Log in replaces
+     * it instead — never a Register ↔ Log in loop on the back stack.
+     */
+    private fun goToLogin() {
+        val nav = findNavController()
+        if (nav.previousBackStackEntry?.destination?.id == R.id.loginFragment) {
+            nav.navigateUp()
+        } else {
+            nav.navigate(
+                R.id.loginFragment, null,
+                navOptions { popUpTo(R.id.registerFragment) { inclusive = true } },
+            )
         }
     }
 
@@ -128,7 +144,7 @@ class RegisterFragment : BaseFragment<FragmentRegisterBinding>() {
     }
 
     private fun showRetrySnackbar(messageRes: Int) {
-        Snackbar.make(binding.root, messageRes, Snackbar.LENGTH_LONG)
+        snackbar(messageRes)
             .setAction(R.string.auth_retry) { submit() }
             .show()
     }

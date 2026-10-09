@@ -66,6 +66,10 @@
         <item name="colorSurfaceInverse">@color/inverse_surface</item>
         <item name="colorOnSurfaceInverse">@color/text_on_dark</item>
 
+        <!-- Flat brand surfaces: no lime-tinted elevation overlay on
+             sheets, menus or raised cards. -->
+        <item name="elevationOverlayEnabled">false</item>
+
         <item name="colorOutline">@color/outline</item>
         <item name="colorOutlineVariant">@color/divider</item>
 
@@ -126,5 +130,6 @@
         <item name="materialAlertDialogTheme">@style/ThemeOverlay.Fitness.MaterialAlertDialog</item>
         <item name="materialCalendarTheme">@style/ThemeOverlay.Fitness.MaterialDatePicker</item>
         <item name="materialTimePickerTheme">@style/ThemeOverlay.Fitness.MaterialTimePicker</item>
+        <item name="bottomSheetDialogTheme">@style/ThemeOverlay.Fitness.BottomSheetDialog</item>
     </style>
 </resources>

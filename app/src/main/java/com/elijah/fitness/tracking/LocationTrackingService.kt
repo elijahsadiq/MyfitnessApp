@@ -1,29 +1,32 @@
 package com.elijah.fitness.tracking
 
 import android.annotation.SuppressLint
-import android.app.Service
+import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
+import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.IBinder
 import android.os.PowerManager
+import android.os.SystemClock
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
 import androidx.core.content.getSystemService
 import com.elijah.fitness.FitnessApp
 import com.elijah.fitness.R
 import com.elijah.fitness.data.model.ActivityType
-import com.elijah.fitness.ui.launcher.LauncherActivity
+import com.elijah.fitness.ui.main.MainActivity
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
@@ -32,8 +35,14 @@ import java.time.Instant
 /**
  * Foreground service that owns the location callback registration for the
  * duration of a workout. Lifecycle in one sentence: `start` → bind the
- * fused provider → forward each fix into [TrackingSession] → mirror the
- * state into the ongoing notification → `stop` tears everything down.
+ * location provider → forward each fix into [TrackingSession] → mirror the
+ * state into the ongoing notification → `stopService` tears everything down.
+ *
+ * Pause / resume / finish are applied to the shared [TrackingSession]
+ * directly by the screen; the service only has to keep reading GPS and
+ * keep the notification current, so it never needs to be "started" just
+ * to flip a flag (which Android forbids while the app is in the
+ * background).
  *
  * ### Why foreground, not plain background
  * Tracking must continue with the screen off; a bound-service alone is
@@ -44,10 +53,8 @@ import java.time.Instant
  *
  * ### Process-kill limitation
  * If the OS kills the process mid-workout (e.g. extreme memory pressure)
- * the tracked data is lost — there is no on-disk journal in phase 8a.
- * Future work in a phase-9 "offline sync" would persist to Room on every
- * accepted fix. Called out in the dev log because it is better to name
- * the limitation than hide it.
+ * the tracked data is lost — there is no on-disk journal yet. Called out
+ * in the dev log because it is better to name the limitation than hide it.
  */
 class LocationTrackingService : Service() {
 
@@ -71,57 +78,92 @@ class LocationTrackingService : Service() {
         createNotificationChannel()
     }
 
-    @SuppressLint("MissingPermission")
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
             ACTION_START -> handleStart(intent)
-            ACTION_PAUSE -> session.pause()
-            ACTION_RESUME -> session.resume()
             ACTION_STOP -> handleStop()
-            else -> if (session.state.value.status == TrackingState.Status.Idle) {
-                // Protect against OS-restarts after a kill — nothing to resume.
-                stopSelf(startId)
-            }
+            // A system restart after a process kill (null intent) has no
+            // session to resume — the in-memory state died with the process.
+            else -> stopSelf(startId)
         }
-        return START_STICKY
+        return START_NOT_STICKY
     }
 
-    @SuppressLint("MissingPermission")
     private fun handleStart(intent: Intent) {
         val activityName = intent.getStringExtra(EXTRA_ACTIVITY_TYPE)
             ?: ActivityType.RUNNING.name
         val activityType = runCatching { ActivityType.valueOf(activityName) }
             .getOrDefault(ActivityType.RUNNING)
 
+        // Android 14+ refuses a location foreground service without a
+        // location grant (SecurityException). Stopping straight away is
+        // also what keeps "did not call startForeground" from firing.
+        if (!LocationPermissions.hasAnyLocationPermission(this) || !promoteToForeground(activityType)) {
+            stopSelf()
+            return
+        }
+
         if (session.state.value.status == TrackingState.Status.Idle) {
             session.start(activityType)
         }
 
-        // Promote to foreground. On API 34+ the location type MUST be
-        // declared with the typed call or startForeground throws.
-        val initial = buildNotification(activityType, elapsedMs = 0L, distanceM = 0.0)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            ServiceCompat.startForeground(
-                this, NOTIFICATION_ID, initial,
-                ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION,
-            )
-        } else {
-            startForeground(NOTIFICATION_ID, initial)
-        }
-
         acquireWakeLock()
+        startJobs()
+    }
 
-        // Pump location fixes into the session.
+    /**
+     * `startForeground` with the location type. Returns `false` (instead of
+     * crashing) when the system refuses — e.g. the permission was revoked
+     * a moment ago, or Android 12+ decided the app is in the background.
+     */
+    private fun promoteToForeground(activityType: ActivityType): Boolean {
+        val initial = buildNotification(activityType, elapsedMs = 0L, distanceM = 0.0)
+        return try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                ServiceCompat.startForeground(
+                    this, NOTIFICATION_ID, initial,
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION,
+                )
+            } else {
+                startForeground(NOTIFICATION_ID, initial)
+            }
+            true
+        } catch (_: SecurityException) {
+            false
+        } catch (_: IllegalStateException) {
+            // ForegroundServiceStartNotAllowedException (API 31+) extends this.
+            false
+        }
+    }
+
+    private fun startJobs() {
+        // Pump location fixes into the session. Fixes older than
+        // [MAX_FIX_AGE_MS] are a cached "last known location" — possibly
+        // from another street or town — and would make every real fix
+        // after it look like a teleport, so they're skipped.
         locationJob?.cancel()
         locationJob = scope.launch {
-            tracker.locationUpdates().collect { loc ->
-                session.onFix(
-                    latitude = loc.latitude,
-                    longitude = loc.longitude,
-                    accuracyM = if (loc.hasAccuracy()) loc.accuracy.toDouble() else null,
-                    recordedAt = Instant.ofEpochMilli(loc.time),
-                )
-            }
+            tracker.locationUpdates()
+                .catch { /* provider failed — keep the session, show "Searching" */ }
+                .collect { loc ->
+                    // How long ago the position was measured, from the
+                    // monotonic clock — `loc.time` (GPS time) can be stale
+                    // or skewed, which hid pauses and counted distance
+                    // walked while paused.
+                    val ageMs = (SystemClock.elapsedRealtimeNanos() - loc.elapsedRealtimeNanos) / 1_000_000L
+                    if (ageMs > MAX_FIX_AGE_MS) return@collect
+                    val now = System.currentTimeMillis()
+                    session.onFix(
+                        latitude = loc.latitude,
+                        longitude = loc.longitude,
+                        accuracyM = if (loc.hasAccuracy()) loc.accuracy.toDouble() else null,
+                        // Stored with the point: acceptance time, on the same
+                        // clock as the session's elapsed time, so the pause
+                        // detector compares like with like.
+                        recordedAt = Instant.ofEpochMilli(now),
+                        measuredAt = Instant.ofEpochMilli(now - ageMs.coerceAtLeast(0L)),
+                    )
+                }
         }
 
         // Tick the elapsed-time counter between fixes.
@@ -133,24 +175,27 @@ class LocationTrackingService : Service() {
             }
         }
 
-        // Refresh the notification whenever elapsed/distance change meaningfully.
+        // Refresh the notification whenever elapsed/distance/status change
+        // meaningfully.
         notificationJob?.cancel()
         notificationJob = scope.launch {
             session.state
                 .map { state ->
-                    Triple(
+                    listOf(
                         state.activityType,
-                        (state.elapsedMs / 1_000).toInt(),      // 1-second grain
-                        (state.distanceMeters / 10.0).toInt(),  // 10-metre grain
+                        state.status,
+                        state.elapsedMs / 1_000,          // 1-second grain
+                        (state.distanceMeters / 10.0).toLong(), // 10-metre grain
                     )
                 }
                 .distinctUntilChanged()
-                .collect { _ ->
+                .collect {
                     val s = session.state.value
+                    if (s.status == TrackingState.Status.Idle) return@collect
                     val nm = getSystemService<NotificationManager>() ?: return@collect
                     nm.notify(
                         NOTIFICATION_ID,
-                        buildNotification(s.activityType, s.elapsedMs, s.distanceMeters),
+                        buildNotification(s.activityType, s.elapsedMs, s.distanceMeters, s.status),
                     )
                 }
         }
@@ -158,18 +203,20 @@ class LocationTrackingService : Service() {
 
     private fun handleStop() {
         session.stop()
-        locationJob?.cancel(); locationJob = null
-        tickerJob?.cancel(); tickerJob = null
-        notificationJob?.cancel(); notificationJob = null
+        stopJobs()
         releaseWakeLock()
         ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE)
         stopSelf()
     }
 
-    override fun onDestroy() {
+    private fun stopJobs() {
         locationJob?.cancel(); locationJob = null
         tickerJob?.cancel(); tickerJob = null
         notificationJob?.cancel(); notificationJob = null
+    }
+
+    override fun onDestroy() {
+        stopJobs()
         scope.cancel()
         releaseWakeLock()
         super.onDestroy()
@@ -199,11 +246,12 @@ class LocationTrackingService : Service() {
         activity: ActivityType,
         elapsedMs: Long,
         distanceM: Double,
-    ): android.app.Notification {
+        status: TrackingState.Status = TrackingState.Status.Tracking,
+    ): Notification {
         val title = getString(
-            when (activity) {
-                ActivityType.RUNNING -> R.string.tracking_notification_title_running
-                ActivityType.CYCLING -> R.string.tracking_notification_title_cycling
+            when {
+                status == TrackingState.Status.Paused -> R.string.tracking_notification_title_paused
+                activity == ActivityType.CYCLING -> R.string.tracking_notification_title_cycling
                 else -> R.string.tracking_notification_title_running
             }
         )
@@ -213,13 +261,10 @@ class LocationTrackingService : Service() {
             formatKm(distanceM),
         )
 
-        // Tapping the notification bounces back into the app. The actual
-        // live-tracking fragment destination is wired in Step 5 — until
-        // then, Launcher routes to Main which picks up the state flow.
+        // Tapping the notification opens the live tracking screen.
         val contentIntent = PendingIntent.getActivity(
             this, 0,
-            Intent(this, LauncherActivity::class.java)
-                .addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP),
+            MainActivity.openTrackingIntent(this),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
 
@@ -230,8 +275,10 @@ class LocationTrackingService : Service() {
             .setContentIntent(contentIntent)
             .setOngoing(true)
             .setOnlyAlertOnce(true)
+            .setSilent(true)
             .setPriority(NotificationCompat.PRIORITY_LOW)
-            .setCategory(NotificationCompat.CATEGORY_SERVICE)
+            .setCategory(NotificationCompat.CATEGORY_WORKOUT)
+            .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
             .build()
     }
 
@@ -245,12 +292,13 @@ class LocationTrackingService : Service() {
     }
 
     private fun formatKm(meters: Double): String =
-        "%.2f km".format(meters / 1000.0)
+        getString(R.string.tracking_notification_distance, meters / 1000.0)
 
     // -----------------------------------------------------------------
     // Wake lock
     // -----------------------------------------------------------------
 
+    @SuppressLint("WakelockTimeout")
     private fun acquireWakeLock() {
         if (wakeLock?.isHeld == true) return
         val pm = getSystemService<PowerManager>() ?: return
@@ -273,9 +321,10 @@ class LocationTrackingService : Service() {
         private const val NOTIFICATION_ID = 2024
         private const val CHANNEL_ID = "tracking"
 
+        /** Ignore cached fixes older than this (ms). */
+        private const val MAX_FIX_AGE_MS = 30_000L
+
         const val ACTION_START = "com.elijah.fitness.tracking.START"
-        const val ACTION_PAUSE = "com.elijah.fitness.tracking.PAUSE"
-        const val ACTION_RESUME = "com.elijah.fitness.tracking.RESUME"
         const val ACTION_STOP = "com.elijah.fitness.tracking.STOP"
         const val EXTRA_ACTIVITY_TYPE = "activityType"
 
@@ -284,13 +333,8 @@ class LocationTrackingService : Service() {
                 .setAction(ACTION_START)
                 .putExtra(EXTRA_ACTIVITY_TYPE, activityType.name)
 
-        fun pauseIntent(context: Context): Intent =
-            Intent(context, LocationTrackingService::class.java).setAction(ACTION_PAUSE)
-
-        fun resumeIntent(context: Context): Intent =
-            Intent(context, LocationTrackingService::class.java).setAction(ACTION_RESUME)
-
-        fun stopIntent(context: Context): Intent =
-            Intent(context, LocationTrackingService::class.java).setAction(ACTION_STOP)
+        /** Plain component intent — use with `Context.stopService`. */
+        fun serviceIntent(context: Context): Intent =
+            Intent(context, LocationTrackingService::class.java)
     }
 }

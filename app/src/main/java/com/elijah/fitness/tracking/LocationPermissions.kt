@@ -55,6 +55,10 @@ object LocationPermissions {
             context, Manifest.permission.ACCESS_COARSE_LOCATION,
         ) == PackageManager.PERMISSION_GRANTED
 
+    /** Fine or coarse — either is enough to start the tracking service. */
+    fun hasAnyLocationPermission(context: Context): Boolean =
+        isFineGranted(context) || isCoarseGranted(context)
+
     fun outcome(context: Context): Outcome = when {
         isFineGranted(context) -> Outcome.FineGranted
         isCoarseGranted(context) -> Outcome.CoarseOnly

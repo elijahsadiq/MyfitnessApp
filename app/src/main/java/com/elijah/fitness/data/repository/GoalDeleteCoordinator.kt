@@ -97,6 +97,25 @@ class GoalDeleteCoordinator(
      * Snapshot of ids that are currently in the "pending delete" state.
      * Handy for tests that want to peek without subscribing.
      */
+    /**
+     * Sign-out: run every pending delete now instead of waiting out the
+     * Undo window (the token is about to be cleared, after which the
+     * DELETE could no longer be authorised).
+     */
+    suspend fun flushPending() {
+        pendingJobs.keys.toList().forEach { id ->
+            pendingJobs.remove(id)?.cancel()
+            runCatching { repository.deleteGoal(id) }
+        }
+        _hiddenIds.value = emptySet()
+    }
+
+    /** Drop every pending delete without sending it (session already invalid). */
+    fun cancelAll() {
+        pendingJobs.keys.toList().forEach { id -> pendingJobs.remove(id)?.cancel() }
+        _hiddenIds.value = emptySet()
+    }
+
     fun pending(): Set<String> = pendingJobs.keys.toSet()
 
     /**

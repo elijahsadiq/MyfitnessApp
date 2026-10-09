@@ -4,8 +4,6 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
 import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
 import com.elijah.fitness.FitnessApp
@@ -50,21 +48,17 @@ class FullScreenMapFragment : BaseFragment<FragmentFullScreenMapBinding>() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        // Edge-to-edge: push the close button below the status bar.
-        val closeTop = binding.fullMapCloseButton.marginTop
-        ViewCompat.setOnApplyWindowInsetsListener(binding.fullMapCloseButton) { v, insets ->
-            val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            v.updateMargin(top = closeTop + bars.top)
-            WindowInsetsCompat.CONSUMED
-        }
-        ViewCompat.requestApplyInsets(binding.fullMapCloseButton)
+        // Edge-to-edge: the overlay (close button + OSM credit) clears the
+        // status bar on top and the navigation bar at the bottom. The
+        // overlay itself never takes touches, so the map stays pannable.
+        applySystemBarInsets(binding.fullMapOverlay)
 
         DarkMapStyler.apply(binding.mapView, requireContext())
         binding.mapView.controller.setZoom(14.0)
         mapCamera = MapCameraController(binding.mapView)
         routeRenderer = RoutePolylineRenderer(binding.mapView)
 
-        binding.fullMapCloseButton.setOnClickListener { findNavController().popBackStack() }
+        binding.fullMapCloseButton.setOnClickListener { findNavController().navigateUp() }
 
         collectOnStart(viewModel.state) { state ->
             if (state is WorkoutDetailViewModel.State.Loaded) renderRoute(state.detail)
@@ -92,16 +86,6 @@ class FullScreenMapFragment : BaseFragment<FragmentFullScreenMapBinding>() {
         if (detail.routePoints.isEmpty()) return
         routeRenderer?.render(detail.routePoints)
         mapCamera?.fitRouteToView(detail.routePoints, padFraction = 0.15)
-    }
-
-    private val View.marginTop: Int
-        get() = (layoutParams as? ViewGroup.MarginLayoutParams)?.topMargin ?: 0
-
-    private fun View.updateMargin(top: Int) {
-        (layoutParams as? ViewGroup.MarginLayoutParams)?.let {
-            it.topMargin = top
-            layoutParams = it
-        }
     }
 
     companion object {

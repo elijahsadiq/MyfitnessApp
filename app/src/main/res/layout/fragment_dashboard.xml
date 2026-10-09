@@ -1,5 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout
+<!--
+  Home. Viewing area on top (header, week strip, this week's numbers),
+  the one big action — Start workout — in the lower half within thumb
+  reach. The header uses the shared Widget.Fitness.ScreenHeader style so
+  its title sits at exactly the same height on every tab.
+-->
+<FrameLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
@@ -8,104 +14,83 @@
     android:background="@color/background_warm"
     tools:context=".ui.dashboard.DashboardFragment">
 
-    <com.google.android.material.progressindicator.LinearProgressIndicator
-        android:id="@+id/loadingBar"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:indeterminate="true"
-        android:visibility="gone"
-        app:indicatorColor="@color/text_primary"
-        app:layout_constraintTop_toTopOf="parent"
-        app:trackColor="@color/surface_container_high"
-        tools:visibility="visible" />
-
     <androidx.core.widget.NestedScrollView
         android:id="@+id/dashboardScroll"
         android:layout_width="match_parent"
-        android:layout_height="0dp"
+        android:layout_height="match_parent"
         android:clipToPadding="false"
-        android:paddingBottom="@dimen/bottom_nav_height_plus_breathing_room"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/loadingBar">
+        android:paddingBottom="@dimen/space_xl">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:paddingTop="@dimen/space_xl">
+            android:orientation="vertical">
 
-            <!-- Greeting header + streak pill + avatar -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
-                android:paddingHorizontal="@dimen/screen_margin">
+            <!-- Header: title + streak pill + profile avatar. A packed chain
+                 lets the title ellipsize before anything overlaps on small
+                 phones with a large font. -->
+            <androidx.constraintlayout.widget.ConstraintLayout
+                style="@style/Widget.Fitness.ScreenHeader">
 
-                <LinearLayout
-                    android:layout_width="0dp"
+                <TextView
+                    android:id="@+id/homeTitle"
+                    style="@style/Widget.Fitness.ScreenTitle"
+                    android:layout_width="wrap_content"
+                    android:text="@string/home_headline"
+                    app:layout_constrainedWidth="true"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toStartOf="@id/streakPill"
+                    app:layout_constraintHorizontal_bias="0"
+                    app:layout_constraintHorizontal_chainStyle="packed"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
+
+                <TextView
+                    android:id="@+id/streakPill"
+                    style="@style/TextAppearance.Fitness.LabelMd"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
-
-                    <TextView
-                        android:id="@+id/greetingCaption"
-                        style="@style/TextAppearance.Fitness.LabelMd"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/home_greeting_caption"
-                        android:textAllCaps="false"
-                        android:textColor="@color/text_secondary" />
-
-                    <LinearLayout
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="2dp"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal">
-
-                        <TextView
-                            style="@style/TextAppearance.Fitness.HeadlineLg"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="@string/home_headline" />
-
-                        <TextView
-                            android:id="@+id/streakPill"
-                            style="@style/TextAppearance.Fitness.LabelSm"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginStart="@dimen/space_sm"
-                            android:background="@drawable/bg_streak_pill"
-                            android:paddingHorizontal="10dp"
-                            android:paddingVertical="4dp"
-                            android:textAllCaps="false"
-                            android:textColor="@color/text_primary"
-                            tools:text="4-day streak" />
-                    </LinearLayout>
-                </LinearLayout>
+                    android:layout_marginStart="@dimen/space_sm"
+                    android:layout_marginEnd="@dimen/space_sm"
+                    android:background="@drawable/bg_streak_pill"
+                    android:maxLines="1"
+                    android:paddingHorizontal="10dp"
+                    android:paddingVertical="4dp"
+                    android:textColor="@color/text_primary"
+                    android:visibility="gone"
+                    app:layout_constrainedWidth="true"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toStartOf="@id/avatar"
+                    app:layout_constraintStart_toEndOf="@id/homeTitle"
+                    app:layout_constraintTop_toTopOf="parent"
+                    tools:text="4-day streak"
+                    tools:visibility="visible" />
 
                 <ImageView
                     android:id="@+id/avatar"
-                    android:layout_width="44dp"
-                    android:layout_height="44dp"
+                    android:layout_width="@dimen/touch_target_min"
+                    android:layout_height="@dimen/touch_target_min"
                     android:background="@drawable/bg_home_avatar"
                     android:clickable="true"
                     android:contentDescription="@string/home_avatar_content_description"
                     android:focusable="true"
-                    android:padding="10dp"
+                    android:foreground="?attr/selectableItemBackgroundBorderless"
+                    android:padding="12dp"
                     android:src="@drawable/ic_person_24"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"
                     app:tint="@color/text_secondary" />
-            </LinearLayout>
+            </androidx.constraintlayout.widget.ConstraintLayout>
 
             <!-- Week strip -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginHorizontal="@dimen/screen_margin"
-                android:layout_marginTop="@dimen/space_xl"
+                android:layout_marginTop="@dimen/space_lg"
                 app:cardBackgroundColor="@color/surface_white"
-                app:cardCornerRadius="20dp"
+                app:cardCornerRadius="@dimen/radius_row"
                 app:cardElevation="0dp"
                 app:strokeColor="@color/divider"
                 app:strokeWidth="@dimen/stroke_hairline">
@@ -122,11 +107,11 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginHorizontal="@dimen/screen_margin"
-                android:layout_marginTop="@dimen/space_xl"
+                android:layout_marginTop="@dimen/space_lg"
                 app:cardBackgroundColor="@color/surface_dark"
                 app:cardCornerRadius="@dimen/radius_card"
                 app:cardElevation="0dp"
-                app:contentPadding="@dimen/space_xl">
+                app:contentPadding="@dimen/card_padding_lg">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -158,29 +143,35 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:layout_marginTop="2dp"
-                                android:textAllCaps="false"
                                 android:textColor="@color/text_on_dark_muted"
-                                tools:text="3 of 4 workouts completed" />
+                                tools:text="3 of 4 workouts done" />
                         </LinearLayout>
 
                         <FrameLayout
                             android:layout_width="56dp"
-                            android:layout_height="56dp">
+                            android:layout_height="56dp"
+                            android:layout_marginStart="@dimen/space_md">
 
                             <com.elijah.fitness.ui.dashboard.ProgressRingView
                                 android:id="@+id/progressRing"
                                 android:layout_width="match_parent"
                                 android:layout_height="match_parent" />
 
+                            <!-- Sized to the ring's hole; shrinks with large fonts. -->
                             <TextView
                                 android:id="@+id/progressRingLabel"
                                 style="@style/TextAppearance.Fitness.LabelMd"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
+                                android:layout_width="40dp"
+                                android:layout_height="22dp"
                                 android:layout_gravity="center"
-                                android:textAllCaps="false"
+                                android:gravity="center"
+                                android:includeFontPadding="false"
+                                android:maxLines="1"
                                 android:textColor="@color/text_on_dark"
                                 android:textStyle="bold"
+                                app:autoSizeMaxTextSize="13sp"
+                                app:autoSizeMinTextSize="8sp"
+                                app:autoSizeTextType="uniform"
                                 tools:text="75%" />
                         </FrameLayout>
                     </LinearLayout>
@@ -190,6 +181,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="@dimen/space_lg"
+                        android:baselineAligned="false"
                         android:orientation="horizontal">
 
                         <LinearLayout
@@ -202,39 +194,20 @@
                                 style="@style/TextAppearance.Fitness.LabelSm"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
+                                android:maxLines="1"
                                 android:text="@string/home_metric_sessions"
                                 android:textColor="@color/text_on_dark_muted" />
 
-                            <LinearLayout
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="2dp"
-                                android:baselineAligned="true"
-                                android:gravity="bottom"
-                                android:orientation="horizontal">
-
-                                <TextView
-                                    android:id="@+id/metricSessions"
-                                    style="@style/TextAppearance.Fitness.DisplayMetric"
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:textColor="@color/text_on_dark"
-                                    tools:text="3" />
-
-                                <TextView
-                                    style="@style/TextAppearance.Fitness.LabelMd"
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:layout_marginStart="6dp"
-                                    android:layout_marginBottom="6dp"
-                                    android:text="@string/home_metric_sessions_unit"
-                                    android:textColor="@color/text_on_dark_muted" />
-                            </LinearLayout>
+                            <TextView
+                                android:id="@+id/metricSessions"
+                                style="@style/Widget.Fitness.HeroMetricValue"
+                                tools:text="3 workouts" />
                         </LinearLayout>
 
                         <LinearLayout
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
+                            android:layout_marginStart="@dimen/space_md"
                             android:layout_weight="1"
                             android:orientation="vertical">
 
@@ -242,34 +215,14 @@
                                 style="@style/TextAppearance.Fitness.LabelSm"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
+                                android:maxLines="1"
                                 android:text="@string/home_metric_active_time"
                                 android:textColor="@color/text_on_dark_muted" />
 
-                            <LinearLayout
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="2dp"
-                                android:baselineAligned="true"
-                                android:gravity="bottom"
-                                android:orientation="horizontal">
-
-                                <TextView
-                                    android:id="@+id/metricMinutes"
-                                    style="@style/TextAppearance.Fitness.DisplayMetric"
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:textColor="@color/text_on_dark"
-                                    tools:text="142" />
-
-                                <TextView
-                                    style="@style/TextAppearance.Fitness.LabelMd"
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:layout_marginStart="6dp"
-                                    android:layout_marginBottom="6dp"
-                                    android:text="@string/home_metric_minutes_unit"
-                                    android:textColor="@color/text_on_dark_muted" />
-                            </LinearLayout>
+                            <TextView
+                                android:id="@+id/metricMinutes"
+                                style="@style/Widget.Fitness.HeroMetricValue"
+                                tools:text="142 min" />
                         </LinearLayout>
                     </LinearLayout>
 
@@ -278,6 +231,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="@dimen/space_md"
+                        android:baselineAligned="false"
                         android:orientation="horizontal">
 
                         <LinearLayout
@@ -290,39 +244,20 @@
                                 style="@style/TextAppearance.Fitness.LabelSm"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
+                                android:maxLines="1"
                                 android:text="@string/home_metric_distance"
                                 android:textColor="@color/text_on_dark_muted" />
 
-                            <LinearLayout
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="2dp"
-                                android:baselineAligned="true"
-                                android:gravity="bottom"
-                                android:orientation="horizontal">
-
-                                <TextView
-                                    android:id="@+id/metricDistance"
-                                    style="@style/TextAppearance.Fitness.DisplayMetric"
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:textColor="@color/text_on_dark"
-                                    tools:text="18.4" />
-
-                                <TextView
-                                    style="@style/TextAppearance.Fitness.LabelMd"
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:layout_marginStart="6dp"
-                                    android:layout_marginBottom="6dp"
-                                    android:text="@string/home_metric_distance_unit"
-                                    android:textColor="@color/text_on_dark_muted" />
-                            </LinearLayout>
+                            <TextView
+                                android:id="@+id/metricDistance"
+                                style="@style/Widget.Fitness.HeroMetricValue"
+                                tools:text="18.4 km" />
                         </LinearLayout>
 
                         <LinearLayout
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
+                            android:layout_marginStart="@dimen/space_md"
                             android:layout_weight="1"
                             android:orientation="vertical">
 
@@ -330,34 +265,14 @@
                                 style="@style/TextAppearance.Fitness.LabelSm"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
+                                android:maxLines="1"
                                 android:text="@string/home_metric_calories"
                                 android:textColor="@color/text_on_dark_muted" />
 
-                            <LinearLayout
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="2dp"
-                                android:baselineAligned="true"
-                                android:gravity="bottom"
-                                android:orientation="horizontal">
-
-                                <TextView
-                                    android:id="@+id/metricCalories"
-                                    style="@style/TextAppearance.Fitness.DisplayMetric"
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:textColor="@color/text_on_dark"
-                                    tools:text="2 148" />
-
-                                <TextView
-                                    style="@style/TextAppearance.Fitness.LabelMd"
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:layout_marginStart="6dp"
-                                    android:layout_marginBottom="6dp"
-                                    android:text="@string/home_metric_calories_unit"
-                                    android:textColor="@color/text_on_dark_muted" />
-                            </LinearLayout>
+                            <TextView
+                                android:id="@+id/metricCalories"
+                                style="@style/Widget.Fitness.HeroMetricValue"
+                                tools:text="2148 kcal" />
                         </LinearLayout>
                     </LinearLayout>
 
@@ -366,7 +281,7 @@
                         style="@style/Widget.Fitness.Button.Primary"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="@dimen/space_lg"
+                        android:layout_marginTop="@dimen/space_xl"
                         android:text="@string/home_start_workout"
                         app:icon="@drawable/ic_play_arrow_24"
                         app:iconGravity="textStart" />
@@ -382,7 +297,7 @@
                 app:cardBackgroundColor="@color/surface_white"
                 app:cardCornerRadius="@dimen/radius_card"
                 app:cardElevation="0dp"
-                app:contentPadding="@dimen/space_lg"
+                app:contentPadding="@dimen/card_padding"
                 app:strokeColor="@color/divider"
                 app:strokeWidth="@dimen/stroke_hairline">
 
@@ -393,8 +308,8 @@
                     android:orientation="horizontal">
 
                     <ImageView
-                        android:layout_width="44dp"
-                        android:layout_height="44dp"
+                        android:layout_width="@dimen/icon_tile_size"
+                        android:layout_height="@dimen/icon_tile_size"
                         android:background="@drawable/bg_home_insight_tile"
                         android:contentDescription="@null"
                         android:padding="10dp"
@@ -411,7 +326,12 @@
                         android:text="@string/home_insight_body" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
-
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
-</androidx.constraintlayout.widget.ConstraintLayout>
+
+    <!-- Overlaid (not stacked) so showing it never shifts the content. -->
+    <com.google.android.material.progressindicator.LinearProgressIndicator
+        android:id="@+id/loadingBar"
+        style="@style/Widget.Fitness.TopLoadingBar"
+        tools:visibility="visible" />
+</FrameLayout>
