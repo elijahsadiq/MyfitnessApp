@@ -46,7 +46,7 @@ class RemoteWorkoutRepository(
 
     override fun observeWorkouts(): Flow<List<Workout>> = _workouts.asStateFlow()
 
-    override fun clearCache() {
+    override suspend fun clearCache() {
         serverIds.clear()
         _workouts.value = emptyList()
     }

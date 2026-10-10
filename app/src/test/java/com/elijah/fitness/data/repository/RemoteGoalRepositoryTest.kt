@@ -1,5 +1,7 @@
 package com.elijah.fitness.data.repository
 
+import com.elijah.fitness.data.local.db.CachedGoalEntity
+import com.elijah.fitness.data.local.db.GoalCacheDao
 import com.elijah.fitness.data.model.ActivityType
 import com.elijah.fitness.data.model.GoalType
 import com.elijah.fitness.data.remote.ApiResult
@@ -187,7 +189,51 @@ class RemoteGoalRepositoryTest {
         assertEquals(listOf("1"), repo.observeGoals().first().map { it.id })
     }
 
+    @Test
+    fun `a cold start with no connection shows the goals cached last time`() = runTest {
+        val cache = FakeGoalCacheDao()
+        val api = FakeGoalApi()
+        api.listResponse = Response.success(
+            ApiEnvelope(success = true, data = listOf(dtoWithId(id = 1L), dtoWithId(id = 2L, isMain = true)))
+        )
+        RemoteGoalRepository(api, cache).refresh()
+
+        // Next launch: the server can't be reached.
+        val offlineApi = FakeGoalApi()
+        offlineApi.listResponse = Response.error(503, "".toResponseBody("application/json".toMediaType()))
+        val repo = RemoteGoalRepository(offlineApi, cache)
+
+        val result = repo.refresh()
+        assertTrue(result is ApiResult.Error)
+        val goals = repo.observeGoals().first()
+        assertEquals(setOf("1", "2"), goals.map { it.id }.toSet())
+        assertTrue(goals.first { it.id == "2" }.isMain)
+    }
+
+    @Test
+    fun `clearCache empties the cached goals too`() = runTest {
+        val cache = FakeGoalCacheDao()
+        val api = FakeGoalApi()
+        api.listResponse = Response.success(ApiEnvelope(success = true, data = listOf(dtoWithId(id = 1L))))
+        val repo = RemoteGoalRepository(api, cache)
+        repo.refresh()
+
+        repo.clearCache()
+
+        assertTrue(cache.all().isEmpty())
+        assertTrue(repo.observeGoals().first().isEmpty())
+    }
+
     // ---------- helpers ----------
+
+    private class FakeGoalCacheDao : GoalCacheDao() {
+        private val rows = linkedMapOf<Long, CachedGoalEntity>()
+        override suspend fun all(): List<CachedGoalEntity> = rows.values.toList()
+        override suspend fun insertAll(rows: List<CachedGoalEntity>) {
+            rows.forEach { this.rows[it.id] = it }
+        }
+        override suspend fun clear() = rows.clear()
+    }
 
     private fun dtoWithId(
         id: Long,

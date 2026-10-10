@@ -76,6 +76,22 @@
                         android:maxLines="1"
                         android:textColor="@color/text_secondary"
                         tools:text="Today, Wed 7 Oct · 06:30" />
+
+                    <!-- Phase 10: shown while this workout waits to upload. -->
+                    <TextView
+                        android:id="@+id/detailSyncPending"
+                        style="@style/TextAppearance.Fitness.LabelMd"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/space_xs"
+                        android:drawablePadding="@dimen/space_xs"
+                        android:gravity="center_vertical"
+                        android:text="@string/sync_not_synced"
+                        android:textColor="@color/text_secondary"
+                        android:visibility="gone"
+                        app:drawableStartCompat="@drawable/ic_cloud_off_16"
+                        app:drawableTint="@color/text_secondary"
+                        tools:visibility="visible" />
                 </LinearLayout>
 
                 <ImageView

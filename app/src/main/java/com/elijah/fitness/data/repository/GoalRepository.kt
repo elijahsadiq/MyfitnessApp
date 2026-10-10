@@ -78,5 +78,5 @@ interface GoalRepository {
     suspend fun extendGoal(id: String, days: Int): ApiResult<Unit>
 
     /** Forget every cached goal (sign-out). */
-    fun clearCache() {}
+    suspend fun clearCache() {}
 }

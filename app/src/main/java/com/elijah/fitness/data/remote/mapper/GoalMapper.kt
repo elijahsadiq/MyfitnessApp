@@ -100,3 +100,23 @@ fun Goal.goalType(): GoalType = when (this) {
     is StrengthVolumeGoal -> GoalType.VOLUME
     else -> error("Unknown Goal subclass: ${this::class.simpleName}")
 }
+
+/**
+ * Domain -> [GoalDto], for the on-phone goal cache. It's the inverse of
+ * [toDomain]; `updatedAt` isn't kept on the domain side, so it repeats
+ * `createdAt` (nothing reads it back).
+ */
+fun Goal.toCacheDto(): GoalDto = GoalDto(
+    id = id.toLong(),
+    title = title,
+    activityType = activityType?.name,
+    goalType = goalType().wire(),
+    targetValue = targetValue,
+    startDate = startDate.toString(),
+    lastDay = lastDay.toString(),
+    durationDays = durationDays,
+    isMain = isMain,
+    completedNotified = completedNotified,
+    createdAt = createdAt.toString(),
+    updatedAt = createdAt.toString(),
+)

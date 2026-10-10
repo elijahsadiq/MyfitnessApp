@@ -5,6 +5,7 @@ import com.elijah.fitness.data.local.DataStoreLastLoggedActivityStore
 import com.elijah.fitness.data.local.DataStoreOnboardingStore
 import com.elijah.fitness.data.local.LastLoggedActivityStore
 import com.elijah.fitness.data.local.OnboardingStore
+import com.elijah.fitness.data.local.db.FitnessDatabase
 import com.elijah.fitness.data.remote.AuthEventBus
 import com.elijah.fitness.data.remote.DataStoreTokenStore
 import com.elijah.fitness.data.remote.NetworkModule
@@ -17,6 +18,7 @@ import com.elijah.fitness.data.remote.api.WorkoutApi
 import com.elijah.fitness.data.repository.AuthRepository
 import com.elijah.fitness.data.repository.FakeWorkoutRepository
 import com.elijah.fitness.data.repository.GoalRepository
+import com.elijah.fitness.data.repository.OfflineFirstWorkoutRepository
 import com.elijah.fitness.data.repository.RemoteAuthRepository
 import com.elijah.fitness.data.repository.RemoteGoalRepository
 import com.elijah.fitness.data.repository.RemoteWorkoutRepository
@@ -24,6 +26,9 @@ import com.elijah.fitness.data.repository.UserSettings
 import com.elijah.fitness.data.repository.WorkoutRepository
 import com.elijah.fitness.data.repository.GoalDeleteCoordinator
 import com.elijah.fitness.data.repository.WorkoutDeleteCoordinator
+import com.elijah.fitness.data.sync.NetworkStatus
+import com.elijah.fitness.data.sync.SyncScheduler
+import com.elijah.fitness.data.sync.WorkManagerSyncScheduler
 import com.elijah.fitness.insights.InsightEngine
 import com.elijah.fitness.tracking.LocationTracker
 import com.elijah.fitness.tracking.LocationTrackingService
@@ -76,19 +81,32 @@ class AppContainer(applicationContext: Context) {
     // Domain surface.
     val userSettings: UserSettings = UserSettings()
 
-    /**
-     * Real API-backed repository. To develop offline, swap in
-     * `FakeWorkoutRepository()` here — every screen still compiles and
-     * runs unchanged because they only depend on [WorkoutRepository].
-     */
-    val workoutRepository: WorkoutRepository = RemoteWorkoutRepository(workoutApi)
+    // Phase 10 — offline store and background sync.
+    val database: FitnessDatabase = FitnessDatabase.build(applicationContext)
+    val syncScheduler: SyncScheduler = WorkManagerSyncScheduler(applicationContext)
+    private val networkStatus = NetworkStatus(applicationContext)
 
     /**
-     * Real API-backed goal repository (phase 7 step 3). Same swap
-     * property as [workoutRepository] — a `FakeGoalRepository()` line
-     * makes the whole goals feature offline-friendly.
+     * Offline-first repository (phase 10): screens read the Room copy,
+     * writes land there first, and WorkManager uploads what was saved
+     * without a connection. It replaced [RemoteWorkoutRepository] with
+     * this one line; every screen still depends only on
+     * [WorkoutRepository]. `FakeWorkoutRepository()` still drops in here
+     * for UI work without a backend.
      */
-    val goalRepository: GoalRepository = RemoteGoalRepository(goalApi)
+    val workoutRepository: WorkoutRepository = OfflineFirstWorkoutRepository(
+        dao = database.workoutDao(),
+        api = workoutApi,
+        syncScheduler = syncScheduler,
+        scope = appScope,
+        isOnline = networkStatus::isOnline,
+    )
+
+    /**
+     * API-backed goal repository (phase 7 step 3) with a Room copy of
+     * the last list (phase 10), so goal progress still shows offline.
+     */
+    val goalRepository: GoalRepository = RemoteGoalRepository(goalApi, database.goalCacheDao())
 
     /**
      * Client-side progress calculation. Combines the goals stream and
@@ -169,11 +187,13 @@ class AppContainer(applicationContext: Context) {
 
     /**
      * "Log out" from Profile: send any swipe-deletes still waiting on
-     * their Undo window, tell the server, then sign out locally.
+     * their Undo window, upload workouts saved offline while the token
+     * still works, tell the server, then sign out locally.
      */
     suspend fun signOut(context: Context) {
         workoutDeleteCoordinator.flushPending()
         goalDeleteCoordinator.flushPending()
+        workoutRepository.syncPending()
         authRepository.logout()
         signOutLocally(context)
     }

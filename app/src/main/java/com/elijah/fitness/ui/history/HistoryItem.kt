@@ -16,5 +16,6 @@ sealed interface HistoryItem {
         val distanceMeters: Double,
     ) : HistoryItem
 
-    data class Row(val workout: Workout) : HistoryItem
+    /** [unsynced]: saved or edited offline, not on the server yet. */
+    data class Row(val workout: Workout, val unsynced: Boolean = false) : HistoryItem
 }

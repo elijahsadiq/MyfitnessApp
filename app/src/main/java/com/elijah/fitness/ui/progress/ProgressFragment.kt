@@ -69,8 +69,8 @@ class ProgressFragment : BaseFragment<FragmentProgressBinding>() {
         collectOnStart(viewModel.period) { syncPeriodButtons(it) }
         collectOnStart(viewModel.state) { render(it) }
         collectOnStart(viewModel.isLoading) { binding.progressLoadingBar.isVisible = it }
-        collectOnStart(viewModel.loadErrors) {
-            snackbar(R.string.workouts_error_load_failed)
+        collectOnStart(viewModel.loadErrors) { messageRes ->
+            snackbar(messageRes)
                 .setAction(R.string.workouts_retry) { viewModel.refresh() }
                 .show()
         }

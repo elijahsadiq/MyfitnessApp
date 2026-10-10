@@ -3,6 +3,7 @@ package com.elijah.fitness.ui.progress
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.elijah.fitness.R
 import com.elijah.fitness.AppContainer
 import com.elijah.fitness.analytics.ActivityFilter
 import com.elijah.fitness.analytics.AnalyticsPeriod
@@ -50,8 +51,9 @@ class ProgressViewModel(
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
     /** One-shot load failures — a Snackbar each, not a sticky flag. */
-    private val _loadErrors = Channel<Unit>(Channel.CONFLATED)
-    val loadErrors: Flow<Unit> = _loadErrors.receiveAsFlow()
+    /** Snackbar text for a failed refresh; offline keeps the saved data on screen. */
+    private val _loadErrors = Channel<Int>(Channel.CONFLATED)
+    val loadErrors: Flow<Int> = _loadErrors.receiveAsFlow()
 
     data class State(
         val periodBars: List<BarPoint>,
@@ -95,8 +97,8 @@ class ProgressViewModel(
             _isLoading.value = true
             when (container.workoutRepository.refresh()) {
                 is ApiResult.Success -> Unit
-                is ApiResult.Error,
-                ApiResult.NetworkError -> _loadErrors.trySend(Unit)
+                is ApiResult.Error -> _loadErrors.trySend(R.string.workouts_error_load_failed)
+                ApiResult.NetworkError -> _loadErrors.trySend(R.string.workouts_error_network)
             }
             _isLoading.value = false
         }

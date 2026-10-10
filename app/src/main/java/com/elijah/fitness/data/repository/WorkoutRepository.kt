@@ -5,15 +5,16 @@ import com.elijah.fitness.data.model.WorkoutDetail
 import com.elijah.fitness.data.remote.ApiResult
 import com.elijah.fitness.tracking.TrackPoint
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 
 /**
  * Read/write access to the user's workouts.
  *
  * The interface deliberately hides where data lives. Phase 1 used
  * `FakeWorkoutRepository` (in-memory); phase 2 swaps in
- * `RemoteWorkoutRepository` talking to the PHP API. Phase 4 will slot in
- * a Room cache and a WorkManager sync behind the same signature — the
- * ViewModels above never move.
+ * `RemoteWorkoutRepository` talking to the PHP API, and phase 10 slots in
+ * `OfflineFirstWorkoutRepository` (Room cache + WorkManager sync) behind
+ * the same signature. The ViewModels above never moved.
  *
  * Phase-2 additions:
  *  - [refresh] triggers a network fetch and returns an [ApiResult] so the
@@ -77,8 +78,22 @@ interface WorkoutRepository {
     suspend fun updateNotes(clientUuid: String, notes: String?): ApiResult<Workout>
 
     /**
+     * Ids of workouts saved or edited on this phone whose latest version
+     * hasn't reached the server yet. Screens use it for the "Not synced"
+     * marker. Implementations without an offline store have none.
+     */
+    fun observeUnsyncedIds(): Flow<Set<String>> = flowOf(emptySet())
+
+    /**
+     * Upload every change made on this phone that the server doesn't
+     * have yet. Returns [ApiResult.NetworkError] if the connection gave
+     * out, so the background job can retry later.
+     */
+    suspend fun syncPending(): ApiResult<Unit> = ApiResult.Success(Unit)
+
+    /**
      * Forget every cached workout. Called on sign-out so the next account
      * to sign in on this phone never sees the previous user's history.
      */
-    fun clearCache() {}
+    suspend fun clearCache() {}
 }

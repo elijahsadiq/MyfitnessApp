@@ -144,6 +144,7 @@
 
     <!-- Empty / error / loading -->
     <string name="goals_error_load_failed">Couldn\'t load your goals.</string>
+    <string name="goals_error_offline">Offline. Showing saved goals.</string>
     <string name="goals_retry">Retry</string>
 
     <!-- Empty state hero card (phase 8b step 8) -->
@@ -370,9 +371,12 @@
     <string name="profile_bmi_missing">Add your height to see BMI.</string>
 
     <!-- Loading + retry (used by History + Dashboard + log fragments) -->
-    <string name="workouts_error_network">Can\'t reach the server. Check your connection.</string>
+    <string name="workouts_error_network">Offline. Showing saved workouts.</string>
     <string name="workouts_error_load_failed">Couldn\'t load your workouts.</string>
     <string name="workouts_retry">Retry</string>
+    <!-- Phase 10: a workout saved or edited offline, not uploaded yet. -->
+    <string name="sync_not_synced">Not synced yet</string>
+    <string name="history_row_unsynced_description">%1$s, %2$s</string>
     <string name="log_error_save_network">Couldn\'t save — check your connection.</string>
     <string name="log_error_save_generic">Couldn\'t save your workout.</string>
     <string name="log_error_save_retry">Retry</string>

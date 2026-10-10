@@ -2,7 +2,9 @@ package com.elijah.fitness.ui.history
 
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import android.widget.TextView
 import androidx.core.content.ContextCompat
+import androidx.core.widget.TextViewCompat
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
@@ -63,8 +65,14 @@ class WorkoutAdapter(
                 (holder as SectionHeaderViewHolder).bind(item)
             is HistoryItem.Row -> {
                 when (holder) {
-                    is DistanceWorkoutViewHolder -> holder.bind(item.workout as DistanceWorkout)
-                    is StrengthWorkoutViewHolder -> holder.bind(item.workout as StrengthWorkout)
+                    is DistanceWorkoutViewHolder -> {
+                        holder.bind(item.workout as DistanceWorkout)
+                        holder.showUnsynced(item.unsynced)
+                    }
+                    is StrengthWorkoutViewHolder -> {
+                        holder.bind(item.workout as StrengthWorkout)
+                        holder.showUnsynced(item.unsynced)
+                    }
                 }
                 holder.itemView.setOnClickListener { onRowClick(item.workout) }
             }
@@ -149,6 +157,8 @@ class DistanceWorkoutViewHolder(
             else -> ""
         }
     }
+
+    fun showUnsynced(unsynced: Boolean) = binding.distanceAndDuration.markUnsynced(unsynced)
 }
 
 class StrengthWorkoutViewHolder(
@@ -176,5 +186,26 @@ class StrengthWorkoutViewHolder(
             R.string.history_row_total_volume,
             item.totalVolumeKg(),
         )
+    }
+
+    fun showUnsynced(unsynced: Boolean) = binding.strengthSummary.markUnsynced(unsynced)
+}
+
+/**
+ * Phase 10: a small cloud-off icon in front of the row's second line for
+ * a workout that hasn't reached the server. The icon isn't read out, so
+ * the line's content description says it in words.
+ */
+private fun TextView.markUnsynced(unsynced: Boolean) {
+    val icon = if (unsynced) ContextCompat.getDrawable(context, R.drawable.ic_cloud_off_16) else null
+    setCompoundDrawablesRelativeWithIntrinsicBounds(icon, null, null, null)
+    compoundDrawablePadding = resources.getDimensionPixelSize(R.dimen.space_xs)
+    TextViewCompat.setCompoundDrawableTintList(
+        this, ContextCompat.getColorStateList(context, R.color.text_secondary),
+    )
+    contentDescription = if (unsynced) {
+        context.getString(R.string.history_row_unsynced_description, text, context.getString(R.string.sync_not_synced))
+    } else {
+        null
     }
 }

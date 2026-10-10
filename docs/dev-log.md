@@ -2758,3 +2758,133 @@ user.
 - **LO3 / LO5 (database + security):** managed MySQL over verified TLS,
   credentials only in environment variables, and photos kept out of the
   web root.
+
+---
+
+## Phase 10 — Step 1: Offline logging + background sync (Room + WorkManager)
+
+**Goal**
+Close the "offline sync is not implemented" limitation the report's
+Task 1a has to discuss: log a workout with no connection, see it on
+every screen straight away, and have it upload by itself once the
+phone is back online, even if the app was closed in between.
+
+**Built**
+- **Dependencies** (approved by the user): Room 2.8.5 (`room-runtime`,
+  `room-ktx`, `room-compiler` through KSP 2.3.12) and WorkManager
+  2.11.2. KSP 2.3.x is the line that runs on AGP 9's built-in Kotlin;
+  the first build confirmed it.
+- **`data/local/db/`** — the on-phone database (`fitness.db`):
+  - `workouts`, `strength_sets`, `route_points` mirror the server's
+    tables, plus sync bookkeeping on each workout: `syncState`
+    (`SYNCED` / `PENDING_CREATE` / `PENDING_UPDATE` / `PENDING_DELETE`),
+    `serverId`, `routeCached`, `localVersion`, `uploadAttempted`.
+  - `cached_goals` keeps the last goal list (one JSON `GoalDto` per row).
+  - `WorkoutDao` is an abstract class so the multi-step writes
+    (`save`, `remove`, `mergeServer`) are `@Transaction` methods.
+    Writes use `@Upsert`: `INSERT OR REPLACE` deletes the old row first
+    and the foreign-key cascade would take its sets and route with it.
+- **`OfflineFirstWorkoutRepository`** replaces `RemoteWorkoutRepository`
+  in `AppContainer` (one line). Every screen still depends only on
+  `WorkoutRepository`:
+  - Save / edit notes / delete write to Room first, so they work
+    offline and the UI updates at once. An upload is attempted
+    straight away (up to 6 s); otherwise WorkManager takes over.
+  - `refresh()` uploads pending changes, then merges the server list:
+    synced rows deleted elsewhere go, pending rows are never
+    overwritten.
+  - `getWorkoutDetail()` reads the route from Room (every workout
+    tracked on the phone, any synced one opened before), else fetches
+    it once and caches it. Offline with nothing cached, the workout
+    still opens without its map.
+- **`data/sync/`**:
+  - `WorkoutSyncWorker` (`CoroutineWorker`) calls `syncPending()`.
+  - `WorkManagerSyncScheduler` enqueues it as unique work with a
+    `NetworkType.CONNECTED` constraint, exponential back-off from 30 s
+    and `APPEND_OR_REPLACE`, so a save made mid-sync gets its own pass.
+  - `NetworkStatus` checks for an internet-capable network before an
+    upload (new `ACCESS_NETWORK_STATE` permission).
+- **`RemoteGoalRepository`** writes every confirmed list to
+  `cached_goals` and reads it back on a cold start. Goal progress is
+  computed on the phone, so a run logged offline still moves its goal.
+  Creating or editing a goal still needs a connection.
+- **UI**:
+  - History rows of unsynced workouts show a cloud-off icon in front
+    of the second line (`ic_cloud_off_16`), with the words in the
+    content description.
+  - The workout detail screen shows "Not synced yet" under the date
+    until the upload lands.
+  - An offline refresh says "Offline. Showing saved workouts." (Home,
+    History, Progress) or "Offline. Showing saved goals." instead of an
+    error.
+- **Sign-out** uploads pending workouts first (`AppContainer.signOut`)
+  while the token still works, then clears Room with the other caches.
+
+**Key design decision — no duplicates, no lost edits**
+- Every workout carries its phone-generated `clientUuid`, and the
+  server's `POST /workouts` already returns the existing row for a
+  uuid it has. A retry after a lost reply can't create a second copy.
+- Local writes must be instant, so they don't take the sync lock.
+  Each one bumps `localVersion`; an upload only marks a row `SYNCED`
+  if the version it sent is still current. A notes edit made while
+  the POST is in flight stays pending and is PATCHed on the next pass.
+- Everything that talks to the server holds one `Mutex`, so a
+  refresh's merge can never run between an upload and its "synced"
+  mark (which would delete the new row as "gone from the server").
+- A deleted row that was never sent is just dropped. One whose POST
+  was sent but unanswered is re-POSTed (idempotent) to learn its
+  server id, then DELETEd, so it can't come back on the next refresh.
+
+**Rejected alternative — a JSON file cache in DataStore**
+No new library, but every change rewrites the whole list, there are
+no transactions across a workout and its route, and the report's
+"Room + WorkManager" design (already named in the README's roadmap)
+would still be missing.
+
+**Rejected alternative — returning "saved offline" as an error**
+Keeping `ApiResult.NetworkError` from `addWorkout` would have left
+the three save screens unchanged, but the form would stay open with a
+Retry for something that was in fact saved. The save now always
+succeeds; the "Not synced yet" marker is the honest signal.
+
+**Known limits**
+- A workout the server rejects outright (a 4xx other than 401/404)
+  stays pending. The forms validate the same rules first, so this
+  shouldn't happen in practice.
+- Goals are read-only offline.
+- `exportSchema = false` for this first version; a schema change will
+  need a Room migration.
+
+**Kotlin / Android concepts** *(for my notes)*
+- *Room:* an SQLite library. You declare tables as `@Entity` data
+  classes and queries as `@Query` methods; KSP generates the code at
+  build time (like an ORM whose SQL is checked when you compile).
+- *`Flow` from a DAO:* Room re-runs the query and emits a new list
+  whenever the table changes, so screens update with no manual refresh.
+- *WorkManager:* a job queue the OS honours across restarts and
+  reboots. Constraints such as "network connected" decide when a job
+  may start.
+- *`Mutex`:* a coroutine lock (like `asyncio.Lock`); `withLock { }`
+  runs the block while holding it.
+
+**Verified**
+- `./gradlew assembleLocalDebug`: BUILD SUCCESSFUL.
+- `./gradlew testLocalDebugUnitTest`: **253 tests, 0 failures**
+  (16 new): 14 in `OfflineFirstWorkoutRepositoryTest` (offline save,
+  sync on reconnect, lost reply → one copy, delete before/after
+  upload, offline notes edit, edit during upload, refresh merge,
+  offline refresh, offline route, route cached once, rejected row,
+  clearCache) and 2 goal-cache cases in `RemoteGoalRepositoryTest`.
+- Emulator (local Docker backend, test account): airplane mode on →
+  History shows the saved list with "Offline. Showing saved
+  workouts." → log a 4.2 km run → detail shows "Not synced yet",
+  History row shows the cloud-off icon, no server row → airplane mode
+  off → the row reached MySQL within about 6 s and the markers went
+  away. Then an offline delete of that run: hidden at once, server row
+  deleted within about 6 s of reconnecting.
+
+**Assignment task supported**
+- **Task 1a (offline accessibility + sync):** the app now does what
+  the brief describes, so the report can explain the real mechanism.
+- **Task 3b (system architecture):** Room as the local source of
+  truth, WorkManager for deferred sync.

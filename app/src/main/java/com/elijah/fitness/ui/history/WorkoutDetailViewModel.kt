@@ -9,9 +9,12 @@ import com.elijah.fitness.data.remote.ApiResult
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 /**
@@ -49,6 +52,11 @@ class WorkoutDetailViewModel(
 
     private val _events = Channel<Event>(capacity = Channel.BUFFERED)
     val events: Flow<Event> = _events.receiveAsFlow()
+
+    /** True while this workout is saved on the phone but not on the server. */
+    val isUnsynced: StateFlow<Boolean> = container.workoutRepository.observeUnsyncedIds()
+        .map { clientUuid in it }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), false)
 
     init { load() }
 
@@ -96,6 +104,8 @@ class WorkoutDetailViewModel(
     }
 
     companion object {
+        private const val STOP_TIMEOUT_MS = 5_000L
+
         fun factory(container: AppContainer, clientUuid: String): ViewModelProvider.Factory =
             object : ViewModelProvider.Factory {
                 @Suppress("UNCHECKED_CAST")

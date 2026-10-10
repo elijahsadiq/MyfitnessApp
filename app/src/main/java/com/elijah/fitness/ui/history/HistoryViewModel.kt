@@ -101,8 +101,10 @@ class HistoryViewModel(
      * the RecyclerView adapter can render row-by-row. Two sections in
      * phase 2: "This week" and "Earlier".
      */
-    val sectioned: StateFlow<List<HistoryItem>> = filteredWorkouts
-        .map { workouts -> buildSections(workouts) }
+    val sectioned: StateFlow<List<HistoryItem>> = combine(
+        filteredWorkouts,
+        repository.observeUnsyncedIds(),
+    ) { workouts, unsynced -> buildSections(workouts, unsynced) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), emptyList())
 
     init { refresh() }
@@ -187,7 +189,7 @@ class HistoryViewModel(
         )
     }
 
-    private fun buildSections(workouts: List<Workout>): List<HistoryItem> {
+    private fun buildSections(workouts: List<Workout>, unsynced: Set<String>): List<HistoryItem> {
         if (workouts.isEmpty()) return emptyList()
         val today = LocalDate.ofInstant(clock.instant(), zone)
         val startOfWeek = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
@@ -201,7 +203,7 @@ class HistoryViewModel(
                 count = thisWeek.size,
                 distanceMeters = thisWeek.filterIsInstance<DistanceWorkout>().sumOf { it.distanceMeters },
             )
-            thisWeek.forEach { items += HistoryItem.Row(it) }
+            thisWeek.forEach { items += HistoryItem.Row(it, it.id in unsynced) }
         }
         if (earlier.isNotEmpty()) {
             items += HistoryItem.SectionHeader(
@@ -209,7 +211,7 @@ class HistoryViewModel(
                 count = earlier.size,
                 distanceMeters = earlier.filterIsInstance<DistanceWorkout>().sumOf { it.distanceMeters },
             )
-            earlier.forEach { items += HistoryItem.Row(it) }
+            earlier.forEach { items += HistoryItem.Row(it, it.id in unsynced) }
         }
         return items
     }

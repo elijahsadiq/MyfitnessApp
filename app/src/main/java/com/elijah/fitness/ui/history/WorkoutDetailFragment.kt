@@ -109,6 +109,7 @@ class WorkoutDetailFragment : BaseFragment<FragmentWorkoutDetailBinding>() {
 
         collectOnStart(viewModel.state) { render(it) }
         collectOnStart(viewModel.events) { onEvent(it) }
+        collectOnStart(viewModel.isUnsynced) { binding.detailSyncPending.isVisible = it }
     }
 
     override fun onResume() {

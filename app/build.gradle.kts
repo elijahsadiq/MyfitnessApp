@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.ksp)
 }
 
 android {
@@ -95,6 +96,12 @@ dependencies {
     // Coil for avatar display. Lightweight, Kotlin-first, uses OkHttp
     // under the hood (same client the API traffic goes through).
     implementation(libs.coil)
+    // Offline-first workouts: Room keeps them on the phone, WorkManager
+    // uploads the ones saved without a connection once it comes back.
+    implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.room.ktx)
+    ksp(libs.androidx.room.compiler)
+    implementation(libs.androidx.work.runtime.ktx)
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)

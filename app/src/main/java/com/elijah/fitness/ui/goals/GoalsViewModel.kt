@@ -86,7 +86,7 @@ class GoalsViewModel(
             when (goalRepository.refresh()) {
                 is ApiResult.Success -> Unit
                 ApiResult.NetworkError ->
-                    _errorEvents.send(ErrorEvent.Network(R.string.auth_error_network))
+                    _errorEvents.send(ErrorEvent.Network(R.string.goals_error_offline))
                 is ApiResult.Error ->
                     _errorEvents.send(ErrorEvent.Generic(R.string.goals_error_load_failed))
             }
