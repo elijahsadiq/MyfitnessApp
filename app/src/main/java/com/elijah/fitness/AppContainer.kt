@@ -30,12 +30,20 @@ import com.elijah.fitness.data.sync.NetworkStatus
 import com.elijah.fitness.data.sync.SyncScheduler
 import com.elijah.fitness.data.sync.WorkManagerSyncScheduler
 import com.elijah.fitness.insights.InsightEngine
+import com.elijah.fitness.notifications.AppNotifications
+import com.elijah.fitness.notifications.DailyReminderScheduler
+import com.elijah.fitness.notifications.DataStoreReminderSettingsStore
+import com.elijah.fitness.notifications.GoalAchievementNotifier
+import com.elijah.fitness.notifications.ReminderSettingsStore
 import com.elijah.fitness.tracking.LocationTracker
 import com.elijah.fitness.tracking.LocationTrackingService
 import com.elijah.fitness.tracking.TrackingSession
+import com.elijah.fitness.ui.goals.displayTitle
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
 /**
@@ -167,6 +175,23 @@ class AppContainer(applicationContext: Context) {
      */
     val insightEngine: InsightEngine = InsightEngine()
 
+    // -----------------------------------------------------------------
+    // Phase 10 — notifications (local, posted by the phone).
+    // -----------------------------------------------------------------
+    val reminderSettingsStore: ReminderSettingsStore =
+        DataStoreReminderSettingsStore(applicationContext)
+    val dailyReminderScheduler: DailyReminderScheduler = DailyReminderScheduler(applicationContext)
+
+    /** "Goal achieved" notifications; started by MainActivity once signed in. */
+    val goalAchievementNotifier: GoalAchievementNotifier = GoalAchievementNotifier(
+        calculator = goalProgressCalculator,
+        goalRepository = goalRepository,
+        alertsEnabled = reminderSettingsStore.settings.map { it.goalAlerts },
+        scope = appScope,
+        post = { id, title -> AppNotifications.showGoalAchieved(applicationContext, id, title) },
+        titleOf = { it.goal.displayTitle() },
+    )
+
     /**
      * Forget everything about the signed-in user on this device: stop a
      * GPS session, drop pending deletes, clear the cached workouts and
@@ -177,6 +202,9 @@ class AppContainer(applicationContext: Context) {
     suspend fun signOutLocally(context: Context) {
         context.stopService(LocationTrackingService.serviceIntent(context))
         trackingSession.reset()
+        goalAchievementNotifier.stop()
+        dailyReminderScheduler.cancel()
+        reminderSettingsStore.reset()
         workoutDeleteCoordinator.cancelAll()
         goalDeleteCoordinator.cancelAll()
         workoutRepository.clearCache()
@@ -205,6 +233,20 @@ class AppContainer(applicationContext: Context) {
      * the time the user taps Log in. Failures are ignored on purpose —
      * the real requests report their own errors.
      */
+    /**
+     * Called when the signed-in app opens: start goal alerts, load the
+     * latest goals for them, and re-book the daily reminder if it's on
+     * (re-booking keeps it at the chosen time after a time-zone change).
+     */
+    fun onSignedInStart() {
+        goalAchievementNotifier.start()
+        appScope.launch {
+            goalRepository.refresh()
+            val settings = reminderSettingsStore.settings.first()
+            if (settings.dailyReminder) dailyReminderScheduler.schedule(settings.reminderTime)
+        }
+    }
+
     fun wakeUpServer() {
         appScope.launch {
             runCatching { authApi.health() }

@@ -38,4 +38,14 @@
         <item quantity="one">set</item>
         <item quantity="other">sets</item>
     </plurals>
+
+    <!-- Phase 10 -->
+    <plurals name="reminder_body_week">
+        <item quantity="one">%d workout this week so far. Log today\'s to keep going.</item>
+        <item quantity="other">%d workouts this week so far. Log today\'s to keep going.</item>
+    </plurals>
+    <plurals name="profile_logout_unsynced_body">
+        <item quantity="one">%d workout hasn\'t synced yet. Logging out now removes it from this phone.</item>
+        <item quantity="other">%d workouts haven\'t synced yet. Logging out now removes them from this phone.</item>
+    </plurals>
 </resources>

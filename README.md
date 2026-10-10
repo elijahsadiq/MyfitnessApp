@@ -14,22 +14,31 @@ accompanies this repository.
   active minutes / distance / kcal, lime streak pill, Material 3 week
   strip with lime dots on active days, personalised insight card.
 - **History** — section-headered list of past workouts with weekly
-  momentum chart. Tap a row to open the detail screen (map, stats,
-  per-kilometre splits for GPS workouts).
+  momentum chart. Tap a row to open the detail screen (map and stats
+  for GPS workouts).
 - **Live GPS tracking** — `FusedLocationProviderClient` behind a
   foreground service; three-filter noise suppression (accuracy, min
   step, teleport); osmdroid map with a lime polyline; pause / resume /
-  stop with on-screen save. See `docs/dev-log.md` phase 8a for the
-  design decisions.
-- **Goals** — distance / count / duration / volume targets scoped to
-  this week or this month; three-section layout (Active / Completed /
-  Ended) with a featured card for the most urgent goal.
+  stop with on-screen save. Works with no connection: the route is
+  stored on the phone until it syncs. See `docs/dev-log.md` phase 8a
+  for the design decisions.
+- **Goals** — distance / count / duration / volume targets over a
+  chosen number of days (1–365); three-section layout (Active /
+  Completed / Ended) with a featured main goal.
 - **Progress + analytics** — period selector (Week / Month / Year),
   activity chips, period bar chart, trend chart (pace / speed /
   volume), per-activity statistics cards, lifetime personal records.
 - **Profile** — avatar upload with Android photo picker, editable
   name / weight / height, BMI with category, three summary tiles,
-  password-gated account deletion.
+  password-gated account deletion, notification switches.
+- **Offline logging + sync** (phase 10) — workouts are saved in an
+  on-phone Room database first; a WorkManager job uploads anything
+  saved offline once the phone is back online. Unsynced workouts show
+  a cloud-off marker.
+- **Notifications** (phase 10) — an optional daily reminder at a
+  chosen time (skipped if you already logged a workout that day) and
+  a "Goal achieved" alert. Both are local notifications posted by the
+  phone; there is no Firebase push.
 
 ## Required components (assignment brief)
 
@@ -103,12 +112,15 @@ assignment-coverage requirements are the same.
 │   │   ├── AppContainer.kt        Manual DI container
 │   │   ├── data/model/            Domain models (Workout, Goal, …)
 │   │   ├── data/remote/           Retrofit + DTOs + mappers
+│   │   ├── data/local/db/         Phase 10 — Room offline store
+│   │   ├── data/sync/             Phase 10 — WorkManager upload job
 │   │   ├── data/repository/       WorkoutRepository, GoalRepository, …
 │   │   ├── tracking/              Phase 8a — location engine, foreground service, GPX utilities
 │   │   ├── analytics/             Phase 8 — pure-Kotlin Progress calculations
 │   │   ├── insights/              Phase 8 — personalised-insights rule engine
+│   │   ├── notifications/         Phase 10 — daily reminder + goal alerts
 │   │   └── ui/                    Fragments + view-models, one package per screen
-│   └── src/test/java/…            233 pure-JVM unit tests (as of phase 8 step 6)
+│   └── src/test/java/…            263 pure-JVM unit tests (as of phase 10)
 ├── backend/               PHP + MySQL API (framework-free)
 │   ├── fitness-api/               The actual API (Composer-free)
 │   ├── sql/                       Schema + seed + migrations
@@ -125,10 +137,10 @@ assignment-coverage requirements are the same.
 
 ## Known limitations
 
-- **Offline sync is not implemented.** The repository talks to the API
-  directly; a lost network connection surfaces as a Snackbar with
-  Retry, and tracked data stays on screen until a save succeeds. A
-  future phase would add Room caching and WorkManager background sync.
+- **Goals are read-only offline.** Workouts can be logged, edited and
+  deleted with no connection (Room + WorkManager, phase 10) and goal
+  progress still updates, but creating or editing a goal needs the
+  server.
 - **Process-kill mid-GPS-tracking drops the session.** The foreground
   service holds the authoritative `TrackingState` in memory; there's
   no on-disk journal. Noted in `docs/dev-log.md` phase 8a step 4.

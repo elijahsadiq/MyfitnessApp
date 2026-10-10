@@ -2,6 +2,7 @@ package com.elijah.fitness
 
 import android.app.Application
 import androidx.appcompat.app.AppCompatDelegate
+import com.elijah.fitness.notifications.AppNotifications
 
 /**
  * Custom [Application] that owns the manual dependency container.
@@ -25,6 +26,7 @@ class FitnessApp : Application() {
     override fun onCreate() {
         super.onCreate()
         AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
+        AppNotifications.createChannels(this)
         container.wakeUpServer()
     }
 }

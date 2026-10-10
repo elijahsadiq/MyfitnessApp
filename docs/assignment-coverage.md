@@ -40,6 +40,16 @@ the examiner (and I) can scan against the mark scheme.
 | Error handling | ✅ | `ApiResult<T>` sealed interface; every ViewModel branches on Success / Error / NetworkError and surfaces a Snackbar with Retry. |
 | Permissions handled gracefully | ✅ | `tracking/LocationPermissions.kt` + `LocationPermissionFragment.kt`; denial routes to manual logging, "don't ask again" opens app settings. |
 
+## Task 1a — mobile-app characteristics the brief names (phase 10)
+
+| Characteristic | Status | Where |
+|---|---|---|
+| Offline logging | ✅ | `data/local/db/` (Room: `workouts`, `strength_sets`, `route_points`, `cached_goals`) + `data/repository/OfflineFirstWorkoutRepository.kt`. Saves, note edits and deletes land in Room first. |
+| Sync once connectivity returns | ✅ | `data/sync/WorkoutSyncWorker.kt` + `WorkManagerSyncScheduler` (`NetworkType.CONNECTED`, exponential back-off). Duplicate-safe through the client UUID + idempotent `POST /workouts`. Screenshots: `offline_history.png`, `offline_detail.png` (cloud-off marker / "Not synced yet"). |
+| Notifications: reminders | ✅ | `notifications/DailyReminderWorker.kt` + `DailyReminderScheduler` + `ReminderPlanner` (skips days with a workout). Profile → Notifications → Daily reminder + time. |
+| Notifications: achievements | ✅ | `notifications/GoalAchievementNotifier.kt` → "Goal achieved". Profile → Goal alerts. Local notifications only; no Firebase push (the report explains the difference). |
+| Touch-based input | ✅ | FAB + bottom sheet, steppers, swipe-to-delete with Undo, hold-to-unlock on tracking, 48dp targets. |
+
 ## Task 1b — architecture + design chapter cites
 
 The written report's architecture and design chapters pull on:
@@ -63,7 +73,8 @@ The written report's architecture and design chapters pull on:
 
 ## Testing
 
-**264 unit tests, 0 failures** as of phase 8 step 6:
+**263 unit tests, 0 failures** as of phase 10 (an earlier "264" count
+here was a miscount; phase 9 had 237):
 
 - `data/model/*Test.kt` — the domain hierarchy + goal calculator.
 - `data/remote/mapper/*Test.kt` — DTO ↔ domain round-trips.
@@ -72,6 +83,9 @@ The written report's architecture and design chapters pull on:
 - `tracking/*Test.kt` — TrackCalculator, TrackingSession, RouteGeometry.
 - `analytics/*Test.kt` — ProgressAnalytics boundary cases.
 - `insights/*Test.kt` — each of the five insight rules + the ranking.
+- `data/repository/OfflineFirstWorkoutRepositoryTest.kt` — offline save,
+  sync on reconnect, no duplicates, offline delete / edit (phase 10).
+- `notifications/*Test.kt` — reminder timing + goal-alert rules (phase 10).
 
 Run with:
 

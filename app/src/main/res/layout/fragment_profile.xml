@@ -343,6 +343,116 @@
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
+        <!-- Phase 10: notifications -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_lg"
+            app:cardBackgroundColor="@color/surface_white"
+            app:cardCornerRadius="@dimen/radius_card"
+            app:cardElevation="0dp"
+            app:strokeColor="@color/divider"
+            app:strokeWidth="@dimen/stroke_hairline">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="@dimen/card_padding">
+
+                <TextView
+                    style="@style/TextAppearance.Fitness.LabelSm"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:paddingHorizontal="@dimen/space_sm"
+                    android:text="@string/profile_notifications_label"
+                    android:textColor="@color/text_secondary" />
+
+                <!-- Daily reminder: tap the text to change the time -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:minHeight="@dimen/row_min_height"
+                    android:orientation="horizontal">
+
+                    <LinearLayout
+                        android:id="@+id/reminderTimeRow"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:background="?attr/selectableItemBackground"
+                        android:minHeight="@dimen/touch_target_min"
+                        android:orientation="vertical"
+                        android:padding="@dimen/space_sm">
+
+                        <TextView
+                            style="@style/TextAppearance.Fitness.BodyLg"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/profile_reminder_title" />
+
+                        <TextView
+                            android:id="@+id/reminderTimeValue"
+                            style="@style/TextAppearance.Fitness.LabelMd"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:textColor="@color/text_secondary"
+                            tools:text="6:00 PM · Tap to change the time" />
+                    </LinearLayout>
+
+                    <com.google.android.material.materialswitch.MaterialSwitch
+                        android:id="@+id/reminderSwitch"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:contentDescription="@string/profile_reminder_title"
+                        android:minHeight="@dimen/touch_target_min" />
+                </LinearLayout>
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="@dimen/stroke_hairline"
+                    android:background="@color/divider" />
+
+                <!-- Goal alerts -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:minHeight="@dimen/row_min_height"
+                    android:orientation="horizontal">
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical"
+                        android:padding="@dimen/space_sm">
+
+                        <TextView
+                            style="@style/TextAppearance.Fitness.BodyLg"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/profile_goal_alerts_title" />
+
+                        <TextView
+                            style="@style/TextAppearance.Fitness.LabelMd"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/profile_goal_alerts_hint"
+                            android:textColor="@color/text_secondary" />
+                    </LinearLayout>
+
+                    <com.google.android.material.materialswitch.MaterialSwitch
+                        android:id="@+id/goalAlertsSwitch"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:contentDescription="@string/profile_goal_alerts_title"
+                        android:minHeight="@dimen/touch_target_min" />
+                </LinearLayout>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
         <!-- Log out -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/logoutButton"

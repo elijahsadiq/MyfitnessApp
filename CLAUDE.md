@@ -49,7 +49,8 @@ Repository interface  ← phase 1: FakeWorkoutRepository (in-memory)
 | 8a (done) | **Geolocation end-to-end** — foreground service, FusedLocationProviderClient, osmdroid map, route save + detail screen (hoisted ahead of phase 8 polish because the brief weights it at 40 marks) |
 | 8  (done) | Goal expiry as a third state, Home redesign (BMI → kcal, real streak, Goals section removed), Profile backend + rebuild, Progress + analytics screen, personalised insights, submission readiness |
 | 9  (done) | Full-app audit — GPS crash fix, consistent content height (new shell), One UI thumb-zone layout, branding pass, brand launcher icon, sign-out cache clearing, copy + plurals cleanup. Step 2: cloud deployment (Render + Aiven MySQL), avatars moved into MySQL |
-| future    | Room offline cache + WorkManager sync (closes the "process-kill drops the GPS session" caveat); extra activity types if the assignment report calls for them |
+| 10 (done) | **Offline logging + sync** (Room store in `data/local/db/`, `OfflineFirstWorkoutRepository`, WorkManager `WorkoutSyncWorker`) and **local notifications** (`notifications/`: daily reminder, goal-achieved alert, Profile switches) |
+| future    | Journal the live GPS session to Room (closes the "process-kill drops the GPS session" caveat); offline goal edits; extra activity types if the assignment report calls for them |
 
 ## Package layout (target)
 ```
@@ -114,8 +115,22 @@ export JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"
   ignores this on large screens, so layouts must still not assume a
   fixed width.
 - Sign-out always goes through `AppContainer.signOut` /
-  `signOutLocally`, which stop tracking and clear every in-memory cache
-  before dropping the token.
+  `signOutLocally`, which stop tracking, stop goal alerts, cancel the
+  reminder and clear every cache (including the Room database) before
+  dropping the token.
+
+## Offline store + notifications (from phase 10)
+- Screens read workouts from Room through `OfflineFirstWorkoutRepository`;
+  writes land in Room first with a `SyncState`, then upload. Never write
+  a workout row with `INSERT OR REPLACE` (the FK cascade deletes its sets
+  and route) — use the DAO's `@Upsert` / `save`.
+- Anything that talks to the server inside the repository holds its
+  `syncLock`; local edits bump `localVersion` instead of locking.
+- A Room schema change needs a version bump and a `Migration`
+  (`exportSchema = false` for v1).
+- Notifications are local (`AppNotifications`): channels `reminders` and
+  `achievements`, small icon `ic_notification_pulse`. The daily reminder
+  is a self-rescheduling one-off WorkManager job, not a periodic one.
 
 ## Cloud deployment (from phase 9)
 - API: Render free Docker web service `elijah-fitness-api` (Singapore),

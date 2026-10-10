@@ -93,6 +93,7 @@ class MainActivity : AppCompatActivity(), SnackbarHost {
         }
 
         observeAuthEvents()
+        (application as FitnessApp).container.onSignedInStart()
 
         if (savedInstanceState == null) handleTrackingIntent(intent)
     }

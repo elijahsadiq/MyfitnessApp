@@ -1,14 +1,20 @@
 package com.elijah.fitness.ui.profile
 
+import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
+import android.text.format.DateFormat
 import android.text.InputType
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.core.widget.doAfterTextChanged
 import androidx.fragment.app.viewModels
@@ -21,6 +27,8 @@ import com.elijah.fitness.data.remote.dto.UserDto
 import com.elijah.fitness.databinding.DialogDeleteAccountBinding
 import com.elijah.fitness.databinding.DialogEditProfileFieldBinding
 import com.elijah.fitness.databinding.FragmentProfileBinding
+import com.elijah.fitness.notifications.AppNotifications
+import com.elijah.fitness.notifications.ReminderSettings
 import com.elijah.fitness.ui.base.BaseFragment
 import com.elijah.fitness.ui.launcher.LauncherActivity
 import com.elijah.fitness.util.BmiCategory
@@ -28,10 +36,13 @@ import com.elijah.fitness.util.AvatarImage
 import com.elijah.fitness.util.BodyMetrics
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
+import com.google.android.material.timepicker.MaterialTimePicker
+import com.google.android.material.timepicker.TimeFormat
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.time.Instant
+import java.time.LocalTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -56,6 +67,17 @@ class ProfileFragment : BaseFragment<FragmentProfileBinding>() {
         uri?.let(::onPhotoPicked)
     }
 
+    /** What to turn on once the notification permission answer comes back. */
+    private var afterNotificationPermission: (() -> Unit)? = null
+
+    private val notificationPermission = registerForActivityResult(
+        ActivityResultContracts.RequestPermission(),
+    ) { granted ->
+        val action = afterNotificationPermission
+        afterNotificationPermission = null
+        if (granted) action?.invoke() else onNotificationsBlocked()
+    }
+
     override fun inflateBinding(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -76,7 +98,8 @@ class ProfileFragment : BaseFragment<FragmentProfileBinding>() {
         binding.nameRow.setOnClickListener { showEditNameDialog() }
         binding.weightRow.setOnClickListener { showEditWeightDialog() }
         binding.heightRow.setOnClickListener { showEditHeightDialog() }
-        binding.logoutButton.setOnClickListener { logOut() }
+        binding.logoutButton.setOnClickListener { confirmLogOut() }
+        binding.reminderTimeRow.setOnClickListener { showReminderTimePicker() }
         binding.deleteAccountButton.setOnClickListener { showDeleteAccountDialog() }
 
         collectOnStart(viewModel.user) { it?.let(::renderUser) }
@@ -85,7 +108,83 @@ class ProfileFragment : BaseFragment<FragmentProfileBinding>() {
             binding.avatarProgress.isVisible = uploading
         }
         collectOnStart(viewModel.events) { handleEvent(it) }
+        collectOnStart(viewModel.notificationSettings) { renderNotificationSettings(it) }
     }
+
+    // ---------- phase 10: notifications ----------
+
+    private fun renderNotificationSettings(settings: ReminderSettings) {
+        binding.reminderTimeValue.text = settings.reminderTime.format(reminderTimeFormatter())
+        // Set the switches without firing their listeners, then re-attach.
+        binding.reminderSwitch.setOnCheckedChangeListener(null)
+        binding.goalAlertsSwitch.setOnCheckedChangeListener(null)
+        binding.reminderSwitch.isChecked = settings.dailyReminder
+        binding.goalAlertsSwitch.isChecked = settings.goalAlerts && AppNotifications.canPost(requireContext())
+        binding.reminderSwitch.setOnCheckedChangeListener { _, checked ->
+            if (checked) withNotificationPermission { viewModel.setDailyReminder(true) }
+            else viewModel.setDailyReminder(false)
+        }
+        binding.goalAlertsSwitch.setOnCheckedChangeListener { _, checked ->
+            if (checked) withNotificationPermission { viewModel.setGoalAlerts(true) }
+            else viewModel.setGoalAlerts(false)
+        }
+    }
+
+    /**
+     * Run [action] once notifications are allowed. Android 13+ asks the
+     * user first; older versions only need the app's notifications on.
+     */
+    private fun withNotificationPermission(action: () -> Unit) {
+        val ctx = requireContext()
+        if (AppNotifications.canPost(ctx)) {
+            action()
+            return
+        }
+        val needsRuntimePermission = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(ctx, Manifest.permission.POST_NOTIFICATIONS) !=
+            PackageManager.PERMISSION_GRANTED
+        if (needsRuntimePermission) {
+            afterNotificationPermission = action
+            notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+        } else {
+            onNotificationsBlocked()
+        }
+    }
+
+    /** Permission refused or notifications blocked: undo the switch and point to Settings. */
+    private fun onNotificationsBlocked() {
+        renderNotificationSettings(viewModel.notificationSettings.value)
+        snackbar(R.string.profile_notifications_denied, Snackbar.LENGTH_LONG)
+            .setAction(R.string.profile_notifications_settings) {
+                startActivity(
+                    Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                        .putExtra(Settings.EXTRA_APP_PACKAGE, requireContext().packageName)
+                )
+            }
+            .show()
+    }
+
+    private fun showReminderTimePicker() {
+        val current = viewModel.notificationSettings.value.reminderTime
+        val picker = MaterialTimePicker.Builder()
+            .setTimeFormat(
+                if (DateFormat.is24HourFormat(requireContext())) TimeFormat.CLOCK_24H
+                else TimeFormat.CLOCK_12H
+            )
+            .setHour(current.hour)
+            .setMinute(current.minute)
+            .setTitleText(R.string.profile_reminder_time_picker_title)
+            .build()
+        picker.addOnPositiveButtonClickListener {
+            viewModel.setReminderTime(LocalTime.of(picker.hour, picker.minute))
+        }
+        picker.show(parentFragmentManager, "reminder-time-picker")
+    }
+
+    private fun reminderTimeFormatter(): DateTimeFormatter = DateTimeFormatter.ofPattern(
+        if (DateFormat.is24HourFormat(requireContext())) "HH:mm" else "h:mm a",
+        Locale.getDefault(),
+    )
 
     private fun bindTileLabels() {
         binding.tileWorkouts.tileLabel.setText(R.string.profile_tile_workouts_label)
@@ -357,6 +456,26 @@ class ProfileFragment : BaseFragment<FragmentProfileBinding>() {
     // -----------------------------------------------------------------
     // Log out + nav helpers
     // -----------------------------------------------------------------
+
+    /**
+     * Phase 10: workouts saved offline only live on this phone until they
+     * sync. Logging out clears the phone, so warn first if any are left.
+     */
+    private fun confirmLogOut() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            val unsynced = viewModel.unsyncedWorkoutCount()
+            if (unsynced == 0) {
+                logOut()
+                return@launch
+            }
+            MaterialAlertDialogBuilder(requireContext())
+                .setTitle(R.string.profile_logout_unsynced_title)
+                .setMessage(resources.getQuantityString(R.plurals.profile_logout_unsynced_body, unsynced, unsynced))
+                .setNegativeButton(android.R.string.cancel, null)
+                .setPositiveButton(R.string.profile_logout_unsynced_confirm) { _, _ -> logOut() }
+                .show()
+        }
+    }
 
     private fun logOut() {
         binding.logoutButton.isEnabled = false

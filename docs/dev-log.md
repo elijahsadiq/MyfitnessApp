@@ -2888,3 +2888,98 @@ succeeds; the "Not synced yet" marker is the honest signal.
   the brief describes, so the report can explain the real mechanism.
 - **Task 3b (system architecture):** Room as the local source of
   truth, WorkManager for deferred sync.
+
+---
+
+## Phase 10 — Step 2: Notifications (daily reminder + goal alerts)
+
+**Goal**
+Give the report's Task 1a a real notification feature: remind the
+user to log a workout, and tell them when they reach a goal.
+
+**Built**
+- **`notifications/`** (no new library; WorkManager from step 1):
+  - `AppNotifications` creates two channels (`reminders`,
+    `achievements`), checks `POST_NOTIFICATIONS` + "notifications
+    enabled", and posts with the new `ic_notification_pulse` icon (the
+    brand pulse cropped to 24dp). Tapping opens the app.
+  - `ReminderSettings` / `DataStoreReminderSettingsStore`: daily
+    reminder (default **off**), reminder time (default 18:00), goal
+    alerts (default on).
+  - `ReminderPlanner` (pure): `delayUntilNext(now, time)` and
+    `workoutsThisWeekIfNoneToday(...)`. Returns null when a workout is
+    already logged today, so the reminder stays quiet.
+  - `DailyReminderScheduler` + `DailyReminderWorker`: a one-off
+    WorkManager job due at the next reminder time. When it runs it reads
+    workouts from Room (works offline), posts "Time to move" with this
+    week's count, then books tomorrow.
+  - `GoalAchievementNotifier`: watches `GoalProgressCalculator` on the
+    app scope. When an active goal reaches 100% it posts "Goal
+    achieved" once and saves the server's `completedNotified` flag.
+    With goal alerts off it does nothing and the Goals tab's Snackbar
+    celebrates as before.
+- **`AppContainer`** owns the store, scheduler and notifier.
+  `onSignedInStart()` (called by `MainActivity`) starts goal alerts,
+  refreshes goals for them, and re-books the reminder if it's on.
+  `signOutLocally` stops the notifier, cancels the reminder and resets
+  the settings.
+- **Profile → Notifications** card: "Daily reminder" (switch + time;
+  tap the time for a `MaterialTimePicker`) and "Goal alerts" (switch).
+  Turning either on asks for the Android 13+ permission first. If it's
+  refused, the switch flips back and a Snackbar offers Settings.
+- **Log out** now warns when workouts haven't synced ("2 workouts
+  haven't synced yet. Logging out now removes them from this phone."),
+  since sign-out clears the Room store (offline follow-up to step 1).
+
+**Key design decision — local notifications, not Firebase push**
+Both triggers are known on the phone: the reminder depends on the
+local workout list, and goal progress is calculated on the phone.
+Firebase Cloud Messaging would need a Firebase project, a
+`google-services.json`, a sender on the PHP side and a device-token
+table, all to deliver something the phone already knows. The report
+explains push vs local, and FCM is the upgrade path if the server ever
+needs to start a message (for example a coach's comment).
+
+**Rejected alternative — a 24-hour `PeriodicWorkRequest`**
+Periodic work is allowed to run anywhere inside its interval (with
+flex), so a "6 pm" reminder could arrive hours late. A one-off job
+that books the next one keeps it at the chosen minute, and WorkManager
+still keeps it across reboots.
+
+**Rejected alternative — `AlarmManager.setExact`**
+Exact to the second, but Android 12+ needs the
+`SCHEDULE_EXACT_ALARM` special permission for it, which is meant for
+alarm clocks and calendars, not a daily nudge.
+
+**Kotlin / Android concepts** *(for my notes)*
+- *Notification channel:* a category the user can mute on its own in
+  system settings (Android 8+). Every notification belongs to one.
+- *`POST_NOTIFICATIONS`:* since Android 13 the app must ask before it
+  can show notifications, like location.
+- *`ActivityResultContracts.RequestPermission`:* the callback-style
+  permission request; the lambda receives true / false.
+
+**Verified**
+- `./gradlew assembleLocalDebug`: BUILD SUCCESSFUL.
+- `./gradlew testLocalDebugUnitTest`: **263 tests, 0 failures** (10 new):
+  `ReminderPlannerTest` (6: later today, tomorrow, exactly-now,
+  logged today → none, week count from Monday, empty week) and
+  `GoalAchievementNotifierTest` (4: posts once + saves flag, no repeat,
+  alerts off → nothing, long-ended goal → nothing).
+- Emulator (local backend, test account):
+  - Profile → Daily reminder on → Android permission dialog → Allow →
+    time 8:45 PM. At 20:45:00 the shade showed "Time to move · 8
+    workouts this week so far. Log today's to keep going." The next
+    day's job was booked.
+  - Logged a 1 h 15 min run that took "Run for 225 min" past its
+    target. "Goal achieved · Run for 225 min in 20 days. Nice work!"
+    appeared within about 1 s, and `goals.completed_notified` became 1.
+  - Clean-up: the test run was deleted through the app (gone from
+    MySQL), the goal's flag reset to 0, the reminder switched off
+    (job cancelled).
+
+**Assignment task supported**
+- **Task 1a (notifications):** reminders and achievement alerts exist
+  and can be shown in screenshots.
+- **Task 2b / 2d:** a concrete native-API example (channels, runtime
+  permission, WorkManager) for the native vs cross-platform comparison.

@@ -10,6 +10,7 @@ import com.elijah.fitness.data.remote.apiCall
 import com.elijah.fitness.data.remote.dto.DeleteAccountRequestDto
 import com.elijah.fitness.data.remote.dto.UpdateProfileRequestDto
 import com.elijah.fitness.data.remote.dto.UserDto
+import com.elijah.fitness.notifications.ReminderSettings
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -25,6 +26,7 @@ import kotlinx.coroutines.launch
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.toRequestBody
+import java.time.LocalTime
 
 /**
  * Profile screen state holder.
@@ -66,6 +68,43 @@ class ProfileViewModel(
 
     private val _events: Channel<Event> = Channel(Channel.BUFFERED)
     val events: Flow<Event> = _events.receiveAsFlow()
+
+    /** Phase 10: daily reminder + goal alert switches. */
+    val notificationSettings: StateFlow<ReminderSettings> = container.reminderSettingsStore.settings
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000L),
+            initialValue = ReminderSettings(),
+        )
+
+    fun setDailyReminder(enabled: Boolean) {
+        viewModelScope.launch {
+            container.reminderSettingsStore.setDailyReminder(enabled)
+            if (enabled) {
+                val time = container.reminderSettingsStore.settings.first().reminderTime
+                container.dailyReminderScheduler.schedule(time)
+            } else {
+                container.dailyReminderScheduler.cancel()
+            }
+        }
+    }
+
+    fun setReminderTime(time: LocalTime) {
+        viewModelScope.launch {
+            container.reminderSettingsStore.setReminderTime(time)
+            if (container.reminderSettingsStore.settings.first().dailyReminder) {
+                container.dailyReminderScheduler.schedule(time)
+            }
+        }
+    }
+
+    fun setGoalAlerts(enabled: Boolean) {
+        viewModelScope.launch { container.reminderSettingsStore.setGoalAlerts(enabled) }
+    }
+
+    /** Workouts saved on this phone that the server doesn't have yet. */
+    suspend fun unsyncedWorkoutCount(): Int =
+        container.workoutRepository.observeUnsyncedIds().first().size
 
     sealed interface Event {
         data object Saved : Event
