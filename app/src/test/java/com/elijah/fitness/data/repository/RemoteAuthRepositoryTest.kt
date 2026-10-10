@@ -198,5 +198,6 @@ class RemoteAuthRepositoryTest {
         override suspend fun register(body: RegisterRequestDto) = registerResponse
         override suspend fun login(body: LoginRequestDto) = loginResponse
         override suspend fun logout() = logoutResponse
+        override suspend fun health(): Response<Unit> = Response.success(Unit)
     }
 }

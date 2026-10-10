@@ -1,0 +1,6 @@
+# The image only needs fitness-api/, certs/ and docker/php/ — keep the
+# rest out of the build context.
+sql/
+api-tests.http
+README.md
+docker-compose.yml

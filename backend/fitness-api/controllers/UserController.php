@@ -1,7 +1,8 @@
 <?php
 /**
- * GET /me, PUT /me, POST /me/avatar, DELETE /me/avatar, DELETE /me.
- * All require a valid Bearer token.
+ * GET /me, PUT /me, POST /me/avatar, DELETE /me/avatar, DELETE /me —
+ * all require a valid Bearer token. GET /avatars/{file} is public, like
+ * any profile picture on the web.
  *
  * Email is deliberately never updatable: an email change is an identity
  * change that needs a verification flow the project does not have. Any
@@ -11,10 +12,10 @@
  */
 final class UserController
 {
-    private const AVATAR_MAX_BYTES = 2 * 1024 * 1024; // 2 MB
-    private const AVATAR_DIM       = 512;             // re-encoded square, px
-    private const AVATAR_DIR_REL   = 'uploads/avatars';
-    private const AVATAR_JPEG_Q    = 85;
+    private const AVATAR_MAX_BYTES  = 2 * 1024 * 1024; // 2 MB
+    private const AVATAR_DIM        = 512;             // re-encoded square, px
+    private const AVATAR_URL_PREFIX = 'avatars/';      // served by avatarImage()
+    private const AVATAR_JPEG_Q     = 85;
 
     public static function me(array $_params, array $_body): void
     {
@@ -61,11 +62,14 @@ final class UserController
      *     payload inside is identified as `image/*` only if it really is one.
      *   - The uploaded bytes are re-encoded through GD into a fresh JPEG.
      *     Re-encoding strips any payload hidden inside the file (EXIF,
-     *     polyglot JPEG-PHP, etc.) — the stored file is bytes we wrote.
-     *   - Filename is `bin2hex(random_bytes(16))` + `.jpg`. We never trust
+     *     polyglot JPEG-PHP, etc.) — the stored image is bytes we wrote.
+     *   - The JPEG is stored in MySQL, never in the web root, so there is
+     *     no uploaded file Apache could ever be tricked into executing.
+     *     (It also survives restarts on hosts like Render, whose disk is
+     *     wiped every time the server restarts.)
+     *   - The public path is `avatars/` + `bin2hex(random_bytes(16))` +
+     *     `.jpg`: unguessable, new on every upload. We never trust
      *     `$_FILES['file']['name']`.
-     *   - Target folder has a `.htaccess` that disables PHP execution and
-     *     restricts served MIME types to images.
      *   - 2 MB cap enforced BEFORE reading pixels, so an attacker cannot
      *     exhaust memory just by posting a huge file.
      */
@@ -132,33 +136,48 @@ final class UserController
         );
         imagedestroy($sourceImg);
 
-        // Random filename — never reuse the client's.
-        $filename = bin2hex(random_bytes(16)) . '.jpg';
-        $absDir = self::absoluteAvatarDir();
-        if (!is_dir($absDir)) {
-            if (!mkdir($absDir, 0755, true) && !is_dir($absDir)) {
-                imagedestroy($dstImg);
-                Response::error('Server error', 500,
-                    ['file' => 'Could not create upload directory']);
-            }
-        }
-        $absPath = $absDir . DIRECTORY_SEPARATOR . $filename;
-        if (!imagejpeg($dstImg, $absPath, self::AVATAR_JPEG_Q)) {
-            imagedestroy($dstImg);
+        // Encode into memory; the bytes go into the user's row.
+        ob_start();
+        $encoded = imagejpeg($dstImg, null, self::AVATAR_JPEG_Q);
+        $jpeg = (string) ob_get_clean();
+        imagedestroy($dstImg);
+        if (!$encoded || $jpeg === '') {
             Response::error('Server error', 500,
                 ['file' => 'Could not store image']);
         }
-        imagedestroy($dstImg);
 
-        // Delete the previous avatar (if any) once the new one is on disk.
-        $existing = User::findById($id);
-        if ($existing !== null && !empty($existing['avatar_path'])) {
-            self::unlinkAvatarIfPresent((string) $existing['avatar_path']);
+        // Random name — never the client's. A new name on every upload
+        // also means no cache can ever show the previous photo.
+        $path = self::AVATAR_URL_PREFIX . bin2hex(random_bytes(16)) . '.jpg';
+        User::updateAvatar($id, $path, $jpeg);
+        Response::success(User::toDto(User::findById($id) ?? []));
+    }
+
+    /**
+     * GET /avatars/{file} — streams a stored avatar. Public on purpose:
+     * the app's image loader sends no token, and the 128-bit random name
+     * is what keeps the URL private.
+     */
+    public static function avatarImage(array $params, array $_body): void
+    {
+        $file = (string) ($params['file'] ?? '');
+        if (preg_match('/^[a-f0-9]{32}\.jpg$/', $file) !== 1) {
+            Response::error('Not found', 404);
+        }
+        $jpeg = User::avatarJpegByPath(self::AVATAR_URL_PREFIX . $file);
+        if ($jpeg === null) {
+            Response::error('Not found', 404);
         }
 
-        $relative = self::AVATAR_DIR_REL . '/' . $filename;
-        User::updateAvatarPath($id, $relative);
-        Response::success(User::toDto(User::findById($id) ?? []));
+        http_response_code(200);
+        header('Content-Type: image/jpeg');
+        header('Content-Length: ' . strlen($jpeg));
+        header('X-Content-Type-Options: nosniff');
+        // The bytes behind a given name never change (a new upload gets a
+        // new name), so clients may cache the image for a year.
+        header('Cache-Control: public, max-age=31536000, immutable');
+        echo $jpeg;
+        exit;
     }
 
     public static function deleteAvatar(array $_params, array $_body): void
@@ -170,8 +189,7 @@ final class UserController
             Response::error('User not found', 404);
         }
         if (!empty($row['avatar_path'])) {
-            self::unlinkAvatarIfPresent((string) $row['avatar_path']);
-            User::updateAvatarPath($id, null);
+            User::updateAvatar($id, null, null);
         }
         Response::success(User::toDto(User::findById($id) ?? []));
     }
@@ -184,9 +202,8 @@ final class UserController
      *
      * Cascade story: the FKs declared in phase-1 + phase-7 + phase-8a
      * clean up auth_tokens, workouts (and their strength_sets +
-     * route_points), and goals when the user row goes. The disk-side
-     * avatar file is removed first so a transaction rollback doesn't
-     * leave an orphaned image.
+     * route_points), and goals when the user row goes. The avatar lives
+     * in the user row itself, so it goes too.
      */
     public static function deleteMe(array $_params, array $body): void
     {
@@ -207,9 +224,6 @@ final class UserController
                 ['password' => 'Password did not match']);
         }
 
-        $row = User::findById($id);
-        $avatarPath = $row['avatar_path'] ?? null;
-
         $pdo = Database::pdo();
         $pdo->beginTransaction();
         try {
@@ -223,41 +237,7 @@ final class UserController
             throw $e;
         }
 
-        // Avatar removed AFTER the DB commit — safe to delete the file now
-        // that the row referencing it is gone.
-        if (is_string($avatarPath) && $avatarPath !== '') {
-            self::unlinkAvatarIfPresent($avatarPath);
-        }
-
         Auth::revokeCurrentToken();
         Response::success(null, 200);
-    }
-
-    // -----------------------------------------------------------------
-    // Internal helpers
-    // -----------------------------------------------------------------
-
-    private static function absoluteAvatarDir(): string
-    {
-        // `fitness-api/` is index.php's directory. The avatar folder lives
-        // alongside controllers / models — a plain subdirectory of the
-        // document root — so a reverse-proxy or sub-folder XAMPP install
-        // still serves the file correctly.
-        return dirname(__DIR__) . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . 'avatars';
-    }
-
-    private static function unlinkAvatarIfPresent(string $relative): void
-    {
-        // Only delete files inside our own avatar dir; never trust the
-        // stored path blindly in case a bug ever persisted something odd.
-        $expectedPrefix = self::AVATAR_DIR_REL . '/';
-        if (!str_starts_with($relative, $expectedPrefix)) {
-            return;
-        }
-        $filename = basename($relative);
-        $abs = self::absoluteAvatarDir() . DIRECTORY_SEPARATOR . $filename;
-        if (is_file($abs)) {
-            @unlink($abs);
-        }
     }
 }

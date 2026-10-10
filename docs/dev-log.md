@@ -2625,3 +2625,136 @@ and network errors already offer a Retry action.
 - **Task 2a (UI implementation):** consistent screen height, a One UI
   thumb-zone layout, Kinetic Glow on every surface, and a brand
   launcher icon.
+
+---
+
+## Phase 9 — Step 2: Cloud deployment prep (Render + Aiven MySQL)
+
+**Goal**
+Host the API so the app works on a real phone and for the marker:
+the PHP API on Render's free plan and MySQL on Aiven's free plan
+(Render has no free MySQL — private services and disks are paid).
+
+**Done in this step**
+- Code pushed to GitHub (`elijahsadiq/MyfitnessApp`, `main`).
+- Aiven MySQL 8.4 (DigitalOcean, Singapore) created by the user, then
+  loaded from `01_schema.sql` + `02_seed.sql` over certificate-verified
+  TLS (`--ssl-mode=VERIFY_IDENTITY`). Row counts match local: 1 user,
+  9 workouts, 14 sets, 5 goals.
+- **`backend/Dockerfile`** (new) replaces `docker/php/Dockerfile`.
+  docker-compose and Render now build the same image:
+  - The code is copied in (Render can't mount a folder); compose still
+    mounts the live code on top.
+  - **GD** with JPEG + PNG.
+  - Production `php.ini` (`display_errors` off).
+  - Apache listens on `${PORT}`: Render's 10000, 80 everywhere else.
+  - Aiven's public CA certificate is baked in at
+    `/etc/ssl/certs/aiven-ca.pem`.
+- **`render.yaml`** (new) — free Docker web service
+  `elijah-fitness-api`, region Singapore (next to the database), health
+  check `/health`, builds only when `backend/**` changes. The four
+  connection values are `sync: false`, so they're entered in Render and
+  never stored in Git.
+- **`Database.php`**:
+  - When `DB_SSL_CA` is set, it encrypts the connection and verifies
+    the server certificate.
+  - Every connection pins MySQL 8's default `sql_mode`, because Aiven
+    defaults to ANSI mode.
+- **Avatars moved into MySQL** (`users.avatar_jpeg MEDIUMBLOB`,
+  migration `07_migration_avatar_blob_phase9.sql`):
+  - Upload re-encodes with GD as before, then stores the JPEG bytes in
+    the user's row.
+  - New public route `GET /avatars/{name}.jpg` streams the photo. The
+    name is 128-bit random, regex-checked, and cached for a year
+    (`immutable`).
+  - `fitness-api/uploads/` and its `.htaccess` are deleted.
+- **App**:
+  - OkHttp waits longer: connect 30 s, read 90 s, write 60 s.
+  - Every request sends `Accept: application/json`.
+  - New `AuthApi.health()`; `AppContainer.wakeUpServer()` is called
+    from `FitnessApp.onCreate()`.
+  - The `cloud` flavour's `BASE_URL` is now
+    `https://elijah-fitness-api.onrender.com/`.
+
+**Found while testing**
+- *Profile photos had never worked on the server.* The old PHP image
+  had no GD, so `imagecreatefromjpeg()` was an undefined function and
+  every upload returned 500. Apache also lacked `mod_headers`, so the
+  avatar folder's `.htaccess` turned every request there into a 500.
+  No account in either database had a photo. The phase 9 audit's
+  avatar fix (`AvatarImage`, re-encoding on the phone) was client-side
+  only; this step fixes the server side.
+- *Aiven's default `sql_mode` is ANSI* (`ANSI_QUOTES`, `PIPES_AS_CONCAT`,
+  `IGNORE_SPACE`, `REAL_AS_FLOAT`). Migration 07's double-quoted DDL
+  string was read as a column name. Fixed by:
+  - single quotes in migration 07,
+  - pinning `sql_mode` in the API.
+
+  The API's own SQL was scanned: no `||`, no `GROUP BY`, no
+  double-quoted strings, no reserved aliases.
+- *The Mac's disk was full* (1.1 GB free). Docker Desktop's storage
+  failed with I/O errors. With the user's OK, old iOS simulator
+  runtimes, simulator devices and Chrome's cache were deleted, leaving
+  30 GB free. Docker was restarted, and the local MySQL came back
+  healthy with its data.
+
+**Key design decision — avatars in MySQL, not files**
+Render's free disk is wiped on every restart, redeploy and spin-down,
+so a file-based photo would vanish within the hour. A `MEDIUMBLOB`
+holds the ~40 KB re-encoded JPEG, needs no folder permissions, and
+leaves nothing executable in the web root. That is stronger than the
+old `.htaccess` hardening.
+
+**Rejected alternative — MySQL on Render (private service + disk)**
+It works, but private services and disks are paid (about $7/month and
+up). Aiven's free plan is real MySQL with no time limit and 1 GB of
+storage (this data set is a few hundred KB).
+
+**Rejected alternative — a paid object store (S3 / Cloudinary) for
+avatars**
+That would mean a new account, new keys and a new SDK, for one image per
+user.
+
+**Kotlin / Android concepts** *(for my notes)*
+- *OkHttp interceptor:* a function that sees every request before it
+  leaves (like Python `requests` hooks). `addInterceptor { chain -> … }`
+  adds a header and passes the request on.
+- *`Application.onCreate()`:* runs once when the app process starts,
+  before any screen. That makes it the earliest place to start waking
+  the server.
+- *`runCatching { }`:* Kotlin's try/except in expression form; the
+  wake-up ping ignores any failure.
+
+**Verified**
+- The Render image was built locally and run as Render will
+  (`PORT=10000`, env vars, Aiven over TLS). These all worked against the
+  real Aiven database:
+  - `/health`, login (and a wrong password → 401), `/workouts` (9),
+    `/goals` (5);
+  - avatar upload (stored 512×512, 38 KB), download as `image/jpeg`,
+    then delete → 404;
+  - logout → token revoked;
+  - path traversal → 400 / 404.
+- Local compose rebuilt from the new Dockerfile; avatar upload and
+  serving work on `localhost:8080`.
+- Emulator (local build): Profile → pick photo → upload 200 → photo
+  shows → Remove photo. The test photo was removed afterwards; no
+  avatars are left in either database.
+- `./gradlew assembleDebug testLocalDebugUnitTest testCloudDebugUnitTest`:
+  BUILD SUCCESSFUL, 237 tests each, 0 failures. The cloud APK contains
+  the Render URL.
+
+**Pending user action**
+- Push this commit, then in Render: New → Blueprint → this repo → enter
+  `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASS` from the Aiven console.
+- Then build the `cloudDebug` APK for the phone, and later a signed
+  `cloudRelease` APK for the marker.
+- Optional: the DB password was shared in chat during setup. Rotate it
+  in Aiven afterwards and update `DB_PASS` in Render.
+
+**Assignment task supported**
+- **LO6 (version control + CI/CD to cloud servers):** Git → GitHub →
+  Render auto-deploy from `render.yaml`.
+- **LO3 / LO5 (database + security):** managed MySQL over verified TLS,
+  credentials only in environment variables, and photos kept out of the
+  web root.

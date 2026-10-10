@@ -61,21 +61,37 @@ final class User
         $stmt->execute([$fullName, $weightKg, $heightCm, $id]);
     }
 
-    /** Set or clear the stored avatar path. */
-    public static function updateAvatarPath(int $id, ?string $relativePath): void
+    /**
+     * Set or clear the avatar: the public path the app loads and the JPEG
+     * bytes behind it. Pass null for both to remove the photo.
+     */
+    public static function updateAvatar(int $id, ?string $path, ?string $jpeg): void
     {
         $stmt = Database::pdo()->prepare(
-            'UPDATE users SET avatar_path = ? WHERE id = ?'
+            'UPDATE users SET avatar_path = ?, avatar_jpeg = ? WHERE id = ?'
         );
-        $stmt->execute([$relativePath, $id]);
+        $stmt->bindValue(1, $path, $path === null ? PDO::PARAM_NULL : PDO::PARAM_STR);
+        $stmt->bindValue(2, $jpeg, $jpeg === null ? PDO::PARAM_NULL : PDO::PARAM_LOB);
+        $stmt->bindValue(3, $id, PDO::PARAM_INT);
+        $stmt->execute();
+    }
+
+    /** JPEG bytes stored under a public avatar path, or null if none. */
+    public static function avatarJpegByPath(string $path): ?string
+    {
+        $stmt = Database::pdo()->prepare(
+            'SELECT avatar_jpeg FROM users WHERE avatar_path = ? AND avatar_jpeg IS NOT NULL'
+        );
+        $stmt->execute([$path]);
+        $jpeg = $stmt->fetchColumn();
+        return is_string($jpeg) ? $jpeg : null;
     }
 
     /**
      * Delete the account row. Phase 1's FKs cascade through auth_tokens,
      * workouts (then strength_sets + route_points), and goals, so a
-     * single row delete tears down the whole user. The controller is
-     * responsible for unlinking the avatar file first — the DB knows
-     * nothing about disk storage.
+     * single row delete tears down the whole user — including the
+     * avatar, which is stored in the row itself.
      */
     public static function deleteById(int $id): bool
     {

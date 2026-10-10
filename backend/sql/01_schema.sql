@@ -1,4 +1,4 @@
--- Fitness API — schema (phase 8b).
+-- Fitness API — schema (phase 9).
 --
 -- This file is the AUTHORITATIVE schema for a fresh install. The docker
 -- compose service mounts `backend/sql/` as /docker-entrypoint-initdb.d,
@@ -23,9 +23,11 @@ USE fitness_app;
 
 -- ---------------------------------------------------------------------
 -- users
---   avatar_path points at a file under fitness-api/uploads/avatars/,
---   stored relatively so the API moves between hosts (Docker, XAMPP)
---   without URL fixups. NULL = no custom avatar.
+--   avatar_path is the relative path the app loads the photo from
+--   (`avatars/<random>.jpg`, served by GET /avatars/{file}); avatar_jpeg
+--   holds the image itself. Keeping the bytes in MySQL means photos
+--   survive restarts on hosts that wipe their disk (Render).
+--   NULL = no custom avatar.
 -- ---------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS users (
     id              BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -35,6 +37,7 @@ CREATE TABLE IF NOT EXISTS users (
     weight_kg       DECIMAL(5,2) NULL,
     height_cm       DECIMAL(5,2) NULL,
     avatar_path     VARCHAR(255) NULL,
+    avatar_jpeg     MEDIUMBLOB NULL,
     created_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     UNIQUE KEY uq_users_email (email)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

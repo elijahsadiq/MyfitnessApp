@@ -55,7 +55,8 @@ The written report's architecture and design chapters pull on:
 | Inheritance example #4 (bonus) — Goal | `data/model/Goal.kt` + its KDoc. |
 | GPS filter story (sensor accuracy) | `tracking/TrackingConstants.kt` + `TrackingSession.onFix`. |
 | Why no background location | Dev-log phase 8a step 2 "Key design decision". |
-| Avatar re-encoding security story | `controllers/UserController.php::uploadAvatar` + `uploads/avatars/.htaccess`. |
+| Avatar re-encoding security story | `controllers/UserController.php::uploadAvatar` + `avatarImage` (JPEG stored in MySQL, served by an unguessable name). |
+| Cloud deployment (CI/CD to a cloud server) | `render.yaml` + `backend/Dockerfile`; README "Option C"; dev-log phase 9 step 2. |
 | Custom chart View | `ui/progress/BarChartView.kt` — ~100 line onDraw. |
 | Idempotent POST /workouts | `WorkoutController::create` upsert path. |
 | Insights priority order | `insights/InsightEngine.kt` class-level KDoc. |

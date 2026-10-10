@@ -46,12 +46,12 @@ android {
         }
         create("cloud") {
             dimension = "env"
-            // Placeholder — replaced once a real deployment exists. Kept as
-            // HTTPS so the release network security config stays HTTPS-only.
+            // The Render deployment (render.yaml at the repo root). HTTPS
+            // only — release builds allow no plain-HTTP traffic.
             buildConfigField(
                 "String",
                 "BASE_URL",
-                "\"https://fitness-api.example.com/\""
+                "\"https://elijah-fitness-api.onrender.com/\""
             )
         }
     }

@@ -31,8 +31,10 @@ services:
       retries: 20
 
   php:
+    # Same image Render runs (backend/Dockerfile); the volume below swaps
+    # in the live code so edits show up without a rebuild.
     build:
-      context: ./docker/php
+      context: .
     container_name: fitness-php
     restart: unless-stopped
     depends_on:

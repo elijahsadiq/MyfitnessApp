@@ -6,6 +6,7 @@ import com.elijah.fitness.data.remote.dto.LoginRequestDto
 import com.elijah.fitness.data.remote.dto.RegisterRequestDto
 import retrofit2.Response
 import retrofit2.http.Body
+import retrofit2.http.GET
 import retrofit2.http.POST
 
 interface AuthApi {
@@ -18,4 +19,8 @@ interface AuthApi {
 
     @POST("auth/logout")
     suspend fun logout(): Response<Unit>
+
+    /** No auth needed. Used to wake a sleeping server early (see AppContainer). */
+    @GET("health")
+    suspend fun health(): Response<Unit>
 }

@@ -11,6 +11,10 @@ return [
         'name' => getenv('DB_NAME') ?: 'fitness_app',
         'user' => getenv('DB_USER') ?: 'root',
         'pass' => getenv('DB_PASS') !== false ? getenv('DB_PASS') : '',
+        // Path to the database provider's CA certificate. Set on Render
+        // (Aiven MySQL only accepts encrypted connections); unset for
+        // Docker / XAMPP, which talk to a local server.
+        'ssl_ca' => getenv('DB_SSL_CA') ?: null,
     ],
     // Bearer tokens live 30 days by default.
     'token_ttl_seconds' => 60 * 60 * 24 * 30,

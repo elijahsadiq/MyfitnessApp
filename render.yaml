@@ -1,0 +1,34 @@
+# Render Blueprint — the PHP API as a free Docker web service.
+#
+# Create it once: Render Dashboard → New → Blueprint → pick this repo.
+# Render asks for the four `sync: false` values (from the Aiven console);
+# they live only in Render, never in Git. After that, every push that
+# touches backend/ redeploys the API automatically.
+#
+# The database is Aiven's free MySQL (Render has no free MySQL), in
+# Singapore — so the API runs in Singapore too, next to its data.
+services:
+  - type: web
+    name: elijah-fitness-api
+    runtime: docker
+    plan: free
+    region: singapore
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    buildFilter:
+      paths:
+        - backend/**
+    healthCheckPath: /health
+    envVars:
+      - key: DB_HOST
+        sync: false
+      - key: DB_PORT
+        sync: false
+      - key: DB_USER
+        sync: false
+      - key: DB_PASS
+        sync: false
+      - key: DB_NAME
+        value: fitness_app
+      - key: DB_SSL_CA
+        value: /etc/ssl/certs/aiven-ca.pem

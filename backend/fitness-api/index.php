@@ -69,6 +69,8 @@ try {
     $router->add('POST',   '/me/avatar',        [UserController::class, 'uploadAvatar']);
     $router->add('DELETE', '/me/avatar',        [UserController::class, 'deleteAvatar']);
     $router->add('DELETE', '/me',               [UserController::class, 'deleteMe']);
+    // Public: the app's image loader fetches avatars without a token.
+    $router->add('GET',    '/avatars/{file}',   [UserController::class, 'avatarImage']);
 
     // Workouts
     $router->add('GET',    '/workouts',         [WorkoutController::class, 'index']);

@@ -1,13 +1,17 @@
 # Fitness API — backend
 
 Two-service PHP/MySQL backend for the My Fitness App Android client. Runs
-locally in Docker for development, or as a bare-metal drop-in for the
+locally in Docker for development, in the cloud on Render + Aiven MySQL
+(the `cloud` app build talks to it), or as a bare-metal drop-in for the
 XAMPP + phpMyAdmin combination the marker is expected to use.
 
 ```
 backend/
+├── Dockerfile              PHP 8.3 + Apache image (pdo_mysql, GD, mod_rewrite),
+│                           used by docker-compose AND by Render
 ├── docker-compose.yml      Dev stack (mysql + php-apache + phpmyadmin)
-├── docker/php/             Custom PHP-Apache image (pdo_mysql, mod_rewrite, GD)
+├── docker/php/             Apache override (.htaccess allowed in the docroot)
+├── certs/aiven-ca.pem      Public CA certificate of the Aiven MySQL server
 ├── sql/
 │   ├── 01_schema.sql       Authoritative schema for a fresh install (users,
 │   │                       auth_tokens, workouts, strength_sets, route_points, goals)
@@ -19,13 +23,13 @@ backend/
 │       ├── 03_migration_goals_phase7.sql
 │       ├── 04_migration_route_points_phase8a.sql
 │       ├── 05_migration_profile_phase8.sql
-│       └── 06_migration_goals_phase8b.sql
+│       ├── 06_migration_goals_phase8b.sql
+│       └── 07_migration_avatar_blob_phase9.sql
 ├── fitness-api/
 │   ├── index.php           Front controller
 │   ├── core/               Router, Response, Auth, Validator, Database
 │   ├── controllers/        Auth / User / Workout / Goal
-│   ├── models/             User / Workout / Goal (PDO data mappers)
-│   └── uploads/avatars/    Avatar storage + hardened .htaccess
+│   └── models/             User / Workout / Goal (PDO data mappers)
 └── api-tests.http          End-to-end request cases
 ```
 
@@ -73,7 +77,12 @@ docker exec -i fitness-mysql mysql -uroot -prootpassword fitness_app \
     < sql/migrations/05_migration_profile_phase8.sql
 docker exec -i fitness-mysql mysql -uroot -prootpassword fitness_app \
     < sql/migrations/06_migration_goals_phase8b.sql
+docker exec -i fitness-mysql mysql -uroot -prootpassword fitness_app \
+    < sql/migrations/07_migration_avatar_blob_phase9.sql
 ```
+
+After pulling a change to `Dockerfile`, rebuild the API container with
+`docker compose up -d --build php` (the database is untouched).
 
 The Android emulator reaches the host via `10.0.2.2`, so the emulator
 base URL is:
@@ -127,6 +136,54 @@ After the imports, click **Browse** on each table in the sidebar:
 - `route_points` → empty until the user tracks a real GPS workout.
 - `auth_tokens` → populated once anyone logs in.
 
+## Option C — Cloud: Render + Aiven MySQL
+
+This is what the `cloud` build of the app (and the APK handed in) uses:
+`https://elijah-fitness-api.onrender.com/`.
+
+| Part | Where | Notes |
+|---|---|---|
+| PHP API | Render free web service (Docker, Singapore) | Defined in `render.yaml` at the repo root. Auto-deploys on every push that touches `backend/`. |
+| MySQL 8.4 | Aiven free plan (DigitalOcean, Singapore) | Render has no free MySQL. Encrypted connection; the API verifies the server against `certs/aiven-ca.pem`. |
+
+The connection settings (`DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASS`) live
+only in Render's environment settings — never in Git. `DB_SSL_CA` turns
+on certificate-verified TLS (unset for Docker / XAMPP).
+
+**Free-tier behaviour to know about**
+- The API sleeps after 15 minutes without traffic; the next request
+  wakes it in about a minute. The app waits up to 90 s and pings
+  `/health` at launch so the server is usually awake by the time you
+  log in. Open `/health` in a browser to wake it manually.
+- Render's disk is wiped on every restart, which is why avatars are
+  stored in MySQL (`users.avatar_jpeg`), not as files.
+- Aiven may power off a free database after a long idle spell (it emails
+  first); power it back on from the Aiven console.
+
+**Loading the cloud database** (uses the MySQL client inside the local
+Docker container):
+
+```bash
+docker cp certs/aiven-ca.pem fitness-mysql:/tmp/aiven-ca.pem
+docker exec -i -e MYSQL_PWD='<password>' fitness-mysql mysql \
+    -h <aiven-host> -P <port> -u avnadmin \
+    --ssl-mode=VERIFY_IDENTITY --ssl-ca=/tmp/aiven-ca.pem \
+    < sql/01_schema.sql      # then the same with sql/02_seed.sql
+```
+
+The seed's dates are relative to "now", so re-seeding just before a demo
+makes the demo account look current. The seed doesn't clear old rows:
+to reset, first run the same command with `-e "DROP DATABASE fitness_app"`
+instead of a file — this deletes **every** account, including any a
+tester created.
+
+Aiven runs MySQL in ANSI mode by default (`"x"` is a column name, `||`
+joins strings), so the API pins MySQL 8's default `sql_mode` on every
+connection (`core/Database.php`). Load only `01_schema.sql` and
+`02_seed.sql` (plus migration 07 into a database created before it):
+migrations 03–06 use double-quoted strings and fail in ANSI mode — a
+fresh install never needs them.
+
 ---
 
 ## Test credentials
@@ -160,6 +217,7 @@ User (phase 2 + phase 8)
   POST   /me/avatar          (multipart; JPEG/PNG; re-encoded to 512×512)
   DELETE /me/avatar
   DELETE /me                 (body { password })
+  GET    /avatars/{name}.jpg (public — the stored photo; name is random)
 
 Workouts (phase 2 + phase 8a)
   GET    /workouts           (filters: ?type, ?from, ?to)
@@ -175,7 +233,7 @@ Goals (phase 7)
   POST   /goals/{id}/notified
 ```
 
-Every endpoint except `/auth/*` and `/health` requires a
+Every endpoint except `/auth/*`, `/health` and `/avatars/*` requires an
 `Authorization: Bearer <token>` header. Tokens come back from
 `/auth/register` and `/auth/login` and are stored only as a SHA-256
 hash on the server.
@@ -197,7 +255,7 @@ The PHP container mounts `./fitness-api/` as a live volume, so edits to
 ## Avatar upload — security notes
 
 `POST /me/avatar` is the only endpoint that accepts a file. Six layers
-of defence apply before anything hits disk:
+of defence apply before anything is stored:
 
 1. `is_uploaded_file()` + the raw `UPLOAD_ERR_OK` code — rejects swapped tmp paths.
 2. 2 MB cap enforced **before** reading pixels.
@@ -206,11 +264,12 @@ of defence apply before anything hits disk:
 4. Only `IMAGETYPE_JPEG` and `IMAGETYPE_PNG` are allowed through.
 5. GD re-encodes the image into a fresh 512×512 JPEG at quality 85.
    Re-encoding strips any payload hidden inside the original bytes.
-6. The stored filename is `bin2hex(random_bytes(16)) . '.jpg'`. The
-   client's filename is never kept. Files land in
-   `fitness-api/uploads/avatars/` which carries a `.htaccess` that
-   disables PHP execution and denies serving any extension other than
-   `.jpg`.
+6. The re-encoded JPEG is stored in MySQL (`users.avatar_jpeg`), never
+   in the web root, so there is no uploaded file Apache could be tricked
+   into executing. It is served by `GET /avatars/{name}.jpg`, where the
+   name is `bin2hex(random_bytes(16))` (new on every upload; the client's
+   filename is never kept) and is validated against `^[a-f0-9]{32}\.jpg$`
+   before any query runs.
 
-See `fitness-api/controllers/UserController.php::uploadAvatar` for the
-code and `fitness-api/uploads/avatars/.htaccess` for the Apache hardening.
+See `fitness-api/controllers/UserController.php` (`uploadAvatar` and
+`avatarImage`) for the code.

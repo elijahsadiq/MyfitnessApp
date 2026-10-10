@@ -48,7 +48,7 @@ Repository interface  ← phase 1: FakeWorkoutRepository (in-memory)
 | 7  (done) | Goals (hierarchy #4), per-user progress calculator, Goals tab UI, completion celebration |
 | 8a (done) | **Geolocation end-to-end** — foreground service, FusedLocationProviderClient, osmdroid map, route save + detail screen (hoisted ahead of phase 8 polish because the brief weights it at 40 marks) |
 | 8  (done) | Goal expiry as a third state, Home redesign (BMI → kcal, real streak, Goals section removed), Profile backend + rebuild, Progress + analytics screen, personalised insights, submission readiness |
-| 9  (done) | Full-app audit — GPS crash fix, consistent content height (new shell), One UI thumb-zone layout, branding pass, brand launcher icon, sign-out cache clearing, copy + plurals cleanup |
+| 9  (done) | Full-app audit — GPS crash fix, consistent content height (new shell), One UI thumb-zone layout, branding pass, brand launcher icon, sign-out cache clearing, copy + plurals cleanup. Step 2: cloud deployment (Render + Aiven MySQL), avatars moved into MySQL |
 | future    | Room offline cache + WorkManager sync (closes the "process-kill drops the GPS session" caveat); extra activity types if the assignment report calls for them |
 
 ## Package layout (target)
@@ -116,6 +116,28 @@ export JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"
 - Sign-out always goes through `AppContainer.signOut` /
   `signOutLocally`, which stop tracking and clear every in-memory cache
   before dropping the token.
+
+## Cloud deployment (from phase 9)
+- API: Render free Docker web service `elijah-fitness-api` (Singapore),
+  defined in `render.yaml`. It builds `backend/Dockerfile`, the same
+  image docker-compose builds locally (compose mounts the live code on
+  top). Pushes that touch `backend/` redeploy it automatically.
+- Database: Aiven free MySQL 8.4 (Singapore). Connection settings are
+  Render environment variables only (`DB_HOST`, `DB_PORT`, `DB_USER`,
+  `DB_PASS`) — **never commit them**. `DB_SSL_CA` turns on
+  certificate-verified TLS using `backend/certs/aiven-ca.pem`.
+- Aiven defaults to ANSI SQL mode. `core/Database.php` pins MySQL 8's
+  default `sql_mode` per connection; still write SQL with single-quoted
+  strings only.
+- A schema change means: update `01_schema.sql`, add a numbered
+  migration, and apply that migration to Aiven as well as local Docker.
+- Render's disk is wiped on every restart: store nothing as files.
+  Avatars live in `users.avatar_jpeg` and are served by
+  `GET /avatars/{name}.jpg`.
+- Free Render sleeps after 15 minutes idle (~1 min to wake). The app's
+  read timeout is 90 s and `AppContainer.wakeUpServer()` pings `/health`
+  at launch — keep both.
+- The `cloud` flavour's `BASE_URL` is `https://elijah-fitness-api.onrender.com/`.
 
 ## How to work in this repo
 - One phase-1 step at a time (see `phase-1-foundation.md` §4).

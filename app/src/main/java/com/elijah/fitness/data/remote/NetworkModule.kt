@@ -34,10 +34,21 @@ object NetworkModule {
     }
 
     fun buildRetrofit(tokenStore: TokenStore, authEventBus: AuthEventBus): Retrofit {
+        // Generous read timeout: the free Render server sleeps after 15
+        // minutes idle and takes about a minute to wake. Render holds the
+        // first request until the server is up, so we wait rather than
+        // fail. An offline phone still fails fast (no DNS / no route).
         val httpBuilder = OkHttpClient.Builder()
-            .connectTimeout(15, TimeUnit.SECONDS)
-            .readTimeout(30, TimeUnit.SECONDS)
-            .writeTimeout(30, TimeUnit.SECONDS)
+            .connectTimeout(30, TimeUnit.SECONDS)
+            .readTimeout(90, TimeUnit.SECONDS)
+            .writeTimeout(60, TimeUnit.SECONDS)
+            // Say we're an API client, so a proxy never answers with an
+            // HTML page meant for browsers.
+            .addInterceptor { chain ->
+                chain.proceed(
+                    chain.request().newBuilder().header("Accept", "application/json").build()
+                )
+            }
             .addInterceptor(AuthInterceptor(tokenStore, authEventBus))
 
         if (BuildConfig.DEBUG) {

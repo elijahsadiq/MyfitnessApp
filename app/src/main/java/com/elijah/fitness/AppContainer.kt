@@ -31,6 +31,7 @@ import com.elijah.fitness.tracking.TrackingSession
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 
 /**
  * Manual dependency container. Instantiated once in [FitnessApp] and read
@@ -175,5 +176,18 @@ class AppContainer(applicationContext: Context) {
         goalDeleteCoordinator.flushPending()
         authRepository.logout()
         signOutLocally(context)
+    }
+
+    /**
+     * Fire-and-forget `GET /health` at app start. The free cloud server
+     * sleeps when idle and needs about a minute to wake; starting that
+     * while the splash / login screen is up means it's usually awake by
+     * the time the user taps Log in. Failures are ignored on purpose —
+     * the real requests report their own errors.
+     */
+    fun wakeUpServer() {
+        appScope.launch {
+            runCatching { authApi.health() }
+        }
     }
 }
