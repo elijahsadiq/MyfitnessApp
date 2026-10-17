@@ -616,6 +616,8 @@
     <string name="profile_delete_account_confirm_hint">Type %1$s to confirm</string>
     <string name="profile_delete_account_confirm">Delete forever</string>
     <string name="profile_delete_account_failed">%1$s</string>
+    <!-- Shown on the log-in screen right after the account is deleted. -->
+    <string name="auth_account_deleted">Your account has been deleted.</string>
 
     <!-- Phase 10: notifications -->
     <string name="notification_channel_reminders">Reminders</string>

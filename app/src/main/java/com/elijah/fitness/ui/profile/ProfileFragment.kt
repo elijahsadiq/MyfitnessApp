@@ -34,6 +34,7 @@ import com.elijah.fitness.databinding.DialogEditProfileFieldBinding
 import com.elijah.fitness.databinding.FragmentProfileBinding
 import com.elijah.fitness.notifications.AppNotifications
 import com.elijah.fitness.notifications.ReminderSettings
+import com.elijah.fitness.ui.auth.AuthActivity
 import com.elijah.fitness.ui.base.BaseFragment
 import com.elijah.fitness.ui.base.SnackKind
 import com.elijah.fitness.ui.launcher.LauncherActivity
@@ -286,7 +287,7 @@ class ProfileFragment : BaseFragment<FragmentProfileBinding>() {
                 val ctx = requireContext().applicationContext
                 viewLifecycleOwner.lifecycleScope.launch {
                     (ctx as FitnessApp).container.signOutLocally(ctx)
-                    goToAuth()
+                    goToAuth(accountDeleted = true)
                 }
             }
         }
@@ -516,9 +517,10 @@ class ProfileFragment : BaseFragment<FragmentProfileBinding>() {
         }
     }
 
-    private fun goToAuth() {
+    private fun goToAuth(accountDeleted: Boolean = false) {
         startActivity(
             Intent(requireContext(), LauncherActivity::class.java)
+                .putExtra(AuthActivity.EXTRA_ACCOUNT_DELETED, accountDeleted)
                 .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK or Intent.FLAG_ACTIVITY_NEW_TASK)
         )
         requireActivity().finish()

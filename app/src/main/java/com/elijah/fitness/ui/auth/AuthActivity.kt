@@ -11,7 +11,10 @@ import androidx.core.view.updatePadding
 import androidx.navigation.fragment.NavHostFragment
 import com.elijah.fitness.R
 import com.elijah.fitness.databinding.ActivityAuthBinding
+import com.elijah.fitness.ui.base.SnackKind
+import com.elijah.fitness.ui.base.withKind
 import com.elijah.fitness.ui.main.MainActivity
+import com.google.android.material.snackbar.Snackbar
 
 /**
  * Hosts the auth-side nav graph (onboarding + location priming + login
@@ -84,6 +87,18 @@ class AuthActivity : AppCompatActivity() {
             insetsController.isAppearanceLightStatusBars = !dark
             insetsController.isAppearanceLightNavigationBars = !dark
         }
+
+        // Arrived here straight after deleting the account: confirm it.
+        // Only on first creation, so it doesn't repeat after rotation.
+        if (savedInstanceState == null &&
+            intent.getBooleanExtra(EXTRA_ACCOUNT_DELETED, false)
+        ) {
+            binding.root.post {
+                Snackbar.make(binding.root, R.string.auth_account_deleted, Snackbar.LENGTH_LONG)
+                    .withKind(SnackKind.SUCCESS)
+                    .show()
+            }
+        }
     }
 
     /** Called by child fragments after register / login succeeds. */
@@ -97,6 +112,9 @@ class AuthActivity : AppCompatActivity() {
 
     companion object {
         const val EXTRA_SHOW_ONBOARDING = "show_onboarding"
+
+        /** Set when Profile hands over after a successful account delete. */
+        const val EXTRA_ACCOUNT_DELETED = "account_deleted"
 
         private val DARK_DESTINATIONS = setOf(
             R.id.onboardingHostFragment,

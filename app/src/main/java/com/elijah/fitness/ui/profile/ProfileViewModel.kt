@@ -7,6 +7,7 @@ import com.elijah.fitness.AppContainer
 import com.elijah.fitness.data.model.DistanceWorkout
 import com.elijah.fitness.data.remote.ApiResult
 import com.elijah.fitness.data.remote.apiCall
+import com.elijah.fitness.data.remote.apiCallEmpty
 import com.elijah.fitness.data.remote.dto.DeleteAccountRequestDto
 import com.elijah.fitness.data.remote.dto.UpdateProfileRequestDto
 import com.elijah.fitness.data.remote.dto.UserDto
@@ -205,17 +206,27 @@ class ProfileViewModel(
     fun deleteAccount() {
         viewModelScope.launch {
             val body = DeleteAccountRequestDto(confirm = DeleteAccountRequestDto.CONFIRM_WORD)
-            when (val result = apiCall { container.userApi.deleteMe(body) }) {
-                is ApiResult.Success -> {
+            // DELETE /me answers `{ success: true, data: null }` — no
+            // payload, so it must go through apiCallEmpty. (apiCall wants
+            // non-null data and reported a successful delete as "Server
+            // error"; the next tap then got 401 because the account was
+            // already gone.)
+            val result = apiCallEmpty { container.userApi.deleteMe(body) }
+            // 404 = the account is already gone (e.g. the reply to an
+            // earlier attempt was lost) — same outcome as success.
+            val deleted = result is ApiResult.Success ||
+                (result is ApiResult.Error && result.status == 404)
+            when {
+                deleted -> {
                     container.tokenStore.clear()
                     _events.send(Event.AccountDeleted)
                 }
-                is ApiResult.Error -> _events.send(
+                result is ApiResult.Error -> _events.send(
                     Event.DeleteFailed(
                         result.fieldErrors["confirm"] ?: result.message,
                     )
                 )
-                ApiResult.NetworkError -> _events.send(Event.Network)
+                else -> _events.send(Event.Network)
             }
         }
     }

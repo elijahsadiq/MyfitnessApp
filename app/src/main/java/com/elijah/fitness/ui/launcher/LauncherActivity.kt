@@ -34,6 +34,10 @@ class LauncherActivity : AppCompatActivity() {
             } else {
                 Intent(this@LauncherActivity, AuthActivity::class.java).apply {
                     putExtra(AuthActivity.EXTRA_SHOW_ONBOARDING, !onboarded)
+                    putExtra(
+                        AuthActivity.EXTRA_ACCOUNT_DELETED,
+                        intent.getBooleanExtra(AuthActivity.EXTRA_ACCOUNT_DELETED, false),
+                    )
                 }
             }
             startActivity(next)

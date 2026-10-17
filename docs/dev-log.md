@@ -3124,3 +3124,31 @@ guards against accidental taps (the real risk for this app).
   (cancelled — test account untouched); "Profile updated." (success),
   "No network…" (error), "Goal deleted · Undo" (lime action) all
   rendered in the new style.
+
+## Phase 11 — Step 3: Fix "Server error" on a successful account delete
+
+**Bug** — typing DELETE showed "Server error"; typing it again showed
+"Not authenticated", then the app landed on log-in with the account
+gone. Server log: first `DELETE /me` → **200**, second → **401**. So
+the first request had already deleted the account.
+
+**Cause** — `UserApi.deleteMe` returned `ApiEnvelope<Unit?>` and went
+through `apiCall`, which only counts a reply as success when `data` is
+non-null. `DELETE /me` answers `{ success: true, data: null }`, so the
+success fell into the error branch and showed the fallback message.
+
+**Fix**
+- `deleteMe` now returns `Response<Unit>` and uses `apiCallEmpty`, the
+  helper already used by logout and the workout / goal deletes.
+- A 404 from `DELETE /me` (account already gone, e.g. a lost reply) is
+  treated as deleted too.
+- The log-in screen confirms it: "Your account has been deleted."
+  (success snackbar; `AuthActivity.EXTRA_ACCOUNT_DELETED`, forwarded by
+  `LauncherActivity`, shown once — not again after rotation).
+- `ApiCallTest` (5 tests) pins both helpers' behaviour, including the
+  data-null trap.
+
+**Verified** — both flavours build, 268 tests × 2 flavours pass, lint 0
+errors. Emulator end to end with a throwaway account: logged in, typed
+DELETE once → log-in screen with the confirmation; server log shows a
+single `DELETE /me` 200; the user row is gone.

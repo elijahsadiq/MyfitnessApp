@@ -35,5 +35,5 @@ interface UserApi {
      * — Retrofit's `@DELETE` annotation forbids `@Body` by default.
      */
     @HTTP(method = "DELETE", path = "me", hasBody = true)
-    suspend fun deleteMe(@Body body: DeleteAccountRequestDto): Response<ApiEnvelope<Unit?>>
+    suspend fun deleteMe(@Body body: DeleteAccountRequestDto): Response<Unit>
 }
