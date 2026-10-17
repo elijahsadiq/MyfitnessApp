@@ -1,9 +1,9 @@
 # CLAUDE.md — MyFitnessApp
 
-Guidance for future Claude sessions working in this repository. Full phase-1
-brief lives in `phase-1-foundation.md`; the phase-2 brief lives in
-`docs/prompts/phase-2-backend-and-ui.md`; incremental notes live in
-`docs/dev-log.md`. Keep this file in sync when foundational things change.
+Guidance for future Claude sessions working in this repository. The old
+phase briefs are no longer kept in the repo; the full history of what was
+built and why lives in `docs/dev-log.md`. Keep this file in sync when
+foundational things change.
 
 ---
 
@@ -155,7 +155,7 @@ export JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"
 - The `cloud` flavour's `BASE_URL` is `https://elijah-fitness-api.onrender.com/`.
 
 ## How to work in this repo
-- One phase-1 step at a time (see `phase-1-foundation.md` §4).
+- One step at a time.
 - After each step: build must pass, one commit per step, entry appended to
   `docs/dev-log.md`. Never push or rewrite history.
 - User is stronger in Python than Kotlin. When touching Kotlin/Android
