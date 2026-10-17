@@ -3082,3 +3082,45 @@ magic number to every screen.
 build), Task 6/security chapter (avatar bomb, bcrypt cap, token
 hygiene), marking-scheme LO5 (web security) and LO3 (defensive DB
 interaction).
+
+## Phase 11 — Step 2: Delete account by typing DELETE + branded snackbars
+
+**What was built**
+- **Delete account** no longer asks for the password (users were getting
+  "password did not match" and had no way out). The dialog — same card
+  as the goal delete confirm (trash badge, Cancel + red pill) — keeps
+  "Delete forever" faded until the user types `DELETE`. `DELETE /me`
+  now requires `{ "confirm": "DELETE" }` instead of a password; the
+  token still has to be valid, so only the signed-in user can do it.
+- **Snackbars ("toasts") restyled** at theme level (`snackbarStyle`,
+  `snackbarTextViewStyle`, `snackbarButtonStyle`), so every Snackbar in
+  the app — including the few built with `Snackbar.make` — gets the
+  Kinetic Glow look: `surface_dark` card, 20dp row radius, white Plus
+  Jakarta Medium text, lime SemiBold action button (previously Material's
+  default purple, because the theme never set `colorPrimaryInverse`).
+- **Status badges** (`ui/base/FitnessSnackbar.kt`): `SnackKind.SUCCESS`
+  (lime circle + check), `ERROR` (red circle + "!"), `INFO` (charcoal
+  circle + lime "i"). `BaseFragment.snackbar(..., kind = …)` and
+  `Snackbar.withKind()`; every call site tagged.
+
+**Key design decision** — style through the theme attributes rather
+than a custom Snackbar layout: zero per-screen code, and nothing can be
+missed because Material reads the attributes for every Snackbar.
+**Rejected alternative** — a custom `Toast`/overlay view: loses
+Snackbar's anchoring above the FAB / bottom nav, swipe-to-dismiss and
+accessibility announcements.
+
+**Security note (report)** — dropping the password re-check means a
+stolen *unlocked* phone can delete the account. Accepted: the token is
+already required, tokens are hashed server-side, and the typed word
+guards against accidental taps (the real risk for this app).
+
+**Verified**
+- `assembleLocalDebug` + `assembleCloudDebug`, 263 tests × 2 flavours, 0
+  failures; lint 0 errors.
+- API: wrong word → 422, old `password` body → 422, `DELETE` → 200, token
+  then 401, user + workouts gone from MySQL (cascade).
+- Emulator: dialog button disabled at "DELE", enabled at "DELETE"
+  (cancelled — test account untouched); "Profile updated." (success),
+  "No network…" (error), "Goal deleted · Undo" (lime action) all
+  rendered in the new style.

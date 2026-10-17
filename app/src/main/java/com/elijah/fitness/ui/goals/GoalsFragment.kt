@@ -16,8 +16,9 @@ import com.elijah.fitness.data.model.GoalWithProgress
 import com.elijah.fitness.data.remote.mapper.goalType
 import com.elijah.fitness.databinding.FragmentGoalsBinding
 import com.elijah.fitness.ui.base.BaseFragment
-import com.google.android.material.snackbar.Snackbar
+import com.elijah.fitness.ui.base.SnackKind
 import com.elijah.fitness.ui.base.navigateSafe
+import com.google.android.material.snackbar.Snackbar
 
 /**
  * Goals tab (phase 8b redesign). The whole screen is a single
@@ -96,7 +97,7 @@ class GoalsFragment : BaseFragment<FragmentGoalsBinding>() {
             NewGoalFragment.FRAGMENT_RESULT_KEY, viewLifecycleOwner,
         ) { _, result ->
             if (result.getBoolean(NewGoalFragment.RESULT_SAVED_KEY, false)) {
-                snackbar(R.string.new_goal_saved_snackbar, Snackbar.LENGTH_SHORT).show()
+                snackbar(R.string.new_goal_saved_snackbar, Snackbar.LENGTH_SHORT, kind = SnackKind.SUCCESS).show()
             }
         }
 
@@ -119,9 +120,9 @@ class GoalsFragment : BaseFragment<FragmentGoalsBinding>() {
                 is GoalsViewModel.ErrorEvent.DeletedWithUndo -> showUndoSnackbar(event.goalId)
                 is GoalsViewModel.ErrorEvent.GoalCompleted -> showCompletionSnackbar(event.title)
                 GoalsViewModel.ErrorEvent.MainGoalChanged ->
-                    snackbar(R.string.goals_main_updated_snackbar, Snackbar.LENGTH_SHORT).show()
+                    snackbar(R.string.goals_main_updated_snackbar, Snackbar.LENGTH_SHORT, kind = SnackKind.SUCCESS).show()
                 GoalsViewModel.ErrorEvent.Extended ->
-                    snackbar(R.string.goals_extended_snackbar, Snackbar.LENGTH_SHORT).show()
+                    snackbar(R.string.goals_extended_snackbar, Snackbar.LENGTH_SHORT, kind = SnackKind.SUCCESS).show()
             }
         }
     }
@@ -216,19 +217,19 @@ class GoalsFragment : BaseFragment<FragmentGoalsBinding>() {
             .firstOrNull { it.id == id }
 
     private fun showUndoSnackbar(goalId: String) {
-        snackbar(R.string.goals_deleted_snackbar)
+        snackbar(R.string.goals_deleted_snackbar, kind = SnackKind.SUCCESS)
             .setAction(R.string.goals_deleted_undo) { viewModel.undoDelete(goalId) }
             .show()
     }
 
     private fun showRetrySnackbar(messageRes: Int) {
-        snackbar(messageRes)
+        snackbar(messageRes, kind = SnackKind.ERROR)
             .setAction(R.string.goals_retry) { viewModel.refresh() }
             .show()
     }
 
     private fun showCompletionSnackbar(title: String) {
-        snackbar(getString(R.string.goals_completed_snackbar, title)).show()
+        snackbar(getString(R.string.goals_completed_snackbar, title), kind = SnackKind.SUCCESS).show()
     }
 
     private companion object {

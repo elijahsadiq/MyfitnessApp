@@ -27,12 +27,14 @@ import com.elijah.fitness.databinding.ItemProgressStatRowBinding
 import com.elijah.fitness.databinding.ViewDetailStatCardBinding
 import com.elijah.fitness.tracking.TrackPoint
 import com.elijah.fitness.ui.base.BaseFragment
+import com.elijah.fitness.ui.base.SnackKind
+import com.elijah.fitness.ui.base.navigateSafe
+import com.elijah.fitness.ui.main.MainActivity
 import com.elijah.fitness.ui.tracking.map.DarkMapStyler
 import com.elijah.fitness.ui.tracking.map.MapCameraController
 import com.elijah.fitness.ui.tracking.map.RoutePolylineRenderer
-import com.elijah.fitness.ui.main.MainActivity
-import com.elijah.fitness.util.Formatters
 import com.elijah.fitness.util.Fonts
+import com.elijah.fitness.util.Formatters
 import com.elijah.fitness.util.MetricText
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
@@ -42,7 +44,6 @@ import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
-import com.elijah.fitness.ui.base.navigateSafe
 
 /**
  * Finished workout screen (phase 8c step 7). Rebuilt from
@@ -139,7 +140,7 @@ class WorkoutDetailFragment : BaseFragment<FragmentWorkoutDetailBinding>() {
         when (state) {
             WorkoutDetailViewModel.State.Loading -> Unit
             WorkoutDetailViewModel.State.Error -> {
-                snackbar(R.string.detail_load_error, Snackbar.LENGTH_INDEFINITE)
+                snackbar(R.string.detail_load_error, Snackbar.LENGTH_INDEFINITE, kind = SnackKind.ERROR)
                     .setAction(R.string.goals_retry) { viewModel.retry() }
                     .show()
             }
@@ -153,15 +154,17 @@ class WorkoutDetailFragment : BaseFragment<FragmentWorkoutDetailBinding>() {
     private fun onEvent(event: WorkoutDetailViewModel.Event) {
         when (event) {
             WorkoutDetailViewModel.Event.NotesUpdated ->
-                snackbar(R.string.detail_notes_updated_snackbar, Snackbar.LENGTH_SHORT).show()
+                snackbar(R.string.detail_notes_updated_snackbar, Snackbar.LENGTH_SHORT, kind = SnackKind.SUCCESS).show()
             WorkoutDetailViewModel.Event.UpdateNotesFailed ->
-                snackbar(R.string.detail_notes_failed_snackbar).show()
+                snackbar(R.string.detail_notes_failed_snackbar, kind = SnackKind.ERROR).show()
             WorkoutDetailViewModel.Event.Deleted -> {
-                (activity as? MainActivity)?.showSnackbar(getString(R.string.history_deleted_snackbar))
+                (activity as? MainActivity)?.showSnackbar(
+                    getString(R.string.history_deleted_snackbar), SnackKind.SUCCESS,
+                )
                 findNavController().navigateUp()
             }
             WorkoutDetailViewModel.Event.DeleteFailed ->
-                snackbar(R.string.detail_delete_failed_snackbar).show()
+                snackbar(R.string.detail_delete_failed_snackbar, kind = SnackKind.ERROR).show()
         }
     }
 

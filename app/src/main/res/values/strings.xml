@@ -612,7 +612,8 @@
     <string name="profile_delete_account_button">Delete account</string>
     <string name="profile_delete_account_title">Delete this account?</string>
     <string name="profile_delete_account_body">This permanently deletes your account, every workout, every goal, and your profile picture. This can\'t be undone.</string>
-    <string name="profile_delete_account_password_hint">Enter your password to confirm</string>
+    <!-- %1$s is the word to type (DeleteAccountRequestDto.CONFIRM_WORD). -->
+    <string name="profile_delete_account_confirm_hint">Type %1$s to confirm</string>
     <string name="profile_delete_account_confirm">Delete forever</string>
     <string name="profile_delete_account_failed">%1$s</string>
 

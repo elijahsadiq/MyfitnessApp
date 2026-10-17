@@ -24,6 +24,8 @@ import com.elijah.fitness.R
 import com.elijah.fitness.data.remote.AuthEventBus
 import com.elijah.fitness.databinding.ActivityMainBinding
 import com.elijah.fitness.tracking.TrackingState
+import com.elijah.fitness.ui.base.SnackKind
+import com.elijah.fitness.ui.base.withKind
 import com.elijah.fitness.ui.launcher.LauncherActivity
 import com.elijah.fitness.ui.tracking.LiveTrackingFragment
 import com.google.android.material.snackbar.Snackbar
@@ -104,8 +106,8 @@ class MainActivity : AppCompatActivity(), SnackbarHost {
     }
 
     /** Short Snackbar for messages that outlive the screen that raised them. */
-    fun showSnackbar(message: CharSequence) {
-        val snack = Snackbar.make(binding.mainRoot, message, Snackbar.LENGTH_SHORT)
+    fun showSnackbar(message: CharSequence, kind: SnackKind = SnackKind.INFO) {
+        val snack = Snackbar.make(binding.mainRoot, message, Snackbar.LENGTH_SHORT).withKind(kind)
         snackbarAnchor()?.let { snack.anchorView = it }
         snack.show()
     }

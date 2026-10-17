@@ -17,6 +17,9 @@ final class UserController
     private const AVATAR_URL_PREFIX = 'avatars/';      // served by avatarImage()
     private const AVATAR_JPEG_Q     = 85;
 
+    /** The word the app's delete dialog makes the user type. */
+    private const DELETE_CONFIRM_WORD = 'DELETE';
+
     public static function me(array $_params, array $_body): void
     {
         $id = Auth::requireUser();
@@ -203,10 +206,10 @@ final class UserController
     }
 
     /**
-     * DELETE /me — permanent account removal. Requires the user to pass
-     * `password` in the body; verified with `password_verify` before any
-     * destructive action. Executes inside a transaction so a failure
-     * mid-way leaves the account intact.
+     * DELETE /me — permanent account removal. Requires the body
+     * `{ "confirm": "DELETE" }` (the word the user types in the app's
+     * confirm dialog) before any destructive action. Executes inside a
+     * transaction so a failure mid-way leaves the account intact.
      *
      * Cascade story: the FKs declared in phase-1 + phase-7 + phase-8a
      * clean up auth_tokens, workouts (and their strength_sets +
@@ -217,19 +220,13 @@ final class UserController
     {
         $id = Auth::requireUser();
 
-        $password = $body['password'] ?? null;
-        if (!is_string($password) || $password === '') {
+        if (($body['confirm'] ?? null) !== self::DELETE_CONFIRM_WORD) {
             Response::error('Validation failed', 422,
-                ['password' => 'Current password is required']);
+                ['confirm' => 'Type DELETE to confirm']);
         }
-        $hash = User::passwordHashFor($id);
-        if ($hash === null) {
+        if (User::findById($id) === null) {
             Auth::revokeCurrentToken();
             Response::error('User not found', 404);
-        }
-        if (!password_verify((string) $password, $hash)) {
-            Response::error('Password did not match', 403,
-                ['password' => 'Password did not match']);
         }
 
         $pdo = Database::pdo();

@@ -4,9 +4,9 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.os.bundleOf
 import androidx.core.view.isVisible
 import androidx.fragment.app.viewModels
-import androidx.core.os.bundleOf
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -14,6 +14,7 @@ import com.elijah.fitness.FitnessApp
 import com.elijah.fitness.R
 import com.elijah.fitness.databinding.FragmentWorkoutHistoryBinding
 import com.elijah.fitness.ui.base.BaseFragment
+import com.elijah.fitness.ui.base.SnackKind
 import com.elijah.fitness.ui.base.navigateSafe
 
 /**
@@ -109,15 +110,15 @@ class WorkoutHistoryFragment : BaseFragment<FragmentWorkoutHistoryBinding>() {
         collectOnStart(viewModel.errorEvents) { event ->
             when (event) {
                 is HistoryViewModel.ErrorEvent.Network ->
-                    snackbar(event.messageRes)
+                    snackbar(event.messageRes, kind = SnackKind.ERROR)
                         .setAction(R.string.workouts_retry) { viewModel.refresh() }
                         .show()
                 is HistoryViewModel.ErrorEvent.Generic ->
-                    snackbar(event.messageRes)
+                    snackbar(event.messageRes, kind = SnackKind.ERROR)
                         .setAction(R.string.workouts_retry) { viewModel.refresh() }
                         .show()
                 is HistoryViewModel.ErrorEvent.DeletedWithUndo -> {
-                    snackbar(R.string.history_deleted_snackbar)
+                    snackbar(R.string.history_deleted_snackbar, kind = SnackKind.SUCCESS)
                         .setAction(R.string.history_deleted_undo) {
                             viewModel.undoDelete(event.workoutId)
                         }

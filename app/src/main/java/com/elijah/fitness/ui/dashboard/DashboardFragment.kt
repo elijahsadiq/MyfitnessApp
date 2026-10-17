@@ -13,10 +13,11 @@ import com.elijah.fitness.R
 import com.elijah.fitness.databinding.FragmentDashboardBinding
 import com.elijah.fitness.tracking.TrackingState
 import com.elijah.fitness.ui.base.BaseFragment
+import com.elijah.fitness.ui.base.SnackKind
+import com.elijah.fitness.ui.base.navigateSafe
 import com.elijah.fitness.util.Fonts
 import com.elijah.fitness.util.MetricText
 import java.util.Locale
-import com.elijah.fitness.ui.base.navigateSafe
 
 /**
  * Home screen.
@@ -75,7 +76,7 @@ class DashboardFragment : BaseFragment<FragmentDashboardBinding>() {
                 is DashboardViewModel.ErrorEvent.Network -> event.messageRes
                 is DashboardViewModel.ErrorEvent.Generic -> event.messageRes
             }
-            snackbar(messageRes)
+            snackbar(messageRes, kind = SnackKind.ERROR)
                 .setAction(R.string.workouts_retry) { viewModel.refresh() }
                 .show()
         }

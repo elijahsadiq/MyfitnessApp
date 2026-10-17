@@ -3,17 +3,21 @@ package com.elijah.fitness.ui.profile
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.Color
+import android.graphics.drawable.ColorDrawable
+import android.graphics.drawable.GradientDrawable
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
-import android.text.format.DateFormat
 import android.text.InputType
+import android.text.format.DateFormat
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.core.widget.doAfterTextChanged
@@ -23,6 +27,7 @@ import coil.load
 import com.elijah.fitness.BuildConfig
 import com.elijah.fitness.FitnessApp
 import com.elijah.fitness.R
+import com.elijah.fitness.data.remote.dto.DeleteAccountRequestDto
 import com.elijah.fitness.data.remote.dto.UserDto
 import com.elijah.fitness.databinding.DialogDeleteAccountBinding
 import com.elijah.fitness.databinding.DialogEditProfileFieldBinding
@@ -30,22 +35,23 @@ import com.elijah.fitness.databinding.FragmentProfileBinding
 import com.elijah.fitness.notifications.AppNotifications
 import com.elijah.fitness.notifications.ReminderSettings
 import com.elijah.fitness.ui.base.BaseFragment
+import com.elijah.fitness.ui.base.SnackKind
 import com.elijah.fitness.ui.launcher.LauncherActivity
-import com.elijah.fitness.util.BmiCategory
 import com.elijah.fitness.util.AvatarImage
+import com.elijah.fitness.util.BmiCategory
 import com.elijah.fitness.util.BodyMetrics
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.timepicker.MaterialTimePicker
 import com.google.android.material.timepicker.TimeFormat
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import java.time.Instant
 import java.time.LocalTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * Profile screen — phase 8 step 4 rebuild. Binds every field to GET /me
@@ -260,19 +266,22 @@ class ProfileFragment : BaseFragment<FragmentProfileBinding>() {
     private fun handleEvent(event: ProfileViewModel.Event) {
         when (event) {
             ProfileViewModel.Event.Saved ->
-                snack(R.string.profile_update_saved_snackbar)
+                snack(R.string.profile_update_saved_snackbar, SnackKind.SUCCESS)
             is ProfileViewModel.Event.SaveFailed ->
-                snack(R.string.profile_update_failed_snackbar)
+                snack(R.string.profile_update_failed_snackbar, SnackKind.ERROR)
             ProfileViewModel.Event.AvatarUpdated ->
-                snack(R.string.profile_avatar_updated)
+                snack(R.string.profile_avatar_updated, SnackKind.SUCCESS)
             ProfileViewModel.Event.AvatarRemoved ->
-                snack(R.string.profile_avatar_removed)
+                snack(R.string.profile_avatar_removed, SnackKind.SUCCESS)
             ProfileViewModel.Event.AvatarFailed ->
-                snack(R.string.profile_avatar_failed)
+                snack(R.string.profile_avatar_failed, SnackKind.ERROR)
             ProfileViewModel.Event.Network ->
-                snack(R.string.profile_network_snackbar)
+                snack(R.string.profile_network_snackbar, SnackKind.ERROR)
             is ProfileViewModel.Event.DeleteFailed ->
-                snackbar(getString(R.string.profile_delete_account_failed, event.message)).show()
+                snackbar(
+                    getString(R.string.profile_delete_account_failed, event.message),
+                    kind = SnackKind.ERROR,
+                ).show()
             ProfileViewModel.Event.AccountDeleted -> {
                 val ctx = requireContext().applicationContext
                 viewLifecycleOwner.lifecycleScope.launch {
@@ -401,27 +410,46 @@ class ProfileFragment : BaseFragment<FragmentProfileBinding>() {
     // Delete-account dialog
     // -----------------------------------------------------------------
 
+    /**
+     * Same card as the goal delete dialog (trash badge, Cancel + red
+     * pill). "Delete forever" stays disabled until the user types the
+     * confirm word — no password needed.
+     */
     private fun showDeleteAccountDialog() {
-        val binding = DialogDeleteAccountBinding.inflate(layoutInflater)
-        val dialog = MaterialAlertDialogBuilder(requireContext())
-            .setTitle(R.string.profile_delete_account_title)
-            .setView(binding.root)
-            .setPositiveButton(R.string.profile_delete_account_confirm, null)
-            .setNegativeButton(R.string.profile_edit_cancel, null)
+        val dialogBinding = DialogDeleteAccountBinding.inflate(layoutInflater)
+        val confirmWord = DeleteAccountRequestDto.CONFIRM_WORD
+        dialogBinding.confirmLayout.hint =
+            getString(R.string.profile_delete_account_confirm_hint, confirmWord)
+
+        val dialog = AlertDialog.Builder(requireContext())
+            .setView(dialogBinding.root)
             .create()
-        dialog.setOnShowListener {
-            val positive = dialog.getButton(android.app.AlertDialog.BUTTON_POSITIVE)
-            positive.isEnabled = false
-            binding.passwordInput.doAfterTextChanged { editable ->
-                positive.isEnabled = (editable?.length ?: 0) > 0
-            }
-            positive.setOnClickListener {
-                positive.isEnabled = false
-                viewModel.deleteAccount(
-                    binding.passwordInput.text?.toString().orEmpty()
-                )
-                dialog.dismiss()
-            }
+        // 28dp white card on a transparent window, like DeleteGoalConfirmDialog.
+        dialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+        dialogBinding.root.background = GradientDrawable().apply {
+            shape = GradientDrawable.RECTANGLE
+            setColor(ContextCompat.getColor(requireContext(), R.color.surface_white))
+            cornerRadius = resources.getDimension(R.dimen.radius_bottom_sheet_top)
+        }
+
+        val confirm = dialogBinding.deleteAccountConfirm
+        fun typedWordMatches(): Boolean =
+            dialogBinding.confirmInput.text?.toString()?.trim()
+                .equals(confirmWord, ignoreCase = true)
+        fun syncConfirm() {
+            val ready = typedWordMatches()
+            confirm.isEnabled = ready
+            confirm.alpha = if (ready) 1f else DISABLED_ALPHA
+        }
+        syncConfirm()
+        dialogBinding.confirmInput.doAfterTextChanged { syncConfirm() }
+
+        dialogBinding.deleteAccountCancel.setOnClickListener { dialog.dismiss() }
+        confirm.setOnClickListener {
+            if (!typedWordMatches()) return@setOnClickListener
+            confirm.isEnabled = false
+            viewModel.deleteAccount()
+            dialog.dismiss()
         }
         dialog.show()
     }
@@ -448,7 +476,7 @@ class ProfileFragment : BaseFragment<FragmentProfileBinding>() {
                 viewModel.uploadAvatar(jpeg, "image/jpeg")
             } else {
                 binding.avatarProgress.isVisible = false
-                snack(R.string.profile_avatar_failed)
+                snack(R.string.profile_avatar_failed, SnackKind.ERROR)
             }
         }
     }
@@ -496,8 +524,8 @@ class ProfileFragment : BaseFragment<FragmentProfileBinding>() {
         requireActivity().finish()
     }
 
-    private fun snack(messageRes: Int) {
-        snackbar(messageRes, Snackbar.LENGTH_SHORT).show()
+    private fun snack(messageRes: Int, kind: SnackKind) {
+        snackbar(messageRes, Snackbar.LENGTH_SHORT, kind = kind).show()
     }
 
     companion object {
@@ -506,5 +534,8 @@ class ProfileFragment : BaseFragment<FragmentProfileBinding>() {
 
         /** "82" or "82.5" — no trailing ".0". */
         private val NUMBER_FORMAT = java.text.DecimalFormat("0.#")
+
+        /** "Delete forever" until the confirm word is typed. */
+        private const val DISABLED_ALPHA = 0.4f
     }
 }

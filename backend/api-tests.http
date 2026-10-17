@@ -496,21 +496,21 @@ definitely not a jpeg
 DELETE {{baseUrl}}/me/avatar
 Authorization: Bearer {{token}}
 
-### 41. DELETE /me — wrong password (expect 403 with fields.password)
+### 41. DELETE /me — wrong confirm word (expect 422 with fields.confirm)
 DELETE {{baseUrl}}/me
 Content-Type: application/json
 Authorization: Bearer {{token}}
 
 {
-  "password": "wrong-password"
+  "confirm": "delete"
 }
 
-### 42. DELETE /me — correct password (permanent)
+### 42. DELETE /me — typed DELETE (permanent)
 ### Only run this against a scratch account!
 DELETE {{baseUrl}}/me
 Content-Type: application/json
 Authorization: Bearer {{token}}
 
 {
-  "password": "Password123"
+  "confirm": "DELETE"
 }

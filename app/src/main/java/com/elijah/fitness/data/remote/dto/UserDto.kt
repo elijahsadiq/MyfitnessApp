@@ -22,7 +22,13 @@ data class UpdateProfileRequestDto(
     val heightCm: Double? = null,
 )
 
+/** Body of `DELETE /me`; the server only deletes when [confirm] is [CONFIRM_WORD]. */
 @Serializable
 data class DeleteAccountRequestDto(
-    val password: String,
-)
+    val confirm: String,
+) {
+    companion object {
+        /** The word the user types in the delete-account dialog. */
+        const val CONFIRM_WORD = "DELETE"
+    }
+}

@@ -17,12 +17,13 @@ import com.elijah.fitness.R
 import com.elijah.fitness.data.model.ActivityType
 import com.elijah.fitness.databinding.FragmentLogDistanceWorkoutBinding
 import com.elijah.fitness.ui.base.BaseFragment
+import com.elijah.fitness.ui.base.SnackKind
 import com.elijah.fitness.ui.history.WorkoutDetailFragment
+import com.elijah.fitness.util.Fonts
+import com.elijah.fitness.util.MetricText
 import com.google.android.material.datepicker.CalendarConstraints
 import com.google.android.material.datepicker.DateValidatorPointBackward
 import com.google.android.material.datepicker.MaterialDatePicker
-import com.elijah.fitness.util.Fonts
-import com.elijah.fitness.util.MetricText
 import com.google.android.material.timepicker.MaterialTimePicker
 import com.google.android.material.timepicker.TimeFormat
 import java.time.Instant
@@ -324,7 +325,7 @@ class LogDistanceWorkoutFragment : BaseFragment<FragmentLogDistanceWorkoutBindin
     }
 
     private fun showSaveRetry(messageRes: Int) {
-        snackbar(messageRes, anchor = binding.logSaveContainer)
+        snackbar(messageRes, anchor = binding.logSaveContainer, kind = SnackKind.ERROR)
             .setAction(R.string.log_error_save_retry) { attemptSave() }
             .show()
     }

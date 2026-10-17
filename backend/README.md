@@ -216,7 +216,7 @@ User (phase 2 + phase 8)
   PUT    /me
   POST   /me/avatar          (multipart; JPEG/PNG; re-encoded to 512×512)
   DELETE /me/avatar
-  DELETE /me                 (body { password })
+  DELETE /me                 (body { "confirm": "DELETE" })
   GET    /avatars/{name}.jpg (public — the stored photo; name is random)
 
 Workouts (phase 2 + phase 8a)

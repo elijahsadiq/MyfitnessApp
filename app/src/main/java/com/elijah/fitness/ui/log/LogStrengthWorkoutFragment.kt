@@ -20,6 +20,7 @@ import com.elijah.fitness.data.model.StrengthSet
 import com.elijah.fitness.databinding.DialogAddSetBinding
 import com.elijah.fitness.databinding.FragmentLogStrengthWorkoutBinding
 import com.elijah.fitness.ui.base.BaseFragment
+import com.elijah.fitness.ui.base.SnackKind
 import com.elijah.fitness.ui.history.WorkoutDetailFragment
 import com.google.android.material.datepicker.CalendarConstraints
 import com.google.android.material.datepicker.DateValidatorPointBackward
@@ -245,7 +246,7 @@ class LogStrengthWorkoutFragment : BaseFragment<FragmentLogStrengthWorkoutBindin
     }
 
     private fun showSaveRetry(messageRes: Int) {
-        snackbar(messageRes, anchor = binding.logSaveContainer)
+        snackbar(messageRes, anchor = binding.logSaveContainer, kind = SnackKind.ERROR)
             .setAction(R.string.log_error_save_retry) { attemptSave() }
             .show()
     }

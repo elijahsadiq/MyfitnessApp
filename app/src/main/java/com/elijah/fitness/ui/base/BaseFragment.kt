@@ -80,21 +80,23 @@ abstract class BaseFragment<VB : ViewBinding> : Fragment() {
     /** Show an error message in a Snackbar (above the bottom nav when shown). */
     protected fun showError(message: CharSequence) {
         if (_binding == null) return
-        snackbar(message).show()
+        snackbar(message, kind = SnackKind.ERROR).show()
     }
 
     /**
      * Build a Snackbar for this screen. It floats just above [anchor] —
      * by default this screen's FAB ([snackbarAnchorView]) or else the
      * bottom navigation — instead of covering it. Pass a pinned Save
-     * button as [anchor] on form screens.
+     * button as [anchor] on form screens. [kind] picks the status badge
+     * (success / error / info) shown before the message.
      */
     protected fun snackbar(
         message: CharSequence,
         duration: Int = Snackbar.LENGTH_LONG,
         anchor: View? = null,
+        kind: SnackKind = SnackKind.INFO,
     ): Snackbar {
-        val snack = Snackbar.make(binding.root, message, duration)
+        val snack = Snackbar.make(binding.root, message, duration).withKind(kind)
         val anchorView = anchor
             ?: snackbarAnchorView()?.takeIf { it.isShown }
             ?: (activity as? SnackbarHost)?.snackbarAnchor()
@@ -109,7 +111,8 @@ abstract class BaseFragment<VB : ViewBinding> : Fragment() {
         @StringRes messageRes: Int,
         duration: Int = Snackbar.LENGTH_LONG,
         anchor: View? = null,
-    ): Snackbar = snackbar(getString(messageRes), duration, anchor)
+        kind: SnackKind = SnackKind.INFO,
+    ): Snackbar = snackbar(getString(messageRes), duration, anchor, kind)
 
     /**
      * Toggle between an empty-state view and the primary content view.

@@ -196,13 +196,15 @@ class ProfileViewModel(
     }
 
     /**
-     * Permanent delete. On success clears the local token so the next
-     * screen is Auth, and sends an `AccountDeleted` event so the fragment
-     * bounces to [com.elijah.fitness.ui.launcher.LauncherActivity].
+     * Permanent delete, confirmed by the user typing
+     * [DeleteAccountRequestDto.CONFIRM_WORD]. On success clears the local
+     * token so the next screen is Auth, and sends an `AccountDeleted`
+     * event so the fragment bounces to
+     * [com.elijah.fitness.ui.launcher.LauncherActivity].
      */
-    fun deleteAccount(password: String) {
+    fun deleteAccount() {
         viewModelScope.launch {
-            val body = DeleteAccountRequestDto(password = password)
+            val body = DeleteAccountRequestDto(confirm = DeleteAccountRequestDto.CONFIRM_WORD)
             when (val result = apiCall { container.userApi.deleteMe(body) }) {
                 is ApiResult.Success -> {
                     container.tokenStore.clear()
@@ -210,7 +212,7 @@ class ProfileViewModel(
                 }
                 is ApiResult.Error -> _events.send(
                     Event.DeleteFailed(
-                        result.fieldErrors["password"] ?: result.message,
+                        result.fieldErrors["confirm"] ?: result.message,
                     )
                 )
                 ApiResult.NetworkError -> _events.send(Event.Network)

@@ -1,6 +1,5 @@
 package com.elijah.fitness.ui.goals
 
-import androidx.appcompat.app.AlertDialog
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -11,6 +10,7 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import androidx.annotation.StringRes
+import androidx.appcompat.app.AlertDialog
 import androidx.core.view.isVisible
 import androidx.core.widget.doAfterTextChanged
 import androidx.fragment.app.setFragmentResult
@@ -25,6 +25,7 @@ import com.elijah.fitness.databinding.ViewGoalActivityTileBinding
 import com.elijah.fitness.databinding.ViewGoalMetricPillBinding
 import com.elijah.fitness.ui.auth.FieldError
 import com.elijah.fitness.ui.base.BaseFragment
+import com.elijah.fitness.ui.base.SnackKind
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import java.text.NumberFormat
 import java.time.LocalDate
@@ -126,7 +127,7 @@ class NewGoalFragment : BaseFragment<FragmentNewGoalBinding>() {
                     findNavController().popBackStack()
                 }
                 is NewGoalViewModel.Event.ShowError -> {
-                    snackbar(event.messageRes, anchor = binding.newGoalSubmitContainer).show()
+                    snackbar(event.messageRes, anchor = binding.newGoalSubmitContainer, kind = SnackKind.ERROR).show()
                 }
             }
         }

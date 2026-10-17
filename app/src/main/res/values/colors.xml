@@ -37,6 +37,7 @@
     <!-- Accent (single) -->
     <color name="lime_accent">#D4F26A</color>              <!-- primary CTA, FAB, active pill -->
     <color name="lime_dim">#B6D24E</color>                 <!-- pressed state / dim -->
+    <color name="lime_ripple">#33D4F26A</color>            <!-- 20% lime: ripple on dark surfaces (Snackbar action) -->
     <color name="lime_deep">#536600</color>                <!-- M3 colorPrimary role -->
     <color name="on_lime_deep">#5A6E00</color>             <!-- on-primary-container M3 role -->
 

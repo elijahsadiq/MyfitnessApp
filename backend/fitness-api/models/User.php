@@ -27,17 +27,6 @@ final class User
         return $row !== false ? $row : null;
     }
 
-    /** Look up only the password hash for the account-delete verify step. */
-    public static function passwordHashFor(int $id): ?string
-    {
-        $stmt = Database::pdo()->prepare(
-            'SELECT password_hash FROM users WHERE id = ?'
-        );
-        $stmt->execute([$id]);
-        $row = $stmt->fetch();
-        return $row !== false ? (string) $row['password_hash'] : null;
-    }
-
     public static function create(
         string $email,
         string $fullName,

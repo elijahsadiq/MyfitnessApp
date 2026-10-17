@@ -503,4 +503,43 @@
         <item name="marginHorizontal">4dp</item>
         <item name="shapeAppearance">@style/ShapeAppearance.Fitness.Pill</item>
     </style>
+
+    <!--
+      Snackbars ("toasts"). Wired up at theme level (snackbarStyle /
+      snackbarTextViewStyle / snackbarButtonStyle) so every Snackbar in
+      the app gets them, including ones built with Snackbar.make().
+      Dark hero surface, 20dp row radius, white Plus Jakarta body, lime
+      action. The leading status badge (success / error / info) comes
+      from ui/base/FitnessSnackbar.kt.
+    -->
+    <style name="Widget.Fitness.Snackbar" parent="Widget.Material3.Snackbar">
+        <item name="backgroundTint">@color/surface_dark</item>
+        <item name="shapeAppearance">@style/ShapeAppearance.Fitness.Snackbar</item>
+        <item name="android:layout_margin">@dimen/space_lg</item>
+        <item name="actionTextColorAlpha">1</item>
+        <item name="animationMode">slide</item>
+    </style>
+
+    <style name="ShapeAppearance.Fitness.Snackbar" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">@dimen/radius_row</item>
+    </style>
+
+    <style name="Widget.Fitness.Snackbar.TextView" parent="Widget.Material3.Snackbar.TextView">
+        <item name="android:alpha">1</item>
+        <item name="android:textAppearance">@style/TextAppearance.Fitness.BodyMd</item>
+        <item name="android:textColor">@color/text_on_dark</item>
+        <item name="android:fontFamily">@font/plus_jakarta_sans_medium</item>
+        <item name="fontFamily">@font/plus_jakarta_sans_medium</item>
+        <item name="android:maxLines">3</item>
+    </style>
+
+    <style name="Widget.Fitness.Snackbar.Button" parent="Widget.Material3.Button.TextButton.Snackbar">
+        <item name="android:textColor">@color/lime_accent</item>
+        <item name="android:textAppearance">@style/TextAppearance.Fitness.Button</item>
+        <item name="android:fontFamily">@font/plus_jakarta_sans_semibold</item>
+        <item name="fontFamily">@font/plus_jakarta_sans_semibold</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="rippleColor">@color/lime_ripple</item>
+    </style>
 </resources>

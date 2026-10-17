@@ -32,20 +32,22 @@ import com.elijah.fitness.tracking.LocationTrackingService
 import com.elijah.fitness.tracking.TrackPoint
 import com.elijah.fitness.tracking.TrackingState
 import com.elijah.fitness.ui.base.BaseFragment
+import com.elijah.fitness.ui.base.SnackKind
+import com.elijah.fitness.ui.base.withKind
 import com.elijah.fitness.ui.history.WorkoutDetailFragment
 import com.elijah.fitness.ui.main.MainActivity
 import com.elijah.fitness.ui.tracking.map.DarkMapStyler
 import com.elijah.fitness.ui.tracking.map.MapCameraController
 import com.elijah.fitness.ui.tracking.map.RoutePolylineRenderer
-import com.elijah.fitness.util.Formatters
 import com.elijah.fitness.util.Fonts
+import com.elijah.fitness.util.Formatters
 import com.elijah.fitness.util.MetricText
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
-import org.osmdroid.util.GeoPoint
 import java.time.Duration
 import java.time.Instant
 import java.util.Locale
+import org.osmdroid.util.GeoPoint
 
 /**
  * Live tracking screen (phase 8c step 6, audit rework).
@@ -249,7 +251,9 @@ class LiveTrackingFragment : BaseFragment<FragmentLiveTrackingBinding>() {
 
     private fun onTrackingCouldNotStart() {
         val activity = activity ?: return
-        (activity as? MainActivity)?.showSnackbar(getString(R.string.tracking_could_not_start))
+        (activity as? MainActivity)?.showSnackbar(
+            getString(R.string.tracking_could_not_start), SnackKind.ERROR,
+        )
         // Posted: this can run from onViewCreated, mid fragment transaction.
         view?.post { if (isAdded) findNavController().navigateUp() }
     }
@@ -275,7 +279,7 @@ class LiveTrackingFragment : BaseFragment<FragmentLiveTrackingBinding>() {
         if (locationOffSnackbar?.isShownOrQueued == true) return
         locationOffSnackbar = Snackbar.make(
             binding.root, R.string.tracking_location_off, Snackbar.LENGTH_INDEFINITE,
-        ).setAction(R.string.tracking_location_turn_on) {
+        ).withKind(SnackKind.ERROR).setAction(R.string.tracking_location_turn_on) {
             runCatching { startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)) }
         }.setAnchorView(binding.trackingPanel).also { it.show() }
     }
@@ -531,7 +535,8 @@ class LiveTrackingFragment : BaseFragment<FragmentLiveTrackingBinding>() {
             binding.root,
             R.string.live_tracking_save_failed_snackbar,
             Snackbar.LENGTH_LONG,
-        ).setAction(R.string.log_error_save_retry) { viewModel.save() }
+        ).withKind(SnackKind.ERROR)
+            .setAction(R.string.log_error_save_retry) { viewModel.save() }
             .setAnchorView(binding.trackingPanel)
             .show()
     }

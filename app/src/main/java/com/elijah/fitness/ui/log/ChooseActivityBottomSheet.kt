@@ -19,11 +19,13 @@ import com.elijah.fitness.data.model.ActivityType
 import com.elijah.fitness.databinding.BottomSheetChooseActivityBinding
 import com.elijah.fitness.databinding.ViewLogSheetActivityTileBinding
 import com.elijah.fitness.tracking.LocationPermissions
+import com.elijah.fitness.ui.base.SnackKind
+import com.elijah.fitness.ui.base.navigateSafe
+import com.elijah.fitness.ui.base.withKind
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import com.elijah.fitness.ui.base.navigateSafe
 
 /**
  * "Log a workout" bottom sheet (phase 8c step 4). One step, three
@@ -214,7 +216,7 @@ class ChooseActivityBottomSheet : BottomSheetDialogFragment() {
             binding.root,
             R.string.log_sheet_permission_denied_snackbar,
             Snackbar.LENGTH_LONG,
-        )
+        ).withKind(SnackKind.INFO)
         if (!LocationPermissions.shouldShowRationale(this)) {
             snack.setAction(R.string.auth_location_open_settings) {
                 runCatching {

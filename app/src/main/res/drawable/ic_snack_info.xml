@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Snackbar status badge: charcoal circle with a lime "i" (heads-up). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="28dp"
+    android:height="28dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="@color/inverse_surface"
+        android:pathData="M12,0a12,12 0,1 1,0 24a12,12 0,1 1,0 -24z" />
+    <path
+        android:fillColor="@color/lime_accent"
+        android:pathData="M12,5.25a1.5,1.5 0,1 1,0 3a1.5,1.5 0,1 1,0 -3z M10.75,10h2.5v8.5h-2.5z" />
+</vector>

@@ -13,6 +13,7 @@ import com.elijah.fitness.FitnessApp
 import com.elijah.fitness.R
 import com.elijah.fitness.databinding.FragmentRegisterBinding
 import com.elijah.fitness.ui.base.BaseFragment
+import com.elijah.fitness.ui.base.SnackKind
 import com.elijah.fitness.util.UnitSystem
 
 /**
@@ -144,7 +145,7 @@ class RegisterFragment : BaseFragment<FragmentRegisterBinding>() {
     }
 
     private fun showRetrySnackbar(messageRes: Int) {
-        snackbar(messageRes)
+        snackbar(messageRes, kind = SnackKind.ERROR)
             .setAction(R.string.auth_retry) { submit() }
             .show()
     }
