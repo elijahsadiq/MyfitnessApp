@@ -96,6 +96,14 @@ final class GoalController
         $durationDays = (int)    $body['durationDays'];
         $activityType = self::stringOrNull($body['activityType'] ?? null);
 
+        if ($activityType !== null && !in_array($activityType, Goal::ACTIVITY_TYPES, true)) {
+            Response::error(
+                'Validation failed',
+                422,
+                ['activityType' => 'Must be one of: ' . implode(', ', Goal::ACTIVITY_TYPES)]
+            );
+        }
+
         self::validateTargetRange($goalType, $target);
         self::validateActivityGoalTypeCombo($goalType, $activityType);
 

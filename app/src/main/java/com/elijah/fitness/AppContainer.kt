@@ -209,6 +209,8 @@ class AppContainer(applicationContext: Context) {
         goalDeleteCoordinator.cancelAll()
         workoutRepository.clearCache()
         goalRepository.clearCache()
+        lastLoggedActivityStore.clear()
+        AppNotifications.cancelAll(context)
         userSettings.reset()
         tokenStore.clear()
     }

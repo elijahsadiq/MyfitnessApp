@@ -67,7 +67,8 @@ final class WorkoutController
             ->required('activityType')->inEnum('activityType', self::ALLOWED_TYPES)
             ->required('startTime')->isDatetime('startTime')
             ->required('durationSeconds')->integer('durationSeconds')->inRange('durationSeconds', 1, 86400)
-            ->numeric('distanceMeters')->inRange('distanceMeters', 0, 300000);
+            ->numeric('distanceMeters')->inRange('distanceMeters', 0, 300000)
+            ->maxLength('notes', 2000);
 
         if ($v->fails()) {
             Response::error('Validation failed', 422, $v->errors());
@@ -91,6 +92,10 @@ final class WorkoutController
             }
             $seen = [];
             foreach ($routePoints as $i => $pt) {
+                if (!is_array($pt)) {
+                    Response::error('Validation failed', 422,
+                        ['routePoints' => 'Point #' . ($i + 1) . ' is invalid']);
+                }
                 $pv = (new Validator($pt))
                     ->required('seq')->integer('seq')->inRange('seq', 0, PHP_INT_MAX)
                     ->required('latitude')->numeric('latitude')->inRange('latitude', -90, 90)
@@ -119,6 +124,9 @@ final class WorkoutController
                 Response::error('Validation failed', 422, ['sets' => 'At least one set is required']);
             }
             foreach ($sets as $i => $set) {
+                if (!is_array($set)) {
+                    Response::error('Validation failed', 422, ['sets' => "Set #" . ($i + 1) . " is invalid"]);
+                }
                 $sv = (new Validator($set))
                     ->required('exerciseName')->maxLength('exerciseName', 120)
                     ->required('reps')->integer('reps')->inRange('reps', 1, 500)

@@ -246,7 +246,7 @@ class NewGoalViewModel(
             } else {
                 // Fresh goal: start today in the client zone; server rejects
                 // if it drifts more than ±1 day from server-UTC today.
-                val startDate = s.startDate ?: LocalDate.ofInstant(clock.instant(), zone)
+                val startDate = s.startDate ?: clock.instant().atZone(zone).toLocalDate()
                 repository.createGoal(
                     title = autoTitle(s),
                     activityType = activity,

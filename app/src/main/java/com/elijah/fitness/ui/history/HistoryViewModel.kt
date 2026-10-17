@@ -147,7 +147,7 @@ class HistoryViewModel(
 
     private fun computeMomentum(workouts: List<Workout>): Momentum {
         val now = clock.instant()
-        val today = LocalDate.ofInstant(now, zone)
+        val today = now.atZone(zone).toLocalDate()
         val monday = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
         val prevMonday = monday.minusWeeks(1)
         val startOfWeek = monday.atStartOfDay(zone).toInstant()
@@ -165,7 +165,7 @@ class HistoryViewModel(
             val distanceMeters = (workout as? DistanceWorkout)?.distanceMeters ?: 0.0
             when {
                 !workout.startTime.isBefore(startOfWeek) -> {
-                    val dayIndex = LocalDate.ofInstant(workout.startTime, zone)
+                    val dayIndex = workout.startTime.atZone(zone).toLocalDate()
                         .dayOfWeek.value - 1  // Mon = 0
                     if (dayIndex in 0..6) perDay[dayIndex] += distanceMeters
                     thisWeekMeters += distanceMeters
@@ -191,7 +191,7 @@ class HistoryViewModel(
 
     private fun buildSections(workouts: List<Workout>, unsynced: Set<String>): List<HistoryItem> {
         if (workouts.isEmpty()) return emptyList()
-        val today = LocalDate.ofInstant(clock.instant(), zone)
+        val today = clock.instant().atZone(zone).toLocalDate()
         val startOfWeek = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
             .atStartOfDay(zone).toInstant()
         val (thisWeek, earlier) = workouts.partition { !it.startTime.isBefore(startOfWeek) }

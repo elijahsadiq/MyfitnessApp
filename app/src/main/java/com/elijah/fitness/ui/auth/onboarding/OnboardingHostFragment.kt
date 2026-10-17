@@ -13,6 +13,7 @@ import com.elijah.fitness.R
 import com.elijah.fitness.databinding.FragmentOnboardingHostBinding
 import com.elijah.fitness.ui.base.BaseFragment
 import kotlinx.coroutines.launch
+import com.elijah.fitness.ui.base.navigateSafe
 
 /**
  * Onboarding host — a ViewPager2 with three [OnboardingPageFragment]
@@ -88,7 +89,7 @@ class OnboardingHostFragment : BaseFragment<FragmentOnboardingHostBinding>() {
         // stop the pages reappearing on the next launch.
         viewLifecycleOwner.lifecycleScope.launch {
             container.onboardingStore.markCompleted()
-            findNavController().navigate(actionId)
+            findNavController().navigateSafe(actionId)
         }
     }
 

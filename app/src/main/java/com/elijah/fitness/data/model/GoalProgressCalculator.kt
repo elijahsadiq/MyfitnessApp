@@ -38,7 +38,7 @@ class GoalProgressCalculator(
             goalRepository.observeGoals(),
             workoutRepository.observeWorkouts(),
         ) { goals, workouts ->
-            val today = LocalDate.ofInstant(clock.instant(), zone)
+            val today = clock.instant().atZone(zone).toLocalDate()
             goals.map { goal -> goal.snapshot(workouts, today) }
         }
 

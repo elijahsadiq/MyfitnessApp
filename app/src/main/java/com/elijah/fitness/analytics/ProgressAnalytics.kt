@@ -131,7 +131,7 @@ object ProgressAnalytics {
         now: Instant,
         zone: ZoneId,
     ): Pair<Instant, Instant> {
-        val today = LocalDate.ofInstant(now, zone)
+        val today = now.atZone(zone).toLocalDate()
         return when (period) {
             AnalyticsPeriod.WEEK -> {
                 val monday = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
@@ -156,7 +156,7 @@ object ProgressAnalytics {
         now: Instant,
         zone: ZoneId,
     ): List<BarPoint> {
-        val today = LocalDate.ofInstant(now, zone)
+        val today = now.atZone(zone).toLocalDate()
         val monday = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
         val startOfWeek = monday.atStartOfDay(zone).toInstant()
         val endOfWeek = monday.plusWeeks(1).atStartOfDay(zone).toInstant()
@@ -164,7 +164,7 @@ object ProgressAnalytics {
         workouts.asSequence()
             .filter { !it.startTime.isBefore(startOfWeek) && it.startTime.isBefore(endOfWeek) }
             .forEach {
-                val day = LocalDate.ofInstant(it.startTime, zone).dayOfWeek
+                val day = it.startTime.atZone(zone).toLocalDate().dayOfWeek
                 perDay[day] = (perDay[day] ?: 0L) + it.duration.toMinutes()
             }
         return listOf(
@@ -183,7 +183,7 @@ object ProgressAnalytics {
         now: Instant,
         zone: ZoneId,
     ): List<BarPoint> {
-        val today = LocalDate.ofInstant(now, zone)
+        val today = now.atZone(zone).toLocalDate()
         val first = today.withDayOfMonth(1)
         val endExclusive = first.plusMonths(1)
         val startOfMonth = first.atStartOfDay(zone).toInstant()
@@ -195,7 +195,7 @@ object ProgressAnalytics {
         workouts.asSequence()
             .filter { !it.startTime.isBefore(startOfMonth) && it.startTime.isBefore(endOfMonth) }
             .forEach {
-                val date = LocalDate.ofInstant(it.startTime, zone)
+                val date = it.startTime.atZone(zone).toLocalDate()
                 val weekIdx = ((date.dayOfMonth + first.dayOfWeek.value - 2) / 7)
                     .coerceIn(0, weekCount - 1)
                 perWeek[weekIdx] += it.duration.toMinutes()
@@ -210,13 +210,13 @@ object ProgressAnalytics {
         now: Instant,
         zone: ZoneId,
     ): List<BarPoint> {
-        val today = LocalDate.ofInstant(now, zone)
+        val today = now.atZone(zone).toLocalDate()
         val year = today.year
         val perMonth = LongArray(12)
         workouts.asSequence()
-            .filter { LocalDate.ofInstant(it.startTime, zone).year == year }
+            .filter { it.startTime.atZone(zone).toLocalDate().year == year }
             .forEach {
-                val m = LocalDate.ofInstant(it.startTime, zone).monthValue - 1
+                val m = it.startTime.atZone(zone).toLocalDate().monthValue - 1
                 perMonth[m] += it.duration.toMinutes()
             }
         return (0 until 12).map {

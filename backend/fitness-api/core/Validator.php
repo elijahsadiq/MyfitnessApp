@@ -108,7 +108,14 @@ final class Validator
         $value = $this->data[$field] ?? null;
         if ($value !== null && $value !== '') {
             try {
-                new DateTimeImmutable((string) $value);
+                $dt = new DateTimeImmutable((string) $value);
+                // MySQL DATETIME only reaches back to 1000-01-01; anything
+                // before 1970 is nonsense for a workout anyway, and strict
+                // mode would turn it into a 500 at insert time.
+                $year = (int) $dt->format('Y');
+                if ($year < 1970 || $year > 9999) {
+                    $this->errors[$field] = 'Date/time out of range';
+                }
             } catch (Throwable) {
                 $this->errors[$field] = 'Must be a valid date/time (ISO 8601 or Y-m-d H:i:s)';
             }

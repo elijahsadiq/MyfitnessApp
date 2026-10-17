@@ -117,7 +117,7 @@ abstract class Goal(
         zone: ZoneId = ZoneId.systemDefault(),
     ): List<Workout> =
         workouts.filter { w ->
-            val d = LocalDate.ofInstant(w.startTime, zone)
+            val d = w.startTime.atZone(zone).toLocalDate()
             val inWindow = !d.isBefore(startDate) && !d.isAfter(lastDay)
             val matchesActivity = activityType == null || w.type == activityType
             inWindow && matchesActivity

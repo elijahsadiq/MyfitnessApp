@@ -16,6 +16,7 @@ import com.elijah.fitness.ui.base.BaseFragment
 import com.elijah.fitness.util.Fonts
 import com.elijah.fitness.util.MetricText
 import java.util.Locale
+import com.elijah.fitness.ui.base.navigateSafe
 
 /**
  * Home screen.
@@ -51,11 +52,11 @@ class DashboardFragment : BaseFragment<FragmentDashboardBinding>() {
         applySystemBarInsets(applyBottom = false)
 
         binding.avatar.setOnClickListener {
-            findNavController().navigate(R.id.action_home_to_profile)
+            findNavController().navigateSafe(R.id.action_home_to_profile)
         }
         binding.startWorkoutButton.setOnClickListener {
             // The sheet itself jumps straight back into a running session.
-            findNavController().navigate(R.id.action_home_to_choose_activity)
+            findNavController().navigateSafe(R.id.action_home_to_choose_activity)
         }
 
         val container = (requireContext().applicationContext as FitnessApp).container

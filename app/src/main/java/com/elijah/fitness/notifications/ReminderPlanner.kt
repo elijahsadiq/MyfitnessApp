@@ -35,7 +35,7 @@ object ReminderPlanner {
      *   nag.
      */
     fun workoutsThisWeekIfNoneToday(workouts: List<Workout>, today: LocalDate, zone: ZoneId): Int? {
-        val days = workouts.map { LocalDate.ofInstant(it.startTime, zone) }
+        val days = workouts.map { it.startTime.atZone(zone).toLocalDate() }
         if (today in days) return null
         val monday = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
         return days.count { !it.isBefore(monday) && !it.isAfter(today) }

@@ -109,7 +109,7 @@ class InsightEngine(
                 candidate.progressFraction in 0.3..0.95
         } ?: return emptyList()
 
-        val today = LocalDate.ofInstant(clock.instant(), zone)
+        val today = clock.instant().atZone(zone).toLocalDate()
         val remainingValue = target.goal.targetValue - target.currentValue
         if (remainingValue <= 0.0) return emptyList()
 
@@ -135,7 +135,7 @@ class InsightEngine(
     // Rule 3 — pace improvement this month vs last month (running)
     // -----------------------------------------------------------------
     private fun paceImprovementInsight(workouts: List<Workout>): List<Insight> {
-        val today = LocalDate.ofInstant(clock.instant(), zone)
+        val today = clock.instant().atZone(zone).toLocalDate()
         val thisMonthStart = today.withDayOfMonth(1)
         val lastMonthStart = thisMonthStart.minusMonths(1)
 
@@ -163,7 +163,7 @@ class InsightEngine(
     // Rule 4 — "you ran X% further than last week"
     // -----------------------------------------------------------------
     private fun volumeChangeInsight(workouts: List<Workout>): List<Insight> {
-        val today = LocalDate.ofInstant(clock.instant(), zone)
+        val today = clock.instant().atZone(zone).toLocalDate()
         val thisWeekStart = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
         val lastWeekStart = thisWeekStart.minusWeeks(1)
 

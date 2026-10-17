@@ -18,6 +18,13 @@ final class Auth
         $hash = hash('sha256', $token);
         $expires = gmdate('Y-m-d H:i:s', time() + $ttlSeconds);
 
+        // Housekeeping: drop this user's expired tokens so the table does
+        // not grow without bound (one cheap indexed DELETE per login).
+        $prune = Database::pdo()->prepare(
+            'DELETE FROM auth_tokens WHERE user_id = ? AND expires_at < UTC_TIMESTAMP()'
+        );
+        $prune->execute([$userId]);
+
         $stmt = Database::pdo()->prepare(
             'INSERT INTO auth_tokens (user_id, token_hash, expires_at) VALUES (?, ?, ?)'
         );
@@ -38,13 +45,30 @@ final class Auth
 
         $hash = hash('sha256', strtolower($m[1]));
         $stmt = Database::pdo()->prepare(
-            'SELECT user_id FROM auth_tokens
+            'SELECT user_id, expires_at FROM auth_tokens
               WHERE token_hash = ? AND expires_at > UTC_TIMESTAMP()
               LIMIT 1'
         );
         $stmt->execute([$hash]);
         $row = $stmt->fetch();
-        return $row !== false ? (int) $row['user_id'] : null;
+        if ($row === false) return null;
+
+        // Sliding expiry: an actively used token never hits the 30-day
+        // cliff (which would sign the app out and discard workouts logged
+        // offline that hadn't synced yet). Only rewrite the row once the
+        // token is into the second half of its life, so most requests
+        // cost no UPDATE.
+        $cfg = require __DIR__ . '/../config.php';
+        $ttl = (int) $cfg['token_ttl_seconds'];
+        $expiresAt = strtotime(((string) $row['expires_at']) . ' UTC');
+        if ($expiresAt !== false && ($expiresAt - time()) < ($ttl / 2)) {
+            $bump = Database::pdo()->prepare(
+                'UPDATE auth_tokens SET expires_at = ? WHERE token_hash = ?'
+            );
+            $bump->execute([gmdate('Y-m-d H:i:s', time() + $ttl), $hash]);
+        }
+
+        return (int) $row['user_id'];
     }
 
     /** Convenience wrapper that emits 401 + exits when there is no valid user. */

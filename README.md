@@ -67,7 +67,7 @@ map.
   API ends up at <http://localhost:8080>; phpMyAdmin at <http://localhost:8081>.
 - **XAMPP (what the examiner is likely to use)**: see the "Option B"
   section of [`backend/README.md`](backend/README.md). Copy the
-  `fitness-api/` folder into XAMPP's `htdocs`, import the five SQL
+  `fitness-api/` folder into XAMPP's `htdocs`, import the seven SQL
   files in order via phpMyAdmin.
 
 ### 2. Android app
@@ -82,10 +82,15 @@ The project is Android Studio-friendly: open the repository root, let
 Gradle sync, and press **Run**. There are two build flavors on the `env`
 dimension:
 
-- `local` — `BASE_URL = http://10.0.2.2:8080/` (Docker on the host).
+- `local` — `BASE_URL = http://localhost:8080/` (Docker on the host,
+  reached from the device via `adb reverse tcp:8080 tcp:8080`).
   Edit the string in `app/build.gradle.kts` if your backend lives elsewhere.
-- `cloud` — placeholder HTTPS URL; set this if you deploy the backend
-  somewhere other than the dev machine.
+- `cloud` — `https://elijah-fitness-api.onrender.com/`, the live Render
+  deployment (free tier: it sleeps after 15 min idle and takes ~1 min to
+  wake; the app pings `/health` at launch to warm it). Deployment is
+  defined by `render.yaml` + `backend/Dockerfile` (CI/CD: every push to
+  `main` that touches `backend/` redeploys), with the database on Aiven
+  MySQL. See `backend/README.md` "Option C" for details.
 
 ### 3. Test credentials
 

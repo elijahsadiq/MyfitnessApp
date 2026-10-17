@@ -42,6 +42,7 @@ import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import com.elijah.fitness.ui.base.navigateSafe
 
 /**
  * Finished workout screen (phase 8c step 7). Rebuilt from
@@ -444,7 +445,7 @@ class WorkoutDetailFragment : BaseFragment<FragmentWorkoutDetailBinding>() {
     // ---------- expand ----------
 
     private fun onExpandClicked() {
-        findNavController().navigate(
+        findNavController().navigateSafe(
             R.id.action_detail_to_full_map,
             bundleOf(FullScreenMapFragment.ARG_CLIENT_UUID to clientUuid),
         )

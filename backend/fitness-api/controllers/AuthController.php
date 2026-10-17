@@ -11,7 +11,7 @@ final class AuthController
     {
         $v = (new Validator($body))
             ->required('email')->email('email')->maxLength('email', 191)
-            ->required('password')->minLength('password', 8)->maxLength('password', 200)
+            ->required('password')->minLength('password', 8)->maxLength('password', 72)
             ->required('fullName')->maxLength('fullName', 120)
             ->numeric('weightKg')->inRange('weightKg', 20, 300)
             ->numeric('heightCm')->inRange('heightCm', 80, 260);
@@ -26,13 +26,22 @@ final class AuthController
         }
 
         $hash = password_hash((string) $body['password'], PASSWORD_BCRYPT);
-        $userId = User::create(
-            $email,
-            (string) $body['fullName'],
-            $hash,
-            isset($body['weightKg']) ? (float) $body['weightKg'] : null,
-            isset($body['heightCm']) ? (float) $body['heightCm'] : null
-        );
+        try {
+            $userId = User::create(
+                $email,
+                (string) $body['fullName'],
+                $hash,
+                isset($body['weightKg']) ? (float) $body['weightKg'] : null,
+                isset($body['heightCm']) ? (float) $body['heightCm'] : null
+            );
+        } catch (PDOException $e) {
+            // Concurrent register with the same email lost the race on
+            // uq_users_email (SQLSTATE 23000) — same outcome as the pre-check.
+            if ($e->getCode() === '23000') {
+                Response::error('Email already registered', 409, ['email' => 'Email already registered']);
+            }
+            throw $e;
+        }
 
         $cfg = require __DIR__ . '/../config.php';
         $token = Auth::issueToken($userId, (int) $cfg['token_ttl_seconds']);

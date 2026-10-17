@@ -17,6 +17,7 @@ import com.elijah.fitness.data.remote.mapper.goalType
 import com.elijah.fitness.databinding.FragmentGoalsBinding
 import com.elijah.fitness.ui.base.BaseFragment
 import com.google.android.material.snackbar.Snackbar
+import com.elijah.fitness.ui.base.navigateSafe
 
 /**
  * Goals tab (phase 8b redesign). The whole screen is a single
@@ -128,14 +129,14 @@ class GoalsFragment : BaseFragment<FragmentGoalsBinding>() {
     override fun snackbarAnchorView(): View? = bindingOrNull?.newGoalFab
 
     private fun openNewGoalSheet() {
-        findNavController().navigate(
+        findNavController().navigateSafe(
             R.id.action_goals_to_new_goal,
             NewGoalFragment.argsFor(goalId = null),
         )
     }
 
     private fun openQuickStart(suggestion: GoalSuggestion) {
-        findNavController().navigate(
+        findNavController().navigateSafe(
             R.id.action_goals_to_new_goal,
             NewGoalFragment.argsFor(
                 prefillActivity = suggestion.activity,
@@ -147,6 +148,8 @@ class GoalsFragment : BaseFragment<FragmentGoalsBinding>() {
     }
 
     private fun onGoalTap(goal: GoalWithProgress) {
+        // A fast double-tap would stack two sheets (same tag doesn't dedupe).
+        if (parentFragmentManager.findFragmentByTag("goal_actions") != null) return
         GoalActionsBottomSheet.newInstance(goal.goal.id)
             .show(parentFragmentManager, "goal_actions")
     }
@@ -156,7 +159,7 @@ class GoalsFragment : BaseFragment<FragmentGoalsBinding>() {
         // goal so one tap gives the user the same activity/metric/target
         // in a fresh window. The start date is deliberately NOT carried
         // across — "Try again" means a new goal with today as day 1.
-        findNavController().navigate(
+        findNavController().navigateSafe(
             R.id.action_goals_to_new_goal,
             NewGoalFragment.argsFor(
                 prefillActivity = NewGoalViewModel.ActivityOption.fromApi(goal.goal.activityType),
@@ -168,7 +171,7 @@ class GoalsFragment : BaseFragment<FragmentGoalsBinding>() {
     }
 
     private fun onEditRequested(goalId: String) {
-        findNavController().navigate(
+        findNavController().navigateSafe(
             R.id.action_goals_to_new_goal,
             NewGoalFragment.argsFor(goalId = goalId),
         )

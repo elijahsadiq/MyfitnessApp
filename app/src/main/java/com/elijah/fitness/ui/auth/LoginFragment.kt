@@ -12,6 +12,7 @@ import com.elijah.fitness.FitnessApp
 import com.elijah.fitness.R
 import com.elijah.fitness.databinding.FragmentLoginBinding
 import com.elijah.fitness.ui.base.BaseFragment
+import com.elijah.fitness.ui.base.navigateSafe
 
 /**
  * Login screen — real form (Step 7 replaces the Step-5 placeholder).
@@ -51,7 +52,7 @@ class LoginFragment : BaseFragment<FragmentLoginBinding>() {
         }
 
         binding.goToRegister.setOnClickListener {
-            findNavController().navigate(R.id.action_login_to_register)
+            findNavController().navigateSafe(R.id.action_login_to_register)
         }
 
         collectOnStart(viewModel.uiState) { render(it) }

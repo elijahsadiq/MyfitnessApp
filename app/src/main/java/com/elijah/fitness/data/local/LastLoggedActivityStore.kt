@@ -24,6 +24,9 @@ interface LastLoggedActivityStore {
     val lastActivity: Flow<ActivityType?>
 
     suspend fun setLastActivity(type: ActivityType)
+
+    /** Sign-out: forget the preselection so it can't leak to the next account. */
+    suspend fun clear()
 }
 
 class DataStoreLastLoggedActivityStore(
@@ -40,6 +43,10 @@ class DataStoreLastLoggedActivityStore(
 
     override suspend fun setLastActivity(type: ActivityType) {
         store.edit { it[KEY_LAST] = type.name }
+    }
+
+    override suspend fun clear() {
+        store.edit { it.remove(KEY_LAST) }
     }
 
     private companion object {

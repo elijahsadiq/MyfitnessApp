@@ -211,7 +211,7 @@ Deleted from phase 1: `brand_*` teal/orange palette, `accent_running/cycling/wei
 
 ### Typography
 
-**Plus Jakarta Sans**, wired via Downloadable Fonts (`res/font/plus_jakarta_sans*.xml` — Google Fonts provider). No fonts are bundled in the APK; falls back to system sans-serif while resolving.
+**Plus Jakarta Sans**, bundled as five TTFs in `res/font/` (OFL licence in `docs/licenses/plus-jakarta-sans/`) behind the `plus_jakarta_sans*` font resources.
 
 | TextAppearance | Size | Weight | Line height | Tracking |
 |---|---|---|---|---|

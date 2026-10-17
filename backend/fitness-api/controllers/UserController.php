@@ -36,7 +36,7 @@ final class UserController
         // dropped (no 422) so naive clients re-posting a profile object
         // don't trip. Documented in the file-level comment.
         $v = (new Validator($body))
-            ->required('fullName')->minLength('fullName', 2)->maxLength('fullName', 60)
+            ->required('fullName')->minLength('fullName', 2)->maxLength('fullName', 120)
             ->numeric('weightKg')->inRange('weightKg', 20, 300)
             ->numeric('heightCm')->inRange('heightCm', 80, 260);
         if ($v->fails()) {
@@ -100,6 +100,14 @@ final class UserController
         if ($info === false) {
             Response::error('Validation failed', 422,
                 ['file' => 'Not a readable image']);
+        }
+        // Cap pixel dimensions BEFORE decoding: a 2 MB "PNG bomb" can
+        // decompress to gigabytes of pixel data and kill the PHP worker.
+        $pixelW = (int) ($info[0] ?? 0);
+        $pixelH = (int) ($info[1] ?? 0);
+        if ($pixelW < 1 || $pixelH < 1 || ($pixelW * $pixelH) > 25_000_000) {
+            Response::error('Validation failed', 422,
+                ['file' => 'Image dimensions too large (max 25 megapixels)']);
         }
         $imageType = (int) ($info[2] ?? 0);
         $sourceImg = null;

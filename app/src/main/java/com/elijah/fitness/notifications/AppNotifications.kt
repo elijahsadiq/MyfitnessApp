@@ -49,6 +49,11 @@ object AppNotifications {
     }
 
     /** True if Android will show our notifications (permission + not blocked). */
+    /** Sign-out: clear anything still in the shade (goal titles etc.). */
+    fun cancelAll(context: Context) {
+        NotificationManagerCompat.from(context).cancelAll()
+    }
+
     fun canPost(context: Context): Boolean {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
             ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) !=

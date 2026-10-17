@@ -96,8 +96,12 @@ class OfflineFirstWorkoutRepository(
         routePoints: List<TrackPoint>,
     ): ApiResult<Unit> {
         val existing = dao.get(workout.id)?.workout
-        // A double-tapped Save for a workout that's already uploaded.
-        if (existing != null && existing.syncState != SyncState.PENDING_CREATE) {
+        // A double-tapped Save. The id is the client UUID, so an existing
+        // row IS this workout — re-inserting it would reset its sync
+        // bookkeeping (serverId / localVersion / uploadAttempted) and could
+        // orphan a row whose upload is already in flight. Just nudge sync.
+        if (existing != null) {
+            if (existing.syncState == SyncState.PENDING_CREATE) syncSoon()
             return ApiResult.Success(Unit)
         }
         dao.save(
@@ -185,7 +189,12 @@ class OfflineFirstWorkoutRepository(
 
     override suspend fun clearCache() {
         syncScheduler.cancel()
-        dao.clearAll()
+        // Hold the lock so a refresh that is mid-merge can't re-insert the
+        // old account's rows after the wipe (sign-out → next sign-in would
+        // then briefly show the previous user's workouts).
+        syncLock.withLock {
+            dao.clearAll()
+        }
     }
 
     // -----------------------------------------------------------------

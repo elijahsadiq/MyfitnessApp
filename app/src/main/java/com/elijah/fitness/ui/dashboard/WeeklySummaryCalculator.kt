@@ -31,7 +31,7 @@ object WeeklySummaryCalculator {
         bodyWeightKg: Double,
         heightCm: Double?,
     ): WeeklySummary {
-        val today = LocalDate.ofInstant(now, zone)
+        val today = now.atZone(zone).toLocalDate()
         val monday = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
         val startOfWeek = monday.atStartOfDay(zone).toInstant()
 
@@ -88,7 +88,7 @@ object WeeklySummaryCalculator {
         if (workouts.isEmpty()) return 0
         val workoutDays: Set<LocalDate> = workouts
             .asSequence()
-            .map { LocalDate.ofInstant(it.startTime, zone) }
+            .map { it.startTime.atZone(zone).toLocalDate() }
             .toSet()
 
         // Decide the starting day: today if today has a workout, else

@@ -2983,3 +2983,102 @@ alarm clocks and calendars, not a daily nudge.
   and can be shown in screenshots.
 - **Task 2b / 2d:** a concrete native-API example (channels, runtime
   permission, WorkManager) for the native vs cross-platform comparison.
+
+## Phase 11 — Pre-submission audit: crash fixes + backend hardening
+
+**What was built / fixed**
+
+A full audit of app + backend against the assignment brief and the NCC
+sample marking scheme (grade descriptors: security, efficient DB
+interaction, CI/CD). Four parallel reviews (backend PHP, UI layer, data
+/ sync layer, brief coverage), every finding verified before fixing.
+
+*Android (crashes)*
+1. **`LocalDate.ofInstant()` is API 34+** — minSdk is 27, so Home,
+   History, Goals, Progress, Insights and the reminder worker all threw
+   `NoSuchMethodError` on Android 8.1–13 phones. 22 call sites replaced
+   with `instant.atZone(zone).toLocalDate()` (API 26+, identical
+   result). JVM unit tests could never catch this; `lintLocalDebug` did.
+2. **Double-tap navigation crash** — every click-driven
+   `navigate(actionId)` was unguarded; a queued second tap throws
+   `IllegalArgumentException` because the action no longer exists on the
+   new destination. New `NavController.navigateSafe()` extension
+   (`ui/base/NavigationExt.kt`) checks
+   `currentDestination?.getAction(actionId)` first; applied at 13 call
+   sites across 7 fragments/sheets, including the onboarding exit race
+   (navigate after a suspended DataStore write).
+3. Goal row double-tap stacked two `GoalActionsBottomSheet`s — dedupe
+   by fragment tag.
+
+*Android (data integrity)*
+4. `OfflineFirstWorkoutRepository.clearCache()` now holds `syncLock`, so
+   a refresh mid-merge can't re-insert the old account's rows after
+   sign-out (cross-account leak).
+5. A double-tapped Save can no longer re-insert an existing row and
+   reset its sync bookkeeping (serverId / localVersion /
+   uploadAttempted) — second call is a no-op that nudges sync.
+6. Sign-out now also clears the "last logged activity" preselection and
+   cancels any posted notifications (nothing from account A survives
+   into account B's session).
+
+*Backend (hardening, all verified live against local Docker)*
+7. Avatar upload: pixel-dimension cap (25 MP) before decode — a 2 MB
+   "PNG bomb" (8000×8000 test file) previously decompressed to ~190 MB
+   and killed the PHP worker; now a clean 422.
+8. `PUT /goals/{id}` validates `activityType` against the enum (bogus
+   value hit the MySQL ENUM under strict mode → 500; now 422).
+9. `POST /workouts` caps `notes` at 2000 chars (matching PATCH; >64 KB
+   previously overflowed the TEXT column → 500).
+10. Scalar elements in `sets` / `routePoints` arrays → 422 (was
+    TypeError → 500).
+11. Registration duplicate-email race → 409 (catch SQLSTATE 23000, same
+    pattern as the workouts upsert; was 500).
+12. `isDatetime` rejects years outside 1970–9999 (pre-1000 dates hit
+    MySQL's DATETIME floor → 500).
+13. Password cap lowered 200 → 72 on register (bcrypt silently ignores
+    bytes past 72, so two "different" long passwords could collide).
+14. **Sliding token expiry** — a token in the second half of its 30-day
+    life is renewed on use, so an active phone never hits the expiry
+    cliff (which auto-signs-out and discards workouts logged offline
+    that hadn't synced). Verified: token at 1 day left → one request →
+    30 days. Expired tokens are also pruned per-user on login.
+
+*Docs* — assignment-coverage.md (FAB claim, stale line refs, removed
+nonexistent `trendBars` cite), README (flavour URLs, Render/Aiven
+deployment section, seven SQL files), CLAUDE.md (fonts are bundled
+TTFs), MetValues TODOs resolved (values verified against the 2011 Adult
+Compendium: running 12020–12070, cycling 01010–01050, resistance 02054).
+
+**Key design decision** — the double-tap guard is a single
+`navigateSafe` extension rather than per-screen `currentDestination?.id
+== X` checks: the "does the current destination still carry this
+action" test is the invariant NavController itself enforces, so the
+guard can't drift out of sync when the graph changes.
+**Rejected alternative** — a time-based click debounce (e.g. 500 ms):
+hides the symptom, still crashes under two-finger taps, and adds a
+magic number to every screen.
+
+**Known, accepted limitations** (documented for the report)
+- If a token *does* expire (app unused > 30 days) with unsynced offline
+  workouts, the automatic sign-out still clears them; Room rows aren't
+  scoped by user id, and uploading them under the next login's token
+  would risk writing into the wrong account.
+- Server-side 4xx-rejected rows stay "Not synced" without a give-up UI.
+- `MaterialAlertDialog`s / pickers lose state on large-screen rotation
+  (phones are portrait-locked; no crash, input re-entry only).
+
+**Verified**
+- `assembleLocalDebug` + `assembleCloudDebug`: BUILD SUCCESSFUL.
+- `testLocalDebugUnitTest` + `testCloudDebugUnitTest`: 263 tests, 0
+  failures (both flavours).
+- `lintLocalDebug`: 0 errors (was 27 — all 25 NewApi + 3
+  MissingConstraints fixed, 2 safe `accessibilityHeading` suppressed).
+- Backend: 20-check API smoke script (register/login/409/401, workout
+  create + idempotent retry, strength sets, goals CRUD, cross-user 404,
+  all seven new 422 paths, avatar ok/bomb) — 20/20 PASS against local
+  Docker; `php -l` clean on all edited files.
+
+**Assignment task supported** — Task 4 (robustness of the 40-mark
+build), Task 6/security chapter (avatar bomb, bcrypt cap, token
+hygiene), marking-scheme LO5 (web security) and LO3 (defensive DB
+interaction).

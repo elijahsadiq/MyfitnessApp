@@ -14,6 +14,7 @@ import com.elijah.fitness.FitnessApp
 import com.elijah.fitness.R
 import com.elijah.fitness.databinding.FragmentWorkoutHistoryBinding
 import com.elijah.fitness.ui.base.BaseFragment
+import com.elijah.fitness.ui.base.navigateSafe
 
 /**
  * Workout history screen (Step 9 restyle).
@@ -34,7 +35,7 @@ class WorkoutHistoryFragment : BaseFragment<FragmentWorkoutHistoryBinding>() {
     private val adapter = WorkoutAdapter(::onWorkoutTapped)
 
     private fun onWorkoutTapped(workout: com.elijah.fitness.data.model.Workout) {
-        findNavController().navigate(
+        findNavController().navigateSafe(
             R.id.action_history_to_detail,
             bundleOf(WorkoutDetailFragment.ARG_CLIENT_UUID to workout.id),
         )
@@ -75,7 +76,7 @@ class WorkoutHistoryFragment : BaseFragment<FragmentWorkoutHistoryBinding>() {
         ).attachToRecyclerView(binding.workoutList)
 
         binding.addWorkoutFab.setOnClickListener {
-            findNavController().navigate(R.id.action_history_to_choose_activity)
+            findNavController().navigateSafe(R.id.action_history_to_choose_activity)
         }
 
         binding.filterChips.setOnCheckedStateChangeListener { _, checkedIds ->

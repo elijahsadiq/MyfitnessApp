@@ -23,6 +23,7 @@ import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import com.elijah.fitness.ui.base.navigateSafe
 
 /**
  * "Log a workout" bottom sheet (phase 8c step 4). One step, three
@@ -96,7 +97,7 @@ class ChooseActivityBottomSheet : BottomSheetDialogFragment() {
         // it, so it can't be forgotten or overwritten.
         val liveState = container.trackingSession.state.value
         if (liveState.isActive) {
-            findNavController().navigate(
+            findNavController().navigateSafe(
                 R.id.action_choose_to_live_tracking,
                 bundleOf(ARG_ACTIVITY_TYPE to liveState.activityType.name),
             )
@@ -234,7 +235,7 @@ class ChooseActivityBottomSheet : BottomSheetDialogFragment() {
         viewLifecycleOwner.lifecycleScope.launch {
             container.lastLoggedActivityStore.setLastActivity(type)
         }
-        findNavController().navigate(
+        findNavController().navigateSafe(
             action,
             bundleOf(ARG_ACTIVITY_TYPE to type.name),
         )

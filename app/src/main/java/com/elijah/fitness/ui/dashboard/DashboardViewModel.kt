@@ -146,12 +146,12 @@ class DashboardViewModel(
     }
 
     private fun buildHomeUi(workouts: List<Workout>): HomeUi {
-        val today = LocalDate.ofInstant(clock.instant(), zone)
+        val today = clock.instant().atZone(zone).toLocalDate()
         val monday = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
         val startOfWeek = monday.atStartOfDay(zone).toInstant()
         val daysWithWorkouts = workouts
             .filter { !it.startTime.isBefore(startOfWeek) }
-            .map { LocalDate.ofInstant(it.startTime, zone).dayOfWeek }
+            .map { it.startTime.atZone(zone).toLocalDate().dayOfWeek }
             .toSet()
         return HomeUi(monday = monday, today = today, daysWithWorkouts = daysWithWorkouts)
     }
