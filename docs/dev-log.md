@@ -3186,3 +3186,52 @@ screen → sign in with the new details.
   snackbar; Back to Register and back again shows no repeat; logging in
   opens Home (1 token row now); Back on Log in after registering exits
   the app; relaunch opens Log in. No crashes in the crash log.
+
+## Phase 11 — Step 5: Home calendar — browse past days
+
+**Request** — Home only showed this week's strip; there was no way to
+look at earlier days. Pull the dates down to reveal the month, make the
+month swipeable, keep the UI consistent.
+
+**What changed**
+- `WeekStripView` → `CalendarCardView` (same white card). Header: month
+  name with a chevron (tap to open / close) and a "Today" button while
+  another day is picked. Weekday letters sit in their own row.
+- Strip: swipe sideways for earlier weeks. Pull down anywhere on the card
+  (or tap the month name / grab bar) to open the month; the selected
+  week unfolds into a six-row grid. Swipe the month for earlier months;
+  tap a day to pick it and fold back onto its week. Drag up to close.
+  Future days are faded and can't be picked; other months' days fade in
+  as the month opens. Pages go back 10 years.
+- Two ViewPager2s (`CalendarPageAdapter`, pages are
+  `CalendarPageViewHolder : BaseViewHolder<CalendarPage>` — inheritance
+  example #3 again). The card owns vertical drags; sideways drags stay
+  with the pagers; an upward drag on the closed strip (or downward on
+  the open month) goes back to the page so it still scrolls.
+- The picked day drives the rest of Home through `DashboardViewModel`:
+  the hero card shows that day's week ("This week" / "Last week" /
+  "5 – 11 Oct", with the year when not this year; `WeeklySummaryCalculator`
+  gained `weekOf`, the streak still counts from today), and a new section
+  under it lists that day's workouts with History's header and rows
+  (`WorkoutAdapter` reused; a row opens the workout via
+  `action_home_to_detail`). Today with nothing logged shows no section.
+- The picked day and open / closed month live in the ViewModel, so they
+  survive a rotation, a font change and a trip to a workout.
+- Date rules in `CalendarMath` (pure Kotlin): paging, keep-the-weekday /
+  keep-the-day-of-month on swipe, clamping to today, labels.
+
+**Verified**
+- Both flavours build; 282 tests × 2 flavours pass (new
+  `CalendarMathTest` 13 tests + a past-week summary test); lint 0
+  errors, no warnings in the new files.
+- Emulator with the demo account: swipe back a week (hero "Last week",
+  4 workouts, dots on the right days); pull down → full October with
+  dots; half-way drag frame unfolds correctly and snaps back below half;
+  month swipe → September, hero "14 – 20 Sep"; tap 13 Oct in the month →
+  folds to that week, day list shows the run; the row opens its detail,
+  Back keeps the pick; Today returns to this week. 360 dp width + 130 %
+  font: header, grid and day list fit; open month survives the
+  recreation. Dragging up on the strip scrolls the page. No crashes.
+- Fast `adb` flicks sometimes don't page; the untouched onboarding
+  pager missed the same flicks (3/8), so it's synthetic-input timing,
+  not the calendar.

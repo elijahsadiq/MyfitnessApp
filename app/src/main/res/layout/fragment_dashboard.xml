@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Home. Viewing area on top (header, week strip, this week's numbers),
+  Home. Viewing area on top (header, calendar, the picked week's numbers),
   the one big action — Start workout — in the lower half within thumb
-  reach. The header uses the shared Widget.Fitness.ScreenHeader style so
+  reach, then the picked day's workouts. The header uses the shared Widget.Fitness.ScreenHeader style so
   its title sits at exactly the same height on every tab.
 -->
 <FrameLayout
@@ -83,7 +83,7 @@
                     app:tint="@color/text_secondary" />
             </androidx.constraintlayout.widget.ConstraintLayout>
 
-            <!-- Week strip -->
+            <!-- Calendar: week strip that pulls down into a month -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -95,13 +95,13 @@
                 app:strokeColor="@color/divider"
                 app:strokeWidth="@dimen/stroke_hairline">
 
-                <com.elijah.fitness.ui.dashboard.WeekStripView
-                    android:id="@+id/weekStrip"
+                <com.elijah.fitness.ui.dashboard.CalendarCardView
+                    android:id="@+id/calendar"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content" />
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Dark "This week" hero card -->
+            <!-- Dark hero card: the picked day's week ("This week" by default) -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/heroCard"
                 android:layout_width="match_parent"
@@ -131,9 +131,11 @@
                             android:orientation="vertical">
 
                             <TextView
+                                android:id="@+id/heroTitle"
                                 style="@style/TextAppearance.Fitness.HeadlineSm"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
+                                android:maxLines="1"
                                 android:text="@string/home_hero_title"
                                 android:textColor="@color/text_on_dark" />
 
@@ -287,6 +289,29 @@
                         app:iconGravity="textStart" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
+
+            <!-- The picked day's workouts: same header and rows as History.
+                 Hidden for today until something is logged. -->
+            <LinearLayout
+                android:id="@+id/daySection"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone"
+                tools:visibility="visible">
+
+                <include
+                    android:id="@+id/dayHeader"
+                    layout="@layout/item_history_section_header" />
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/dayWorkoutList"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:nestedScrollingEnabled="false"
+                    tools:itemCount="2"
+                    tools:listitem="@layout/item_distance_workout" />
+            </LinearLayout>
 
             <!-- Insight card -->
             <com.google.android.material.card.MaterialCardView

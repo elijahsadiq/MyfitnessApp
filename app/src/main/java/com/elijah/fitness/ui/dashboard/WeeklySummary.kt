@@ -4,7 +4,8 @@ import com.elijah.fitness.data.model.ActivityType
 import com.elijah.fitness.util.BmiCategory
 
 /**
- * Aggregated numbers for the current calendar week. Raw values only — the
+ * Aggregated numbers for one calendar week — the current one, or the
+ * week of the day picked on Home's calendar. Raw values only — the
  * fragment does the formatting so this stays trivially testable.
  *
  * [bmi] + [bmiCategory] are user-scoped, not workout-scoped, but live

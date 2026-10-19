@@ -66,4 +66,15 @@
 
     <!-- Onboarding chrome -->
     <dimen name="onboarding_arrow_size">56dp</dimen>
+
+    <!-- Home calendar (week strip that pulls down into a month) -->
+    <dimen name="calendar_row_height">48dp</dimen>
+    <dimen name="calendar_side_padding">6dp</dimen>
+    <dimen name="calendar_day_inset">2dp</dimen>
+    <dimen name="calendar_day_radius">14dp</dimen>
+    <dimen name="calendar_dot_size">6dp</dimen>
+    <dimen name="calendar_weekday_height">20dp</dimen>
+    <dimen name="calendar_handle_area">20dp</dimen>
+    <dimen name="calendar_handle_width">32dp</dimen>
+    <dimen name="calendar_handle_height">4dp</dimen>
 </resources>

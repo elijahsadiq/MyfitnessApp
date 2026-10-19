@@ -5,18 +5,25 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.core.content.ContextCompat
+import androidx.core.os.bundleOf
 import androidx.core.view.isVisible
 import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
+import androidx.recyclerview.widget.LinearLayoutManager
 import com.elijah.fitness.FitnessApp
 import com.elijah.fitness.R
+import com.elijah.fitness.data.model.Workout
 import com.elijah.fitness.databinding.FragmentDashboardBinding
 import com.elijah.fitness.tracking.TrackingState
 import com.elijah.fitness.ui.base.BaseFragment
 import com.elijah.fitness.ui.base.SnackKind
 import com.elijah.fitness.ui.base.navigateSafe
+import com.elijah.fitness.ui.history.WorkoutAdapter
+import com.elijah.fitness.ui.history.WorkoutDetailFragment
 import com.elijah.fitness.util.Fonts
+import com.elijah.fitness.util.Formatters
 import com.elijah.fitness.util.MetricText
+import java.time.LocalDate
 import java.util.Locale
 
 /**
@@ -25,11 +32,15 @@ import java.util.Locale
  * Renders (top to bottom):
  *  - "Your week" headline + streak pill + avatar (the avatar opens
  *    Profile)
- *  - Week strip (7 day cells with a dot on active days + dark pill on
- *    today)
- *  - Dark "This week" hero card with 2x2 metrics + progress ring +
- *    "Start workout" CTA (reads "Back to your workout" while a GPS
- *    session is running in the background)
+ *  - Calendar ([CalendarCardView]): a week strip that pulls down into a
+ *    month, with a dot on active days. Picking a day — tap, swipe or
+ *    "Today" — drives everything below.
+ *  - Dark hero card for the picked day's week ("This week", "Last week"
+ *    or "13 – 19 Oct") with 2x2 metrics + progress ring + "Start
+ *    workout" CTA (reads "Back to your workout" while a GPS session is
+ *    running in the background)
+ *  - The picked day's workouts, with the same header and rows as
+ *    History; a row opens the workout
  *  - Insight card
  */
 class DashboardFragment : BaseFragment<FragmentDashboardBinding>() {
@@ -39,6 +50,8 @@ class DashboardFragment : BaseFragment<FragmentDashboardBinding>() {
             container = (requireContext().applicationContext as FitnessApp).container
         )
     }
+
+    private val dayAdapter = WorkoutAdapter(::openWorkout)
 
     override fun inflateBinding(
         inflater: LayoutInflater,
@@ -60,10 +73,27 @@ class DashboardFragment : BaseFragment<FragmentDashboardBinding>() {
             findNavController().navigateSafe(R.id.action_home_to_choose_activity)
         }
 
+        binding.dayWorkoutList.layoutManager = LinearLayoutManager(requireContext())
+        binding.dayWorkoutList.adapter = dayAdapter
+
+        binding.calendar.listener = object : CalendarCardView.Listener {
+            override fun onDaySelected(date: LocalDate) = viewModel.selectDate(date)
+            override fun onExpandedChanged(expanded: Boolean) =
+                viewModel.setCalendarExpanded(expanded)
+        }
+        // Draw straight away (no empty first frame), then reopen the month
+        // if it was open before a rotation or a trip to a workout.
+        binding.calendar.setUi(viewModel.calendar.value)
+        binding.calendar.setExpanded(viewModel.calendarExpanded.value, animate = false)
+
         val container = (requireContext().applicationContext as FitnessApp).container
         collectOnStart(container.trackingSession.state) { renderStartButton(it) }
         collectOnStart(viewModel.summary) { renderSummary(it) }
-        collectOnStart(viewModel.homeUi) { renderWeekStrip(it) }
+        collectOnStart(viewModel.calendar) { ui ->
+            binding.calendar.setUi(ui)
+            renderHeroTitle(ui)
+        }
+        collectOnStart(viewModel.day) { renderDay(it) }
         collectOnStart(viewModel.topInsight) { insight ->
             binding.insightBody.text = insight?.text
                 ?: getString(R.string.home_insight_body)
@@ -139,9 +169,41 @@ class DashboardFragment : BaseFragment<FragmentDashboardBinding>() {
         }
     }
 
-    private fun renderWeekStrip(ui: DashboardViewModel.HomeUi) {
-        if (ui == DashboardViewModel.HomeUi.EMPTY) return
-        binding.weekStrip.setData(ui.monday, ui.today, ui.daysWithWorkouts)
+    private fun renderHeroTitle(ui: CalendarUi) {
+        binding.heroTitle.text = when (val label = CalendarMath.weekLabel(ui.selected, ui.today)) {
+            CalendarMath.WeekLabel.ThisWeek -> getString(R.string.home_hero_title)
+            CalendarMath.WeekLabel.LastWeek -> getString(R.string.home_hero_title_last_week)
+            is CalendarMath.WeekLabel.Range ->
+                CalendarMath.formatWeekRange(label.start, ui.today, Locale.getDefault())
+        }
+    }
+
+    /** The picked day's workouts. Today with nothing logged shows nothing. */
+    private fun renderDay(day: DashboardViewModel.DayUi) {
+        binding.daySection.isVisible = day.rows.isNotEmpty() || !day.isToday
+        binding.dayHeader.sectionTitle.text = when (day.date) {
+            day.today -> getString(R.string.home_day_today)
+            day.today.minusDays(1) -> getString(R.string.home_day_yesterday)
+            else -> CalendarMath.formatDay(day.date, day.today, Locale.getDefault())
+        }
+        val count = day.rows.size
+        binding.dayHeader.sectionSummary.text = when {
+            count == 0 -> getString(R.string.home_day_no_workouts)
+            day.distanceMeters > 0.0 -> getString(
+                R.string.history_section_summary_with_distance,
+                resources.getQuantityString(R.plurals.history_section_workout_count, count, count),
+                Formatters.formatDistanceKm(day.distanceMeters),
+            )
+            else -> resources.getQuantityString(R.plurals.history_section_workout_count, count, count)
+        }
+        dayAdapter.submitList(day.rows)
+    }
+
+    private fun openWorkout(workout: Workout) {
+        findNavController().navigateSafe(
+            R.id.action_home_to_detail,
+            bundleOf(WorkoutDetailFragment.ARG_CLIENT_UUID to workout.id),
+        )
     }
 
     private fun renderStartButton(state: TrackingState) {

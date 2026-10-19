@@ -10,6 +10,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 import java.time.Duration
 import java.time.Instant
+import java.time.LocalDate
 import java.time.ZoneId
 
 /**
@@ -225,5 +226,26 @@ class WeeklySummaryCalculatorTest {
         // 8 MET * 70 kg * 1h = 560; 8 MET * 100 kg * 1h = 800
         assertEquals(560.0, at70.estimatedCalories, 1e-6)
         assertEquals(800.0, at100.estimatedCalories, 1e-6)
+    }
+
+    // ---------- a past week (Home calendar) ----------
+
+    @Test
+    fun `weekOf sums only that week and keeps today's streak`() {
+        val workouts = listOf(
+            runOn("2026-09-06T10:00:00Z"), // Sun, two weeks ago
+            runOn("2026-09-08T10:00:00Z"), // Tue last week
+            runOn("2026-09-13T22:00:00Z"), // Sun last week, late
+            runOn("2026-09-15T10:00:00Z"), // Tue this week
+            runOn("2026-09-16T07:00:00Z"), // Wed (today)
+        )
+        val lastWeek = WeeklySummaryCalculator.compute(
+            workouts, now, zone, bodyWeightKg, heightCm = null,
+            weekOf = LocalDate.of(2026, 9, 10),
+        )
+        assertEquals(2, lastWeek.workoutCount)
+        assertEquals(10_000.0, lastWeek.totalDistanceMeters, 0.0)
+        // Streak: Tue + Wed this week, counted back from today.
+        assertEquals(2, lastWeek.streakDays)
     }
 }

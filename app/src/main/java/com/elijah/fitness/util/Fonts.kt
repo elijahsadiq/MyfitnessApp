@@ -13,8 +13,8 @@ import java.util.concurrent.ConcurrentHashMap
  * `Paint.setTypeface` can't resolve a font resource by itself the way
  * `TextView` does — the view has to load the `Typeface` through
  * [ResourcesCompat.getFont] first. That call parses the font file every
- * time, which is unnecessary when `BarChartView` / `WeekStripView` /
- * `WeeklyMomentumView` all want the same two weights.
+ * time, which is unnecessary when `BarChartView` / `WeeklyMomentumView`
+ * and the Home metrics all want the same two weights.
  *
  * This object caches by resource id (process-scoped) so each custom view
  * pays the parse cost once, then shares the result.

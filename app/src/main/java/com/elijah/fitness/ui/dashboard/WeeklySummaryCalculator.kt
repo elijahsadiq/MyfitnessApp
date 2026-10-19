@@ -19,10 +19,14 @@ import java.time.temporal.TemporalAdjusters
 object WeeklySummaryCalculator {
 
     /**
-     * Aggregate workouts falling inside the current calendar week
-     * (Monday 00:00 in [zone] up to [now]) plus the user's BMI derived
-     * from [bodyWeightKg] and [heightCm]. BMI is `null` when height is
+     * Aggregate workouts falling inside one calendar week (Monday 00:00
+     * in [zone], never past [now]) plus the user's BMI derived from
+     * [bodyWeightKg] and [heightCm]. BMI is `null` when height is
      * missing — the UI shows a "add height" state in that case.
+     *
+     * The week is the one containing [weekOf] (the day picked on Home's
+     * calendar), or the current week when it's `null`. The streak always
+     * counts back from today.
      */
     fun compute(
         workouts: List<Workout>,
@@ -30,13 +34,16 @@ object WeeklySummaryCalculator {
         zone: ZoneId,
         bodyWeightKg: Double,
         heightCm: Double?,
+        weekOf: LocalDate? = null,
     ): WeeklySummary {
         val today = now.atZone(zone).toLocalDate()
-        val monday = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+        val monday = (weekOf ?: today).with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
         val startOfWeek = monday.atStartOfDay(zone).toInstant()
+        val endOfWeek = monday.plusWeeks(1).atStartOfDay(zone).toInstant()
 
         val inWeek = workouts.filter { workout ->
             !workout.startTime.isBefore(startOfWeek) &&
+                workout.startTime.isBefore(endOfWeek) &&
                 !workout.startTime.isAfter(now)
         }
 

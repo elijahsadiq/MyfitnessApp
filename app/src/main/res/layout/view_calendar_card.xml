@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Home calendar (CalendarCardView). Header (month name that opens / closes
+  the month, plus "Today" while another day is picked), weekday letters,
+  then the body: one week (weekPager) or the whole month (monthPager).
+  The month grid is always full height; the body grows over it while the
+  card opens, so the selected week unfolds into the month. The grab bar
+  at the bottom is the pull-down cue.
+-->
+<merge
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:orientation="vertical"
+    tools:parentTag="android.widget.LinearLayout">
+
+    <LinearLayout
+        android:id="@+id/calendarHeader"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingHorizontal="@dimen/space_xs">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/monthToggle"
+            style="@style/Widget.Fitness.Button.Text"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:ellipsize="end"
+            android:gravity="center_vertical|start"
+            android:maxLines="1"
+            android:textAlignment="viewStart"
+            app:icon="@drawable/ic_expand_more_24"
+            app:iconGravity="textEnd"
+            app:iconPadding="@dimen/space_xs"
+            app:iconTint="@color/text_secondary"
+            tools:text="October 2026" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/todayButton"
+            style="@style/Widget.Fitness.Button.Text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/home_calendar_today"
+            android:visibility="gone"
+            tools:visibility="visible" />
+    </LinearLayout>
+
+    <!-- M T W T F S S — filled in by CalendarCardView in the phone's language. -->
+    <LinearLayout
+        android:id="@+id/weekdayRow"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/calendar_weekday_height"
+        android:importantForAccessibility="noHideDescendants"
+        android:orientation="horizontal"
+        android:paddingHorizontal="@dimen/calendar_side_padding" />
+
+    <!-- Height animated by CalendarCardView: one row → six rows. -->
+    <FrameLayout
+        android:id="@+id/calendarBody"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/calendar_row_height">
+
+        <androidx.viewpager2.widget.ViewPager2
+            android:id="@+id/monthPager"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:visibility="invisible" />
+
+        <androidx.viewpager2.widget.ViewPager2
+            android:id="@+id/weekPager"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/calendar_row_height" />
+    </FrameLayout>
+
+    <!-- Grab bar: drag (or tap) to open / close the month. The month
+         name above is the same control for TalkBack. -->
+    <FrameLayout
+        android:id="@+id/calendarHandle"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/calendar_handle_area"
+        android:background="?attr/selectableItemBackground"
+        android:importantForAccessibility="no">
+
+        <View
+            android:layout_width="@dimen/calendar_handle_width"
+            android:layout_height="@dimen/calendar_handle_height"
+            android:layout_gravity="center"
+            android:background="@drawable/bg_calendar_handle" />
+    </FrameLayout>
+</merge>

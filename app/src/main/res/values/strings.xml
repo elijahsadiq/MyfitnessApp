@@ -345,6 +345,14 @@
     <string name="home_streak_pill">%1$d-day streak</string>
     <string name="home_avatar_content_description">Open profile</string>
     <string name="home_week_strip_active_suffix">, workout logged</string>
+    <string name="home_calendar_today">Today</string>
+    <!-- Month-name button on the Home calendar, read by TalkBack. %1$s = "October 2026". -->
+    <string name="home_calendar_show_month">%1$s, show month</string>
+    <string name="home_calendar_show_week">%1$s, show week</string>
+    <string name="home_hero_title_last_week">Last week</string>
+    <string name="home_day_today">Today</string>
+    <string name="home_day_yesterday">Yesterday</string>
+    <string name="home_day_no_workouts">No workouts</string>
     <string name="home_hero_title">This week</string>
     <string name="home_hero_subtitle">%1$d of %2$d workouts done</string>
     <string name="home_hero_subtitle_done">Weekly target reached</string>

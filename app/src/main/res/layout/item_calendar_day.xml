@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- One day in the Home calendar: number + workout dot, on a rounded
+     pill that carries the selected / today look and the ripple. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/dayCell"
+    android:layout_width="0dp"
+    android:layout_height="match_parent"
+    android:layout_margin="@dimen/calendar_day_inset"
+    android:layout_weight="1"
+    android:clickable="true"
+    android:focusable="true"
+    android:foreground="@drawable/fg_calendar_day"
+    android:gravity="center"
+    android:orientation="vertical">
+
+    <TextView
+        android:id="@+id/dayNumber"
+        style="@style/TextAppearance.Fitness.HeadlineSm"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:includeFontPadding="false"
+        android:textColor="@color/text_primary"
+        tools:text="19" />
+
+    <View
+        android:id="@+id/dayDot"
+        android:layout_width="@dimen/calendar_dot_size"
+        android:layout_height="@dimen/calendar_dot_size"
+        android:layout_marginTop="@dimen/space_xs"
+        android:background="@drawable/bg_calendar_day_dot"
+        android:visibility="invisible"
+        tools:visibility="visible" />
+</LinearLayout>
