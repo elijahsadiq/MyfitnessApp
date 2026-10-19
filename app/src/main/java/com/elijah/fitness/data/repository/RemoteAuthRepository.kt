@@ -15,7 +15,8 @@ import kotlinx.coroutines.flow.map
 
 /**
  * Retrofit-backed [AuthRepository]. Persists the returned bearer token in
- * [TokenStore] on register / login and clears it on logout.
+ * [TokenStore] on login and clears it on logout. Register only creates
+ * the account: the user then signs in on the Log in screen.
  *
  * Also marks onboarding as completed on successful register / login so
  * a user who reinstalls without clearing app data — or hits register on
@@ -41,11 +42,10 @@ class RemoteAuthRepository(
         val request = RegisterRequestDto(email, password, fullName, weightKg, heightCm)
         return when (val result = apiCall { authApi.register(request) }) {
             is ApiResult.Success -> {
-                tokenStore.save(result.data.token)
+                // No token: registering doesn't start a session. Login
+                // hydrates the body metrics once the user signs in.
                 onboardingStore.markCompleted()
-                val profile = result.data.user.toDomain()
-                userSettings.hydrateFrom(profile.weightKg, profile.heightCm)
-                ApiResult.Success(profile)
+                ApiResult.Success(result.data.user.toDomain())
             }
             is ApiResult.Error -> result
             ApiResult.NetworkError -> ApiResult.NetworkError

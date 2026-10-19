@@ -77,7 +77,10 @@ class RegisterViewModelTest {
         assertNull(state.fullNameError)
         assertNull(state.emailError)
         assertNull(state.passwordError)
-        assertEquals(RegisterViewModel.Event.RegistrationComplete, vm.events.first())
+        assertEquals(
+            RegisterViewModel.Event.RegistrationComplete("alex@example.com"),
+            vm.events.first(),
+        )
         assertEquals(1, repo.registerCallCount)
         assertEquals(70.5, repo.lastWeight!!, 0.0)
         assertEquals(178.0, repo.lastHeight!!, 0.0)

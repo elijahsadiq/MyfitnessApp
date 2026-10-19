@@ -14,6 +14,7 @@ interface AuthRepository {
     /** Emits `true` while a valid token is stored, `false` otherwise. */
     val isLoggedIn: Flow<Boolean>
 
+    /** Creates the account only. The user signs in afterwards with [login]. */
     suspend fun register(
         email: String,
         password: String,

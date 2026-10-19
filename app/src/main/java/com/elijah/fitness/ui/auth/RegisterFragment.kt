@@ -20,8 +20,8 @@ import com.elijah.fitness.util.UnitSystem
  * Register screen. Same state-machine shape as [LoginFragment] with a
  * full-name field, a metric/imperial unit toggle, required body-weight
  * and height fields (both feed BMI on the Home screen), and a
- * terms-checkbox row. Successful registration bounces to Main via
- * [AuthActivity.goToMain].
+ * terms-checkbox row. Successful registration doesn't sign the user
+ * in: it hands over to Log in with the email filled in.
  */
 class RegisterFragment : BaseFragment<FragmentRegisterBinding>() {
 
@@ -68,8 +68,8 @@ class RegisterFragment : BaseFragment<FragmentRegisterBinding>() {
         collectOnStart(viewModel.uiState) { render(it) }
         collectOnStart(viewModel.events) { event ->
             when (event) {
-                RegisterViewModel.Event.RegistrationComplete ->
-                    (requireActivity() as? AuthActivity)?.goToMain()
+                is RegisterViewModel.Event.RegistrationComplete ->
+                    goToLoginAfterRegistering(event.email)
                 is RegisterViewModel.Event.ShowNetworkError ->
                     showRetrySnackbar(event.messageRes)
             }
@@ -92,6 +92,20 @@ class RegisterFragment : BaseFragment<FragmentRegisterBinding>() {
                 navOptions { popUpTo(R.id.registerFragment) { inclusive = true } },
             )
         }
+    }
+
+    /**
+     * Account created: Log in becomes the only screen on the stack, so
+     * Back from it leaves the app instead of returning to a form that
+     * was already submitted.
+     */
+    private fun goToLoginAfterRegistering(email: String) {
+        val nav = findNavController()
+        nav.navigate(
+            R.id.loginFragment,
+            LoginFragment.argsAfterRegistering(email),
+            navOptions { popUpTo(nav.graph.id) { inclusive = true } },
+        )
     }
 
     private fun submit() {

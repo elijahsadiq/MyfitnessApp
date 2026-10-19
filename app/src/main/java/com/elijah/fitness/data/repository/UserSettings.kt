@@ -6,7 +6,7 @@ import kotlinx.coroutines.flow.asStateFlow
 
 /**
  * In-memory cache of the current user's body metrics. Fed by
- * `RemoteAuthRepository` on login/register and by the Dashboard's
+ * `RemoteAuthRepository` on login and by the Dashboard's
  * profile refresh (an existing session that pre-dates the height/BMI
  * feature won't have a locally-cached height until `/me` is called).
  *

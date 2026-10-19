@@ -235,7 +235,8 @@ Goals (phase 7)
 
 Every endpoint except `/auth/*`, `/health` and `/avatars/*` requires an
 `Authorization: Bearer <token>` header. Tokens come back from
-`/auth/register` and `/auth/login` and are stored only as a SHA-256
+`/auth/login` only (`/auth/register` creates the account and returns
+`{ user }`; the user then logs in) and are stored only as a SHA-256
 hash on the server.
 
 ---

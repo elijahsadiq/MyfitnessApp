@@ -72,6 +72,7 @@
     <string name="auth_register_have_account">Already have an account?</string>
     <string name="auth_register_go_to_login">Log in</string>
     <string name="auth_register_back_content_description">Back</string>
+    <string name="auth_account_created">Account created. Log in to continue.</string>
     <string name="auth_register_terms">I agree to the Terms and Privacy Policy.</string>
 
     <!-- Shared field labels + hints -->

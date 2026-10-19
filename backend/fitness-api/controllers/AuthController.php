@@ -2,8 +2,9 @@
 /**
  * /auth/register, /auth/login, /auth/logout.
  *
- * All three endpoints return a `{ token, user }` payload on success so the
- * client never needs a follow-up GET /me right after login.
+ * Register only creates the account and returns `{ user }`: no session
+ * starts until the user signs in. Login returns `{ token, user }` so the
+ * client never needs a follow-up GET /me right after signing in.
  */
 final class AuthController
 {
@@ -43,12 +44,10 @@ final class AuthController
             throw $e;
         }
 
-        $cfg = require __DIR__ . '/../config.php';
-        $token = Auth::issueToken($userId, (int) $cfg['token_ttl_seconds']);
-
+        // No token here: the app sends the new user to Log in, and an
+        // unused token would just sit valid in auth_tokens for 30 days.
         Response::success([
-            'token' => $token,
-            'user'  => User::toDto(User::findById($userId) ?? []),
+            'user' => User::toDto(User::findById($userId) ?? []),
         ], 201);
     }
 

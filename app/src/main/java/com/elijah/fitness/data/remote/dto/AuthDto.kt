@@ -17,7 +17,16 @@ data class LoginRequestDto(
     val password: String,
 )
 
-/** Payload returned by both /auth/register and /auth/login. */
+/**
+ * Payload returned by /auth/register: the new account only. Registering
+ * doesn't sign the user in, so there is no token.
+ */
+@Serializable
+data class RegisterResponseDto(
+    val user: UserDto,
+)
+
+/** Payload returned by /auth/login. */
 @Serializable
 data class AuthResponseDto(
     val token: String,

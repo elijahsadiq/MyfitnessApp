@@ -26,8 +26,9 @@ import kotlinx.coroutines.launch
  *
  * Mirrors [LoginViewModel]: client-side validation up-front, then a
  * network call. On success, `RegistrationComplete` fires and the
- * fragment navigates to Main. On per-field 422 the server messages hang
- * off the right fields; on any other 4xx/5xx the Snackbar path is used.
+ * fragment sends the user to Log in (registering doesn't sign them in).
+ * On per-field 422 the server messages hang off the right fields; on
+ * any other 4xx/5xx the Snackbar path is used.
  *
  * Body metrics are entered in the [unitSystem] the user picked; the
  * ViewModel converts to kg / cm before the API call so the wire is
@@ -49,7 +50,8 @@ class RegisterViewModel(
     )
 
     sealed interface Event {
-        data object RegistrationComplete : Event
+        /** Account created. [email] pre-fills the Log in screen. */
+        data class RegistrationComplete(val email: String) : Event
         data class ShowNetworkError(@StringRes val messageRes: Int) : Event
     }
 
@@ -132,9 +134,10 @@ class RegisterViewModel(
         }
 
         _uiState.value = _uiState.value.copy(submitting = true)
+        val trimmedEmail = email.trim()
         viewModelScope.launch {
             val result = authRepository.register(
-                email = email.trim(),
+                email = trimmedEmail,
                 password = password,
                 fullName = fullName.trim(),
                 weightKg = weightKg,
@@ -143,7 +146,7 @@ class RegisterViewModel(
             when (result) {
                 is ApiResult.Success -> {
                     _uiState.value = UiState(unitSystem = unitSystem)
-                    _events.send(Event.RegistrationComplete)
+                    _events.send(Event.RegistrationComplete(trimmedEmail))
                 }
                 is ApiResult.NetworkError -> {
                     _uiState.value = _uiState.value.copy(submitting = false)

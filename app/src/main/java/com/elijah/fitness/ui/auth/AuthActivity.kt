@@ -28,8 +28,9 @@ import com.google.android.material.snackbar.Snackbar
  * `WindowInsetsControllerCompat.isAppearanceLightStatusBars = false`
  * while attached so system icons stay legible on the dark background.
  *
- * On a successful sign-in the child fragments call [goToMain] which
- * clears this activity out of the task stack.
+ * On a successful sign-in [LoginFragment] calls [goToMain] which
+ * clears this activity out of the task stack. Registering doesn't sign
+ * in: Register hands over to Log in instead.
  */
 class AuthActivity : AppCompatActivity() {
 
@@ -101,7 +102,7 @@ class AuthActivity : AppCompatActivity() {
         }
     }
 
-    /** Called by child fragments after register / login succeeds. */
+    /** Called by [LoginFragment] after login succeeds. */
     fun goToMain() {
         startActivity(
             Intent(this, MainActivity::class.java)

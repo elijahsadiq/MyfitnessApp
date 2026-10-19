@@ -8,6 +8,7 @@ import com.elijah.fitness.data.remote.dto.ApiError
 import com.elijah.fitness.data.remote.dto.AuthResponseDto
 import com.elijah.fitness.data.remote.dto.LoginRequestDto
 import com.elijah.fitness.data.remote.dto.RegisterRequestDto
+import com.elijah.fitness.data.remote.dto.RegisterResponseDto
 import com.elijah.fitness.data.remote.dto.UserDto
 import com.elijah.fitness.data.remote.ApiResult
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -53,16 +54,13 @@ class RemoteAuthRepositoryTest {
     }
 
     @Test
-    fun `register on 201 persists the token and returns a UserProfile`() = runTest {
+    fun `register on 201 returns a UserProfile without signing in`() = runTest {
         val tokenStore = FakeTokenStore()
         val onboardingStore = FakeOnboardingStore()
         val api = FakeAuthApi(
             registerResponse = Response.success(
                 201,
-                ApiEnvelope(
-                    success = true,
-                    data = AuthResponseDto(token = "new-token", user = alexDto)
-                )
+                ApiEnvelope(success = true, data = RegisterResponseDto(user = alexDto))
             )
         )
         val repo = RemoteAuthRepository(api, tokenStore, onboardingStore, UserSettings())
@@ -76,7 +74,10 @@ class RemoteAuthRepositoryTest {
         )
 
         assertTrue(result is ApiResult.Success)
-        assertEquals("new-token", tokenStore.token.first())
+        assertEquals("alex@example.com", (result as ApiResult.Success).data.email)
+        // The user signs in on the Log in screen next, so no session yet.
+        assertNull(tokenStore.token.first())
+        assertTrue(onboardingStore.hasCompletedOnboarding.first())
     }
 
     // ---------- error paths ----------
@@ -189,7 +190,7 @@ class RemoteAuthRepositoryTest {
     }
 
     private class FakeAuthApi(
-        private val registerResponse: Response<ApiEnvelope<AuthResponseDto>> =
+        private val registerResponse: Response<ApiEnvelope<RegisterResponseDto>> =
             Response.success(ApiEnvelope(success = true, data = null, error = ApiError("unset"))),
         private val loginResponse: Response<ApiEnvelope<AuthResponseDto>> =
             Response.success(ApiEnvelope(success = true, data = null, error = ApiError("unset"))),

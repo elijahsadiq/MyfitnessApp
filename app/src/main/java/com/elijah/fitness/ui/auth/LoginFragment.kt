@@ -23,6 +23,10 @@ import com.elijah.fitness.ui.base.navigateSafe
  * `TextInputLayout`; network failures show a Snackbar with a Retry
  * action. The primary button is disabled + shows an inline spinner
  * while a request is in flight.
+ *
+ * Also the landing screen after registering: the new account's email
+ * arrives in [ARG_REGISTERED_EMAIL] and is filled in, with a
+ * confirmation Snackbar.
  */
 class LoginFragment : BaseFragment<FragmentLoginBinding>() {
 
@@ -52,6 +56,8 @@ class LoginFragment : BaseFragment<FragmentLoginBinding>() {
             submit(); true
         }
 
+        showAccountCreatedOnce()
+
         binding.goToRegister.setOnClickListener {
             findNavController().navigateSafe(R.id.action_login_to_register)
         }
@@ -63,6 +69,25 @@ class LoginFragment : BaseFragment<FragmentLoginBinding>() {
                     (requireActivity() as? AuthActivity)?.goToMain()
                 is LoginViewModel.Event.ShowNetworkError ->
                     showRetrySnackbar(event.messageRes)
+            }
+        }
+    }
+
+    /**
+     * Just registered: fill in the email and confirm the account exists.
+     * The argument is removed once used, so rotating the screen or
+     * coming back from Register doesn't show it again.
+     */
+    private fun showAccountCreatedOnce() {
+        val args = arguments ?: return
+        val email = args.getString(ARG_REGISTERED_EMAIL) ?: return
+        args.remove(ARG_REGISTERED_EMAIL)
+        binding.emailInput.setText(email)
+        // Posted: during onViewCreated the screen isn't in the window yet,
+        // so the Snackbar would have no parent to attach to.
+        binding.root.post {
+            if (bindingOrNull != null) {
+                snackbar(R.string.auth_account_created, kind = SnackKind.SUCCESS).show()
             }
         }
     }
@@ -95,5 +120,13 @@ class LoginFragment : BaseFragment<FragmentLoginBinding>() {
         snackbar(messageRes, kind = SnackKind.ERROR)
             .setAction(R.string.auth_retry) { submit() }
             .show()
+    }
+
+    companion object {
+        /** Set by Register after it creates an account. */
+        const val ARG_REGISTERED_EMAIL = "registered_email"
+
+        fun argsAfterRegistering(email: String): Bundle =
+            Bundle().apply { putString(ARG_REGISTERED_EMAIL, email) }
     }
 }

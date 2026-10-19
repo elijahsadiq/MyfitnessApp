@@ -50,6 +50,12 @@
         android:name="com.elijah.fitness.ui.auth.LoginFragment"
         android:label="@string/auth_login_title"
         tools:layout="@layout/fragment_login">
+        <!-- Set by Register after it creates an account: pre-fills the email. -->
+        <argument
+            android:name="registered_email"
+            app:argType="string"
+            android:defaultValue="@null"
+            app:nullable="true" />
         <action
             android:id="@+id/action_login_to_register"
             app:destination="@id/registerFragment" />

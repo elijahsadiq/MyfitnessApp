@@ -3152,3 +3152,37 @@ success fell into the error branch and showed the fallback message.
 errors. Emulator end to end with a throwaway account: logged in, typed
 DELETE once → log-in screen with the confirmation; server log shows a
 single `DELETE /me` 200; the user row is gone.
+
+## Phase 11 — Step 4: Create account → Log in (no automatic sign-in)
+
+**Feedback** — the professor noted that creating an account signed the
+user straight into the app. Expected flow: create account → Log in
+screen → sign in with the new details.
+
+**Change**
+- API: `POST /auth/register` now only creates the account and returns
+  `201 { user }`. It no longer issues a token, so no unused session sits
+  in `auth_tokens` for 30 days. Login is the only place a token is made.
+- App: `RemoteAuthRepository.register` no longer saves a token (it still
+  marks onboarding done, so a relaunch opens Log in, not onboarding).
+  New `RegisterResponseDto`; `AuthResponseDto` is login-only.
+- `RegisterViewModel.Event.RegistrationComplete` carries the email.
+  `RegisterFragment` navigates to Log in and clears the back stack, so
+  Back from Log in leaves the app rather than reopening a submitted form.
+- `LoginFragment` fills in the email and shows "Account created. Log in
+  to continue." (success snackbar). The `registered_email` argument is
+  removed once used, so it doesn't repeat after coming back from
+  Register.
+- Docs: `backend/README.md` and `api-tests.http` describe the new
+  register reply.
+
+**Verified**
+- Both flavours build, 268 tests × 2 flavours pass (register test now
+  asserts no token is stored), lint 0 errors.
+- Local API: register → 201 with `user`, no `token`, 0 rows in
+  `auth_tokens` for the new user; login → token; duplicate → 409.
+- Emulator, both entry points: Log in → Create account, and onboarding →
+  Create account. Each lands on Log in with the email filled and the
+  snackbar; Back to Register and back again shows no repeat; logging in
+  opens Home (1 token row now); Back on Log in after registering exits
+  the app; relaunch opens Log in. No crashes in the crash log.
