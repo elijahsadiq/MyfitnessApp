@@ -30,6 +30,18 @@
 
     <!-- Touch targets -->
     <dimen name="touch_target_min">48dp</dimen>
+    <!-- Ended goal row "Try again": a 36dp pill (18dp radius, 14dp side
+         padding) inside a 48dp touch target, 6dp of transparent inset
+         above and below that overlap the row's own padding. -->
+    <dimen name="goal_try_again_radius">18dp</dimen>
+    <dimen name="goal_try_again_padding_horizontal">14dp</dimen>
+    <dimen name="goal_try_again_touch_inset">6dp</dimen>
+    <dimen name="goal_try_again_touch_overlap">-6dp</dimen>
+    <!-- Goal rows: the 22dp activity icon in its tile, 2dp above a caption. -->
+    <dimen name="goal_row_icon">22dp</dimen>
+    <dimen name="goal_row_caption_gap">2dp</dimen>
+    <!-- Ended goal row: 14dp above and below (the Try again target overlaps 6dp of it). -->
+    <dimen name="goal_ended_row_padding_vertical">14dp</dimen>
     <dimen name="button_pill_height">52dp</dimen>
     <dimen name="fab_size">56dp</dimen>
     <dimen name="icon_tile_size">44dp</dimen>
@@ -77,4 +89,311 @@
     <dimen name="calendar_handle_area">20dp</dimen>
     <dimen name="calendar_handle_width">32dp</dimen>
     <dimen name="calendar_handle_height">4dp</dimen>
+
+    <!-- ============ Phase 8d — activities-v3 shared components ============ -->
+
+    <!-- Activity carousel card, Log a workout sheet (LogSheet.dc.html). -->
+    <dimen name="activity_card_log_width">250dp</dimen>
+    <dimen name="activity_card_log_height">270dp</dimen>
+    <dimen name="activity_card_log_radius">26dp</dimen>
+    <!-- The design's 20px padding + its 1px border: CSS draws the border
+         outside the padding, Android draws the stroke inside it. -->
+    <dimen name="activity_card_log_padding">21dp</dimen>
+    <dimen name="activity_card_log_icon_tile">64dp</dimen>
+    <dimen name="activity_card_log_icon_tile_radius">18dp</dimen>
+    <dimen name="activity_card_log_icon">32dp</dimen>
+    <dimen name="activity_card_log_name_text">26sp</dimen>
+    <dimen name="activity_card_log_description_text">14sp</dimen>
+    <dimen name="activity_card_log_content_gap">14dp</dimen>
+    <dimen name="activity_card_log_gap">14dp</dimen>
+
+    <!-- Activity carousel card, New goal sheet (NewGoal.dc.html). -->
+    <dimen name="activity_card_goal_width">200dp</dimen>
+    <dimen name="activity_card_goal_height">186dp</dimen>
+    <dimen name="activity_card_goal_radius">24dp</dimen>
+    <!-- The design's 16px padding + its 1px border (see activity_card_log_padding). -->
+    <dimen name="activity_card_goal_padding">17dp</dimen>
+    <dimen name="activity_card_goal_icon_tile">52dp</dimen>
+    <dimen name="activity_card_goal_icon_tile_radius">16dp</dimen>
+    <dimen name="activity_card_goal_icon">26dp</dimen>
+    <dimen name="activity_card_goal_name_text">22sp</dimen>
+    <dimen name="activity_card_goal_description_text">13sp</dimen>
+    <dimen name="activity_card_goal_content_gap">6dp</dimen>
+    <dimen name="activity_card_goal_gap">12dp</dimen>
+
+    <!-- Carousel dots: 8dp dots, the selected one a 22x8dp pill, 6dp apart. -->
+    <dimen name="carousel_dot_size">8dp</dimen>
+    <dimen name="carousel_dot_active_width">22dp</dimen>
+    <dimen name="carousel_dot_gap">6dp</dimen>
+
+    <!--
+      Round icon buttons. The visible circle is inset inside a 48dp touch
+      target: 40dp prev / next arrows (18dp chevron), 44dp header back
+      button (20dp chevron).
+    -->
+    <dimen name="round_icon_button_inset">4dp</dimen>
+    <dimen name="round_icon_button_icon_padding">15dp</dimen>
+    <dimen name="header_icon_button_inset">2dp</dimen>
+    <dimen name="header_icon_button_icon_padding">14dp</dimen>
+    <!-- Side margin of a row that starts / ends with a round icon button:
+         screen_margin minus the button's invisible inset, so the visible
+         circle lines up with the 20dp screen edge. -->
+    <dimen name="carousel_nav_row_margin">16dp</dimen>
+
+    <!-- Pill segmented control (single choice). The radius is clamped to
+         half the height, so any shape drawn with it is a full pill. -->
+    <dimen name="radius_pill">999dp</dimen>
+    <dimen name="segment_text_size">14sp</dimen>
+    <dimen name="segment_text_size_large">15sp</dimen>
+    <dimen name="segment_log_height">40dp</dimen>
+    <dimen name="segment_log_track_padding">5dp</dimen>
+    <dimen name="segment_log_gap">6dp</dimen>
+    <dimen name="segment_pool_height">42dp</dimen>
+    <dimen name="segment_measure_height">44dp</dimen>
+    <dimen name="segment_measure_track_padding">4dp</dimen>
+    <dimen name="segment_measure_gap">4dp</dimen>
+
+    <!-- 56dp lime call-to-action pill (activities-v3 screens). -->
+    <dimen name="button_cta_height">56dp</dimen>
+
+    <!-- Sheet chrome. -->
+    <dimen name="sheet_handle_width">40dp</dimen>
+    <dimen name="sheet_handle_height">4dp</dimen>
+
+    <!-- Log a workout sheet (LogSheet.dc.html): padding 12 / 20 / 28,
+         18dp between blocks. -->
+    <dimen name="log_sheet_padding_top">12dp</dimen>
+    <dimen name="log_sheet_padding_bottom">28dp</dimen>
+    <dimen name="log_sheet_gap">18dp</dimen>
+    <!-- The 18dp gap minus the 4dp invisible inset of the 48dp nav buttons. -->
+    <dimen name="log_sheet_gap_beside_nav">14dp</dimen>
+    <dimen name="log_sheet_title_gap">4dp</dimen>
+    <dimen name="log_sheet_note_min_height">52dp</dimen>
+
+    <!-- activities-v3 text sizes. -->
+    <dimen name="text_size_sheet_title">24sp</dimen>
+    <dimen name="text_size_page_title">22sp</dimen>
+    <dimen name="text_size_sheet_header_title">18sp</dimen>
+    <dimen name="text_size_sheet_note">13sp</dimen>
+    <dimen name="line_height_sheet_note">19sp</dimen>
+
+    <!--
+      Log a swim screen (LogSwim.dc.html): padding 20 / 20 / 28, 20dp
+      between blocks. Its header (back button + title) is shared by every
+      log form (Log a run / ride / row / workout): the 48dp back button
+      draws a 44dp circle, so the top padding and the gap under the
+      header lose its 2dp inset (header_row_outset pulls the row 2dp to
+      the start) and the title gap is 12 - 2.
+    -->
+    <dimen name="log_header_padding_top">18dp</dimen>
+    <dimen name="log_swim_padding_bottom">28dp</dimen>
+    <dimen name="log_swim_gap">20dp</dimen>
+    <!-- Pinned "Save swim" bar: 12dp above the button, so scrolled
+         content doesn't run into it; the column ends 8dp lower, making the
+         design's 20dp gap once scrolled to the end. -->
+    <dimen name="log_swim_save_bar_padding_top">12dp</dimen>
+    <dimen name="log_swim_scroll_end_gap">8dp</dimen>
+    <dimen name="log_header_gap_below">18dp</dimen>
+    <dimen name="log_header_title_gap">10dp</dimen>
+    <dimen name="header_row_outset">-2dp</dimen>
+    <!-- Section label ("WHEN", "DURATION") to its cards, on every log form. -->
+    <dimen name="form_label_gap">10dp</dimen>
+    <!--
+      Log a run / ride / row and Log a workout forms (phase 8b layouts,
+      tokenised in 8d): 22dp between sections, 16sp section titles, 4dp
+      above a field error, the When cards (64dp tall, 14dp side padding,
+      36dp icon tile with an 18dp icon, 12dp to the text, 15sp value,
+      10dp apart).
+    -->
+    <dimen name="log_form_section_gap">22dp</dimen>
+    <dimen name="text_size_log_form_section">16sp</dimen>
+    <dimen name="log_form_error_gap">4dp</dimen>
+    <dimen name="log_when_card_min_height">64dp</dimen>
+    <dimen name="log_when_card_padding">14dp</dimen>
+    <dimen name="log_when_icon_tile">36dp</dimen>
+    <dimen name="log_when_icon">18dp</dimen>
+    <dimen name="log_when_label_gap">12dp</dimen>
+    <dimen name="text_size_log_when_value">15sp</dimen>
+    <dimen name="log_when_cards_gap">10dp</dimen>
+    <dimen name="log_notes_optional_gap">6dp</dimen>
+    <!-- Run / ride / row form: the dark live summary and its activity pill. -->
+    <dimen name="log_summary_padding">18dp</dimen>
+    <dimen name="log_summary_pill_height">28dp</dimen>
+    <dimen name="log_summary_pill_padding">12dp</dimen>
+    <dimen name="log_summary_pill_icon">15dp</dimen>
+    <dimen name="log_summary_pill_gap">6dp</dimen>
+    <dimen name="log_summary_stats_gap">14dp</dimen>
+    <dimen name="log_summary_note_gap">10dp</dimen>
+    <!-- Run / ride / row form: the big "How far?" field (44sp number, 18sp "km"). -->
+    <dimen name="log_distance_card_padding_horizontal">20dp</dimen>
+    <dimen name="log_distance_card_padding_vertical">12dp</dimen>
+    <dimen name="log_distance_input_min_height">64dp</dimen>
+    <dimen name="text_size_log_distance_input">44sp</dimen>
+    <dimen name="log_distance_unit_gap">10dp</dimen>
+    <dimen name="text_size_log_distance_unit">18sp</dimen>
+    <!-- Log a workout form: the "Add set" icon and the empty sets hint. -->
+    <dimen name="log_add_set_icon">18dp</dimen>
+    <dimen name="log_sets_empty_min_height">64dp</dimen>
+
+    <!-- Dark live-summary card (LogSwim, NewGoal): radius 26, padding 20,
+         16dp between its rows. -->
+    <dimen name="summary_card_radius">26dp</dimen>
+    <dimen name="summary_card_padding">20dp</dimen>
+    <!-- The 16dp row gap above and below the 50sp hero number: the design
+         sets it with line-height 1, but Plus Jakarta Sans' font box is
+         1.26em, so the TextView is 6.5dp taller on each side. 16 - 6.5. -->
+    <dimen name="summary_hero_gap">9.5dp</dimen>
+    <dimen name="summary_icon_tile_size">36dp</dimen>
+    <dimen name="summary_icon_tile_radius">12dp</dimen>
+    <!-- Space before " /100 m": one 16sp space in the design, and Plus
+         Jakarta Sans' space is 0.17em wide (16 x 0.17 = 2.7). -->
+    <dimen name="summary_pace_unit_gap">2.7dp</dimen>
+    <!-- Stat tiles inside the dark card: radius 16, padding 12 / 14,
+         10dp apart, 2dp between label and value. -->
+    <dimen name="summary_tile_radius">16dp</dimen>
+    <dimen name="summary_tile_padding_vertical">12dp</dimen>
+    <dimen name="summary_tile_padding_horizontal">14dp</dimen>
+    <dimen name="summary_tile_gap">10dp</dimen>
+    <dimen name="summary_tile_label_gap">2dp</dimen>
+
+    <!-- White form cards (activities-v3): radius 20, 1dp divider border
+         (2dp text_on_lime while an input inside has focus). The design's
+         CSS border sits outside its padding, Android draws the stroke
+         inside it, so every card padding here is the design's + 1dp
+         (14 + 1 for the Date / Start time cards and the Notes field). -->
+    <dimen name="field_card_radius">20dp</dimen>
+    <dimen name="field_card_padding">15dp</dimen>
+    <dimen name="field_card_gap">10dp</dimen>
+    <dimen name="field_card_label_gap">2dp</dimen>
+    <dimen name="stroke_focused">2dp</dimen>
+
+    <!-- Laps card: padding 16 + the 1dp border, 12dp between the text and
+         the stepper. The stepper's 48dp buttons draw 44dp circles, so the
+         card loses that 2dp inset on the sides the stepper touches. -->
+    <dimen name="laps_card_padding">17dp</dimen>
+    <dimen name="laps_card_padding_beside_stepper">15dp</dimen>
+    <dimen name="laps_card_gap">12dp</dimen>
+
+    <!-- Notes field: at least 84dp tall, 14dp padding. -->
+    <dimen name="notes_field_min_height">84dp</dimen>
+
+    <!-- Stepper (− value +): 44dp circles inside 48dp touch targets, 10dp
+         between the circles and the value (8dp + the 2dp inset). -->
+    <dimen name="stepper_button_inset">2dp</dimen>
+    <dimen name="stepper_value_gap">8dp</dimen>
+    <dimen name="stepper_value_min_width">48dp</dimen>
+
+    <!-- Duration cells (h / min / s): padding 12 / 14 + the 1dp border,
+         10dp apart, 6dp between the number and its unit. -->
+    <dimen name="duration_cell_padding_vertical">13dp</dimen>
+    <dimen name="duration_cell_padding_horizontal">15dp</dimen>
+    <dimen name="duration_cell_gap">10dp</dimen>
+    <dimen name="duration_unit_gap">6dp</dimen>
+
+    <!-- activities-v3 form text sizes. -->
+    <dimen name="text_size_section_label">12sp</dimen>
+    <dimen name="text_size_field_label">12sp</dimen>
+    <dimen name="text_size_field_value">16sp</dimen>
+    <dimen name="text_size_field_hint">13sp</dimen>
+    <dimen name="text_size_summary_pace">50sp</dimen>
+    <dimen name="text_size_summary_pace_unit">16sp</dimen>
+    <dimen name="text_size_summary_tile_value">20sp</dimen>
+    <dimen name="text_size_stepper_value">28sp</dimen>
+    <dimen name="text_size_stepper_symbol">22sp</dimen>
+    <dimen name="text_size_duration_value">26sp</dimen>
+    <dimen name="text_size_duration_unit">13sp</dimen>
+    <dimen name="text_size_notes">15sp</dimen>
+
+    <!-- Manage goal sheet: 2dp between the title and its subtitle. -->
+    <dimen name="manage_goal_subtitle_gap">2dp</dimen>
+    <!-- The rest of the Manage goal sheet (bottom_sheet_goal_actions). -->
+    <dimen name="manage_goal_padding_top">10dp</dimen>
+    <dimen name="manage_goal_header_gap">18dp</dimen>
+    <dimen name="manage_goal_icon_tile">48dp</dimen>
+    <dimen name="manage_goal_icon">24dp</dimen>
+    <dimen name="manage_goal_close_padding">12dp</dimen>
+    <dimen name="text_size_manage_goal_current">26sp</dimen>
+    <dimen name="text_size_manage_goal_of_target">15sp</dimen>
+    <dimen name="manage_goal_of_target_gap">6dp</dimen>
+    <!-- Lifts "of 100 km" and the percent off the bottom edge, onto the big number's baseline. -->
+    <dimen name="manage_goal_value_baseline_lift">4dp</dimen>
+    <dimen name="manage_goal_progress_gap">10dp</dimen>
+    <dimen name="manage_goal_progress_thickness">10dp</dimen>
+    <dimen name="manage_goal_progress_radius">5dp</dimen>
+    <dimen name="manage_goal_stat_tile_padding">12dp</dimen>
+    <dimen name="manage_goal_stat_value_gap">4dp</dimen>
+    <dimen name="text_size_manage_goal_stat_value">16sp</dimen>
+    <dimen name="manage_goal_action_row_height">58dp</dimen>
+    <dimen name="manage_goal_action_row_padding">16dp</dimen>
+    <dimen name="manage_goal_action_icon">20dp</dimen>
+    <dimen name="manage_goal_action_label_gap">14dp</dimen>
+    <dimen name="manage_goal_action_chevron">18dp</dimen>
+
+    <!--
+      New goal sheet (phase 8d, NewGoal.dc.html). 40dp of the page stays
+      visible between the status bar and the sheet; inside, padding
+      10 / 20 / 28 with 16dp between blocks.
+    -->
+    <dimen name="new_goal_sheet_top_gap">40dp</dimen>
+    <dimen name="new_goal_sheet_padding_top">10dp</dimen>
+    <dimen name="new_goal_sheet_padding_bottom">28dp</dimen>
+    <dimen name="new_goal_sheet_gap">16dp</dimen>
+    <!-- Dark live summary: padding 18, 14dp between the sentence and the
+         tiles; tiles padding 10 / 12, 8dp apart. No border, so no +1dp. -->
+    <dimen name="goal_summary_padding">18dp</dimen>
+    <dimen name="goal_summary_gap">14dp</dimen>
+    <dimen name="goal_summary_tile_gap">8dp</dimen>
+    <dimen name="goal_summary_tile_padding_vertical">10dp</dimen>
+    <dimen name="goal_summary_tile_padding_horizontal">12dp</dimen>
+    <dimen name="text_size_goal_sentence">21sp</dimen>
+    <!-- 21sp x the design's line-height 1.25. -->
+    <dimen name="line_height_goal_sentence">26.25sp</dimen>
+    <dimen name="text_size_goal_tile_label">11sp</dimen>
+    <dimen name="text_size_goal_tile_value">15sp</dimen>
+    <!-- Activity cards to their dots. -->
+    <dimen name="carousel_dots_gap">12dp</dimen>
+    <!--
+      Adjust card (target + days rows): padding 12 / 12 / 12 / 16 inside the
+      card's 1dp border (the card pads itself by the border width). The
+      stepper's 48dp buttons draw 44dp circles, so the vertical and end
+      padding lose that 2dp inset, and so does the design's 8px between
+      the text and the "−" circle (6dp + 2dp); the divider is inset 16dp.
+    -->
+    <dimen name="adjust_row_padding_start">16dp</dimen>
+    <dimen name="adjust_row_padding_end">10dp</dimen>
+    <dimen name="adjust_row_padding_vertical">10dp</dimen>
+    <dimen name="adjust_row_gap">6dp</dimen>
+    <dimen name="adjust_divider_inset">16dp</dimen>
+    <dimen name="adjust_label_gap">2dp</dimen>
+    <!-- Goal stepper: 18sp value at least 92dp wide, 20sp − / +, 6dp
+         between the value and the circles (4dp + the 2dp inset). -->
+    <dimen name="text_size_goal_stepper_value">18sp</dimen>
+    <dimen name="goal_stepper_value_min_width">92dp</dimen>
+    <dimen name="text_size_goal_stepper_symbol">20sp</dimen>
+    <dimen name="goal_stepper_value_gap">4dp</dimen>
+
+    <!-- History (activities-v3, phase 8d step 8) -->
+    <dimen name="history_chip_height">40dp</dimen>
+    <dimen name="history_chip_icon">18dp</dimen>
+    <dimen name="history_chip_padding_start">10dp</dimen>
+    <dimen name="history_chip_text_gap">6dp</dimen>
+    <dimen name="history_chip_padding_end">14dp</dimen>
+    <dimen name="history_chip_padding_end_text">16dp</dimen>
+    <dimen name="history_chip_fade_width">40dp</dimen>
+    <dimen name="history_row_padding">14dp</dimen>
+    <dimen name="history_row_gap">10dp</dimen>
+    <dimen name="history_row_icon_tile">46dp</dimen>
+    <dimen name="history_row_icon_tile_radius">14dp</dimen>
+    <dimen name="history_row_icon_padding">12dp</dimen>
+    <dimen name="history_row_text_gap">14dp</dimen>
+    <dimen name="history_fab_size">60dp</dimen>
+    <dimen name="history_fab_radius">20dp</dimen>
+    <dimen name="history_fab_icon">26dp</dimen>
+    <dimen name="history_fab_margin_end">20dp</dimen>
+    <dimen name="history_fab_margin_bottom">28dp</dimen>
+    <dimen name="history_fab_elevation">6dp</dimen>
+    <dimen name="text_size_history_chip">14sp</dimen>
+    <dimen name="text_size_history_row_title">16sp</dimen>
+    <dimen name="text_size_history_row_subtitle">13sp</dimen>
+    <dimen name="text_size_history_row_value">16sp</dimen>
 </resources>

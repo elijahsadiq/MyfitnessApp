@@ -16,7 +16,7 @@ foundational things change.
 - The report must explain **three uses of inheritance**, so the following
   three hierarchies are load-bearing, not optional:
   1. `Workout` → `DistanceWorkout` / `StrengthWorkout` → `RunningWorkout` /
-     `CyclingWorkout` (domain model, Step 3).
+     `CyclingWorkout` / `SwimmingWorkout` / `RowingWorkout` (domain model).
   2. `BaseFragment<VB : ViewBinding>` — every fragment extends it, except the
      `BottomSheetDialogFragment` (Step 5).
   3. `BaseViewHolder<T>` → `DistanceWorkoutViewHolder` /
@@ -50,6 +50,7 @@ Repository interface  ← phase 1: FakeWorkoutRepository (in-memory)
 | 8  (done) | Goal expiry as a third state, Home redesign (BMI → kcal, real streak, Goals section removed), Profile backend + rebuild, Progress + analytics screen, personalised insights, submission readiness |
 | 9  (done) | Full-app audit — GPS crash fix, consistent content height (new shell), One UI thumb-zone layout, branding pass, brand launcher icon, sign-out cache clearing, copy + plurals cleanup. Step 2: cloud deployment (Render + Aiven MySQL), avatars moved into MySQL |
 | 10 (done) | **Offline logging + sync** (Room store in `data/local/db/`, `OfflineFirstWorkoutRepository`, WorkManager `WorkoutSyncWorker`) and **local notifications** (`notifications/`: daily reminder, goal-achieved alert, Profile switches) |
+| 8d (done) | Swimming + rowing (`SwimmingWorkout` / `RowingWorkout`, migration 08, Room v2), calories stored per workout, activities-v3 screens (swipeable log sheet, Log a swim, one-hand New goal sheet, History restyle), goal-complete celebration (`GoalCelebrationManager`) |
 | future    | Journal the live GPS session to Room (closes the "process-kill drops the GPS session" caveat); offline goal edits; extra activity types if the assignment report calls for them |
 
 ## Package layout (target)
@@ -131,6 +132,12 @@ export JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"
 - Notifications are local (`AppNotifications`): channels `reminders` and
   `achievements`, small icon `ic_notification_pulse`. The daily reminder
   is a self-rescheduling one-off WorkManager job, not a periodic one.
+- Every save path stores `caloriesKcal` at save time
+  (`CalorieEstimator.storedWorkoutKcal` at `UserSettings.weightForSavingKgOrNull`).
+  Since phase 8d the profile weight is also kept on the device
+  (`ProfileWeightStore`, DataStore `profile_prefs`, via
+  `ProfileWeightPersistence`), restored at app start so offline saves after
+  a cold start still store calories; sign-out clears it.
 
 ## Cloud deployment (from phase 9)
 - API: Render free Docker web service `elijah-fitness-api` (Singapore),
@@ -189,15 +196,15 @@ following exceptions noted in the palette below.
 
 | Token | Hex | Used for |
 |---|---|---|
-| `background_warm` | `#F9FAF6` | canvas |
+| `background_warm` | `#F5F6F2` | canvas (activities-v3 value since phase 8d) |
 | `surface_white` | `#FFFFFF` | resting cards, input fields |
-| `surface_container_low` | `#F3F4F0` | row icon tiles |
+| `surface_container_low` | `#F1F3EC` | icon tiles (activities-v3 value since phase 8d) |
 | `surface_container_high` | `#E7E9E5` | section pills, dividers-as-fill |
 | `surface_dark` | `#121411` | Home hero card, week-strip active pill |
-| `surface_charcoal` | `#1C1F1A` | alternate dark surface (per DESIGN.md prose) |
+| `surface_charcoal` | `#1C1F1A` | dark cards, selected carousel card (phase 8d) |
 | `inverse_surface` | `#2E312F` | History "Weekly momentum" card (`colorSurfaceInverse`) |
 | `text_primary` | `#1A1C1A` | body text on light |
-| `text_secondary` | `#5D5F5B` | muted / metadata |
+| `text_secondary` | `#6B7066` | labels, captions on light (activities-v3 value since phase 8d) |
 | `text_on_lime` | `#111410` | **strict rule** — any text drawn on `#D4F26A` |
 | `text_on_dark` | `#FFFFFF` | text on dark hero |
 | `divider` | `#E4E6E0` | 1dp hairlines, card strokes (also `colorOutlineVariant`) |
@@ -206,6 +213,15 @@ following exceptions noted in the palette below.
 | `lime_deep` | `#536600` | M3 `colorPrimary` (surface tint) — never on button labels |
 | `error_material` | `#BA1A1A` | M3 `colorError` |
 | `error_red` | `#D64545` | form-validation red (per DESIGN.md prose) |
+| `surface_dark_tile` | `#2A2E27` | stat tiles inside dark cards (phase 8d) |
+| `text_muted_on_dark` | `#B4B9AE` | secondary text on dark cards (phase 8d) |
+| `divider_soft` | `#ECEEE7` | thin row dividers (phase 8d) |
+| `dot_inactive` | `#D3D6CD` | carousel dots, sheet drag handles (phase 8d) |
+| `text_placeholder` | `#8A8F84` | placeholder / hint text (phase 8d) |
+| `text_body_muted` | `#555A50` | muted body copy on light (phase 8d) |
+| `text_pill` | `#454A40` | text inside pale pills (phase 8d) |
+| `confetti_lime_mid` / `confetti_lime_soft` | `#C6E85A` / `#E8F7B0` | goal-complete confetti (phase 8d) |
+| `scrim_celebration` | `#9E111410` | 62 % scrim behind the goal pop-up (phase 8d) |
 
 Deleted from phase 1: `brand_*` teal/orange palette, `accent_running/cycling/weightlifting`. The single-accent lime replaces per-activity tinting; all row icons render in `text_primary` on a `surface_container_low` tile.
 
@@ -237,11 +253,57 @@ Deleted from phase 1: `brand_*` teal/orange palette, `accent_running/cycling/wei
 
 Shared since phase 9 — reuse these instead of restyling per screen:
 - Screen chrome: `ScreenHeader` / `ScreenTitle` (tab titles), `Toolbar`, `TopLoadingBar`.
-- Forms: `FormSectionTitle`, `WhenCard` / `WhenCardValue`, `DurationCell` / `DurationCellLabel` / `DurationColon`, `FormError`, `PinnedButtonBar` (bottom Save bar), `Button.Segment`.
+- Forms: `FormSectionTitle`, `WhenCard` / `WhenCardValue`, `FormError`, `PinnedButtonBar` (bottom Save bar), `Button.Segment`. (The duration cells became `DurationInputView` in phase 8d, below.)
 - Metrics: `HeroMetricValue`, `TrackingStatValue`, `SummaryStatValue` — auto-sizing; fill them with `util/MetricText.of(value, unit, …)` so number + unit shrink together.
 - Map: `MapOverlayButton` (48dp), `MapAttribution`.
 - Sheets / dialogs: `ThemeOverlay.Fitness.BottomSheetDialog`, `Widget.Fitness.BottomSheet`, `MaterialAlertDialog.Fitness.Title`; dialogs and sheets are white (`elevationOverlayEnabled=false`).
 - Scrolling lists under a FAB end with `@dimen/fab_clearance` (88dp) of bottom padding.
+
+Shared since phase 8d (activities-v3, `ui/components/`) — the log sheet,
+Log a swim and New goal reuse these:
+- `ActivityCarouselView` (ViewPager2 cards with peeking neighbours; size from
+  `ActivityCardSpec.LOG_SHEET` / `GOAL_SHEET`), `ActivityCardAdapter` +
+  `ActivityCardViewHolder : BaseViewHolder`, `CarouselDotsView`,
+  `CarouselNavButtons` (+ `Widget.Fitness.RoundIconButton`).
+- `PillSegmentedControl` (separate pills with a gap, radio semantics) with
+  `Widget.Fitness.PillSegmented.LogSheet` / `.PoolLength` / `.MeasureBy`.
+  Don't use `MaterialButtonToggleGroup` for these: it squares the inner corners.
+- `Widget.Fitness.Button.Primary.Large` (56dp lime CTA, 16sp ExtraBold),
+  `Widget.Fitness.HeaderBackButton`, `Widget.Fitness.SheetHandle`,
+  `TextAppearance.Fitness.SheetTitle` / `PageTitle` / `SheetSubtitle` / `SheetNote`.
+- In these screens primary text is `text_on_lime` (`#111410`, the designs'
+  ink colour); lime is still never used as text on a light surface.
+- `StepperView` (− value +, 44dp circles in 48dp targets, hold-to-repeat via
+  `HoldToRepeat` / `HoldRepeatSchedule`, minus/plus disable at the limits,
+  value is a polite live region). It only reports ±1 steps: the ViewModel
+  owns the value and limits and sends back `valueText` + `setStepEnabled`.
+  `stepperValueTextSize` / `stepperValueMinWidth` (28sp / 48dp by default).
+- `DurationInputView` — the h / min / s cells of **every** log form (swim,
+  run / ride / row, workout): white 20dp cards, 26sp ExtraBold number with
+  its unit after it, 2dp dark border on the focused cell (`bg_input_card`).
+  Validation is shared too: `ui/log/LogFormRules` (start not in the future,
+  minutes / seconds 0–59, total > 0 and at most 24 h — the server's limit)
+  and `ui/log/LogDateTimePickers` (the Date / Start time pickers and
+  formatters; pickers live in the form's child fragment manager, ignore a
+  second tap, and each form calls `reattach` in `onViewCreated`).
+- Log a swim form blocks: `Widget.Fitness.SummaryCard` / `SummaryTile` /
+  `SummaryIconTile` (dark live summary, 26dp radius), `Widget.Fitness.FieldCard`
+  (tappable white 20dp card), `Widget.Fitness.NotesField`, and
+  `TextAppearance.Fitness.SectionLabel` (12sp Bold caps) / `FieldLabel` /
+  `FieldValue` / `FieldHint` / `SummaryHero` (+ `.OnDark` variants). The 50sp
+  hero number is 6.5dp taller than the design's `line-height: 1` per side,
+  so its gaps use `summary_hero_gap` (9.5dp) rather than 16dp.
+  `Widget.Fitness.SectionLabel` is the same label as a TalkBack heading.
+- New activities-v3 text styles parent on `TextAppearance.Fitness.Flat`
+  (BodyMd with letter spacing 0 and no font padding), never on BodyMd
+  directly: M3's BodyMedium adds 0.018em tracking and the font padding makes
+  lines ~1.55em tall instead of the designs' 1.26em ("normal").
+- The designs' 1px CSS borders sit outside the padding; Android strokes
+  inside it, so card paddings are the design value + 1dp.
+- Activity cards use `ActivityLabels.cardIconRes` (2dp-stroke glyphs as in
+  the designs); the rest of the app keeps `ActivityLabels.iconRes`.
+- "Last activity logged" (the log sheet's starting card) is written only by
+  a successful save, through `AppContainer.rememberLoggedActivity`.
 
 **Widget fonts:** AppCompat lets the theme's `fontFamily` override the font
 from a `textAppearance`, so any style that needs a non-regular weight sets

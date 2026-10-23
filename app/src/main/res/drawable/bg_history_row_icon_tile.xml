@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 46dp icon tile on a History row (activities-v3). -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="@color/surface_container_low" />
+    <corners android:radius="@dimen/history_row_icon_tile_radius" />
+</shape>

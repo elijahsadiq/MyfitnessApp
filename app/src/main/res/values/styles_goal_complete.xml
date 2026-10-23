@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Goal-complete pop-up (GoalComplete.dc.html, phase 8d step 7). Text
+     styles that need a non-regular weight set fontFamily and
+     android:fontFamily directly (see CLAUDE.md "Widget fonts"). -->
+<resources xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- Full-screen, non-floating dialog window: the window background is
+         the 62 % scrim, drawn edge to edge behind the system bars. -->
+    <style name="Theme.Fitness.GoalCompleteDialog" parent="Theme.MyFitnessApp">
+        <item name="android:windowIsFloating">false</item>
+        <item name="android:windowBackground">@color/scrim_celebration</item>
+        <item name="android:backgroundDimEnabled">false</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="windowNoTitle">true</item>
+        <item name="windowActionBar">false</item>
+        <item name="android:windowAnimationStyle">@android:style/Animation.Dialog</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
+
+    <!-- "GOAL COMPLETE": 12sp Bold caps, 0.08em, on a pale pill. -->
+    <style name="TextAppearance.Fitness.GoalCompletePill" parent="TextAppearance.Fitness.Flat">
+        <item name="android:fontFamily">@font/plus_jakarta_sans_bold</item>
+        <item name="fontFamily">@font/plus_jakarta_sans_bold</item>
+        <item name="android:textSize">@dimen/text_size_goal_complete_pill</item>
+        <item name="android:letterSpacing">0.08</item>
+        <item name="android:textAllCaps">true</item>
+        <item name="android:textColor">@color/text_pill</item>
+    </style>
+
+    <!-- "Congrats, you achieved your goal!": 26sp ExtraBold, 1.15, −0.02em. -->
+    <style name="TextAppearance.Fitness.GoalCompleteTitle" parent="TextAppearance.Fitness.Flat">
+        <item name="android:fontFamily">@font/plus_jakarta_sans_extrabold</item>
+        <item name="fontFamily">@font/plus_jakarta_sans_extrabold</item>
+        <item name="android:textSize">@dimen/text_size_goal_complete_title</item>
+        <item name="android:letterSpacing">-0.02</item>
+        <item name="lineHeight">@dimen/line_height_goal_complete_title</item>
+        <item name="android:lineHeight" tools:targetApi="28">@dimen/line_height_goal_complete_title</item>
+        <item name="android:textColor">@color/text_on_lime</item>
+    </style>
+
+    <!-- Body line: 15sp Regular, 1.5 line height, muted. -->
+    <style name="TextAppearance.Fitness.GoalCompleteBody" parent="TextAppearance.Fitness.Flat">
+        <item name="android:textSize">@dimen/text_size_goal_complete_body</item>
+        <item name="lineHeight">@dimen/line_height_goal_complete_body</item>
+        <item name="android:lineHeight" tools:targetApi="28">@dimen/line_height_goal_complete_body</item>
+        <item name="android:textColor">@color/text_body_muted</item>
+    </style>
+
+    <!-- Stat tile value ("100"): 20sp ExtraBold, shrinks to fit one line. -->
+    <style name="Widget.Fitness.GoalCompleteTileValue" parent="TextAppearance.Fitness.Flat">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">@dimen/goal_complete_tile_value_height</item>
+        <item name="android:gravity">center</item>
+        <item name="android:maxLines">1</item>
+        <item name="android:fontFamily">@font/plus_jakarta_sans_extrabold</item>
+        <item name="fontFamily">@font/plus_jakarta_sans_extrabold</item>
+        <item name="android:textSize">@dimen/text_size_goal_complete_tile_value</item>
+        <item name="android:textColor">@color/text_on_lime</item>
+        <item name="autoSizeTextType">uniform</item>
+        <item name="autoSizeMinTextSize">@dimen/text_size_goal_complete_tile_value_min</item>
+        <item name="autoSizeMaxTextSize">@dimen/text_size_goal_complete_tile_value</item>
+        <item name="autoSizeStepGranularity">1sp</item>
+        <item name="android:autoSizeTextType" tools:targetApi="26">uniform</item>
+        <item name="android:autoSizeMinTextSize" tools:targetApi="26">@dimen/text_size_goal_complete_tile_value_min</item>
+        <item name="android:autoSizeMaxTextSize" tools:targetApi="26">@dimen/text_size_goal_complete_tile_value</item>
+        <item name="android:autoSizeStepGranularity" tools:targetApi="26">1sp</item>
+    </style>
+
+    <!-- The dark tile's value: lime. -->
+    <style name="Widget.Fitness.GoalCompleteTileValue.OnDark">
+        <item name="android:textColor">@color/lime_accent</item>
+    </style>
+
+    <!-- Stat tile label ("km ridden"): 12sp Regular. -->
+    <style name="Widget.Fitness.GoalCompleteTileLabel" parent="TextAppearance.Fitness.Flat">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:gravity">center</item>
+        <item name="android:maxLines">2</item>
+        <item name="android:ellipsize">end</item>
+        <item name="android:textSize">@dimen/text_size_goal_complete_tile_label</item>
+        <item name="android:textColor">@color/text_secondary</item>
+    </style>
+
+    <style name="Widget.Fitness.GoalCompleteTileLabel.OnDark">
+        <item name="android:textColor">@color/text_muted_on_dark</item>
+    </style>
+
+    <!-- "Set a new goal": the 56dp lime CTA at the design's 54dp. -->
+    <style name="Widget.Fitness.Button.Primary.Large.GoalComplete">
+        <item name="android:layout_height">@dimen/goal_complete_cta_height</item>
+        <item name="android:minHeight">@dimen/goal_complete_cta_height</item>
+    </style>
+
+    <!-- 15sp Bold label shared by the Share / Done pills. -->
+    <style name="TextAppearance.Fitness.GoalCompleteAction" parent="TextAppearance.Fitness.Button">
+        <item name="android:fontFamily">@font/plus_jakarta_sans_bold</item>
+        <item name="fontFamily">@font/plus_jakarta_sans_bold</item>
+        <item name="android:textSize">@dimen/text_size_goal_complete_action</item>
+        <item name="android:textAllCaps">false</item>
+    </style>
+
+    <!-- "Share": white 48dp pill, 1dp dot_inactive border. -->
+    <style name="Widget.Fitness.Button.GoalCompleteShare" parent="Widget.Fitness.Button.Outlined">
+        <item name="android:layout_height">@dimen/goal_complete_action_height</item>
+        <item name="android:minHeight">@dimen/goal_complete_action_height</item>
+        <item name="android:insetTop">0dp</item>
+        <item name="android:insetBottom">0dp</item>
+        <item name="android:paddingStart">@dimen/space_sm</item>
+        <item name="android:paddingEnd">@dimen/space_sm</item>
+        <item name="android:maxLines">1</item>
+        <item name="android:ellipsize">end</item>
+        <item name="strokeColor">@color/dot_inactive</item>
+        <item name="android:textColor">@color/text_on_lime</item>
+        <item name="android:textAppearance">@style/TextAppearance.Fitness.GoalCompleteAction</item>
+        <item name="android:fontFamily">@font/plus_jakarta_sans_bold</item>
+        <item name="fontFamily">@font/plus_jakarta_sans_bold</item>
+    </style>
+
+    <!-- "Done": 48dp pill on surface_container_low, no border. -->
+    <style name="Widget.Fitness.Button.GoalCompleteDone" parent="Widget.Fitness.Button.Primary">
+        <item name="android:layout_height">@dimen/goal_complete_action_height</item>
+        <item name="android:minHeight">@dimen/goal_complete_action_height</item>
+        <item name="android:insetTop">0dp</item>
+        <item name="android:insetBottom">0dp</item>
+        <item name="android:paddingStart">@dimen/space_sm</item>
+        <item name="android:paddingEnd">@dimen/space_sm</item>
+        <item name="android:maxLines">1</item>
+        <item name="android:ellipsize">end</item>
+        <item name="backgroundTint">@color/surface_container_low</item>
+        <item name="rippleColor">@color/surface_container_high</item>
+        <item name="android:textColor">@color/text_on_lime</item>
+        <item name="android:textAppearance">@style/TextAppearance.Fitness.GoalCompleteAction</item>
+        <item name="android:fontFamily">@font/plus_jakarta_sans_bold</item>
+        <item name="fontFamily">@font/plus_jakarta_sans_bold</item>
+    </style>
+</resources>

@@ -121,56 +121,87 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Filter chips (horizontal scroller) -->
-            <HorizontalScrollView
-                android:id="@+id/filterChipsScroll"
+            <!-- Filter chips (activities-v3): a horizontal scroller with a fade
+                 on the right edge so it reads as scrollable. -->
+            <FrameLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/space_lg"
-                android:clipToPadding="false"
-                android:paddingHorizontal="@dimen/screen_margin"
-                android:scrollbars="none">
+                android:layout_marginTop="@dimen/space_lg">
 
-                <com.google.android.material.chip.ChipGroup
-                    android:id="@+id/filterChips"
-                    android:layout_width="wrap_content"
+                <HorizontalScrollView
+                    android:id="@+id/filterChipsScroll"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    app:chipSpacingHorizontal="@dimen/space_sm"
-                    app:selectionRequired="true"
-                    app:singleLine="true"
-                    app:singleSelection="true">
+                    android:clipToPadding="false"
+                    android:paddingHorizontal="@dimen/screen_margin"
+                    android:scrollbars="none">
 
-                    <com.google.android.material.chip.Chip
-                        android:id="@+id/chipAll"
-                        style="@style/Widget.Fitness.Chip.Filter"
+                    <com.google.android.material.chip.ChipGroup
+                        android:id="@+id/filterChips"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:checked="true"
-                        android:text="@string/history_filter_all"
-                        tools:text="All  6" />
+                        app:chipSpacingHorizontal="@dimen/space_sm"
+                        app:selectionRequired="true"
+                        app:singleLine="true"
+                        app:singleSelection="true">
 
-                    <com.google.android.material.chip.Chip
-                        android:id="@+id/chipRunning"
-                        style="@style/Widget.Fitness.Chip.Filter"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/activity_type_running" />
+                        <com.google.android.material.chip.Chip
+                            android:id="@+id/chipAll"
+                            style="@style/Widget.Fitness.Chip.History.Text"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:checked="true"
+                            android:text="@string/history_filter_all" />
 
-                    <com.google.android.material.chip.Chip
-                        android:id="@+id/chipCycling"
-                        style="@style/Widget.Fitness.Chip.Filter"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/activity_type_cycling" />
+                        <com.google.android.material.chip.Chip
+                            android:id="@+id/chipRunning"
+                            style="@style/Widget.Fitness.Chip.History"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/activity_type_running"
+                            app:chipIcon="@drawable/ic_run_24" />
 
-                    <com.google.android.material.chip.Chip
-                        android:id="@+id/chipWeightlifting"
-                        style="@style/Widget.Fitness.Chip.Filter"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/activity_type_weightlifting" />
-                </com.google.android.material.chip.ChipGroup>
-            </HorizontalScrollView>
+                        <com.google.android.material.chip.Chip
+                            android:id="@+id/chipCycling"
+                            style="@style/Widget.Fitness.Chip.History"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/activity_type_cycling"
+                            app:chipIcon="@drawable/ic_bike_24" />
+
+                        <com.google.android.material.chip.Chip
+                            android:id="@+id/chipSwimming"
+                            style="@style/Widget.Fitness.Chip.History"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/activity_type_swimming"
+                            app:chipIcon="@drawable/ic_swim_24" />
+
+                        <com.google.android.material.chip.Chip
+                            android:id="@+id/chipRowing"
+                            style="@style/Widget.Fitness.Chip.History"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/activity_type_rowing"
+                            app:chipIcon="@drawable/ic_row_24" />
+
+                        <com.google.android.material.chip.Chip
+                            android:id="@+id/chipWeightlifting"
+                            style="@style/Widget.Fitness.Chip.History"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/activity_type_weightlifting"
+                            app:chipIcon="@drawable/ic_dumbbell_24" />
+                    </com.google.android.material.chip.ChipGroup>
+                </HorizontalScrollView>
+
+                <View
+                    android:layout_width="@dimen/history_chip_fade_width"
+                    android:layout_height="match_parent"
+                    android:layout_gravity="end"
+                    android:background="@drawable/bg_history_chip_fade"
+                    android:importantForAccessibility="no" />
+            </FrameLayout>
 
             <!-- Section-headered workout list -->
             <androidx.recyclerview.widget.RecyclerView
@@ -203,6 +234,7 @@
                     app:tint="@color/text_primary" />
 
                 <TextView
+                    android:id="@+id/emptyTitle"
                     style="@style/TextAppearance.Fitness.HeadlineSm"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
@@ -214,6 +246,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/space_xs"
+                    android:id="@+id/emptyBody"
                     android:gravity="center"
                     android:text="@string/history_empty_body"
                     android:textColor="@color/text_secondary" />
@@ -222,21 +255,20 @@
     </androidx.core.widget.NestedScrollView>
 
     <!--
-      Phase 8c step 1 — History FAB reinstated.
-
-      Opens the "Log a workout" sheet. The brief's Step 4 will swap the
-      sheet contents; this FAB is the entry point either way. Required
-      as a visible FloatingActionButton by the assignment brief.
+      History FAB (assignment requirement: a visible FloatingActionButton).
+      Phase 8d: the activities-v3 60dp lime rounded square, 20dp from the
+      right and 28dp from the bottom; opens the "Log a workout" sheet.
     -->
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/addWorkoutFab"
-        style="@style/Widget.Fitness.FAB"
+        style="@style/Widget.Fitness.FAB.History"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
-        android:layout_margin="@dimen/fab_margin_end"
+        android:layout_marginEnd="@dimen/history_fab_margin_end"
+        android:layout_marginBottom="@dimen/history_fab_margin_bottom"
         android:contentDescription="@string/history_fab_content_description"
-        android:src="@drawable/ic_add_24" />
+        android:src="@drawable/ic_plus_bold_24" />
 
     <!-- Overlaid (not stacked) so showing it never shifts the content. -->
     <com.google.android.material.progressindicator.LinearProgressIndicator

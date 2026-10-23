@@ -9,6 +9,7 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.elijah.fitness.AppContainer
 import com.elijah.fitness.R
 import com.elijah.fitness.data.model.ActivityType
+import com.elijah.fitness.data.model.DistanceUnit
 import com.elijah.fitness.data.model.DistanceWorkout
 import com.elijah.fitness.data.model.Workout
 import com.elijah.fitness.data.remote.ApiResult
@@ -48,7 +49,15 @@ class HistoryViewModel(
     private val zone: ZoneId = ZoneId.systemDefault(),
 ) : ViewModel() {
 
-    enum class Filter { ALL, RUNNING, CYCLING, WEIGHTLIFTING }
+    /** Chip filter, in the order the chips show. `ALL` has no activity. */
+    enum class Filter(val activityType: ActivityType?) {
+        ALL(null),
+        RUNNING(ActivityType.RUNNING),
+        CYCLING(ActivityType.CYCLING),
+        SWIMMING(ActivityType.SWIMMING),
+        ROWING(ActivityType.ROWING),
+        WEIGHTLIFTING(ActivityType.WEIGHTLIFTING),
+    }
 
     private val _filter = MutableStateFlow(Filter.ALL)
     val filter: StateFlow<Filter> = _filter.asStateFlow()
@@ -76,21 +85,12 @@ class HistoryViewModel(
         allWorkouts,
         _filter,
     ) { workouts, filter ->
-        when (filter) {
-            Filter.ALL -> workouts
-            Filter.RUNNING -> workouts.filter { it.type == ActivityType.RUNNING }
-            Filter.CYCLING -> workouts.filter { it.type == ActivityType.CYCLING }
-            Filter.WEIGHTLIFTING -> workouts.filter { it.type == ActivityType.WEIGHTLIFTING }
-        }
+        val type = filter.activityType
+        if (type == null) workouts else workouts.filter { it.type == type }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), emptyList())
 
     /** Backwards-compat alias — old tests + fragment consumed `workouts`. */
     val workouts: StateFlow<List<Workout>> get() = filteredWorkouts
-
-    /** Count of workouts overall (badge on the "All" chip). */
-    val totalCount: StateFlow<Int> = allWorkouts
-        .map { it.size }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), 0)
 
     val momentum: StateFlow<Momentum> = allWorkouts
         .map { computeMomentum(it) }
@@ -198,22 +198,28 @@ class HistoryViewModel(
 
         val items = mutableListOf<HistoryItem>()
         if (thisWeek.isNotEmpty()) {
-            items += HistoryItem.SectionHeader(
-                labelRes = R.string.history_section_this_week,
-                count = thisWeek.size,
-                distanceMeters = thisWeek.filterIsInstance<DistanceWorkout>().sumOf { it.distanceMeters },
-            )
+            items += sectionHeader(R.string.history_section_this_week, thisWeek)
             thisWeek.forEach { items += HistoryItem.Row(it, it.id in unsynced) }
         }
         if (earlier.isNotEmpty()) {
-            items += HistoryItem.SectionHeader(
-                labelRes = R.string.history_section_earlier,
-                count = earlier.size,
-                distanceMeters = earlier.filterIsInstance<DistanceWorkout>().sumOf { it.distanceMeters },
-            )
+            items += sectionHeader(R.string.history_section_earlier, earlier)
             earlier.forEach { items += HistoryItem.Row(it, it.id in unsynced) }
         }
         return items
+    }
+
+    /**
+     * The pill row above a section: how many workouts and how far. A
+     * section of only swims totals in metres, like its swim rows.
+     */
+    private fun sectionHeader(@StringRes labelRes: Int, workouts: List<Workout>): HistoryItem.SectionHeader {
+        val distanceWorkouts = workouts.filterIsInstance<DistanceWorkout>()
+        return HistoryItem.SectionHeader(
+            labelRes = labelRes,
+            count = workouts.size,
+            distanceMeters = distanceWorkouts.sumOf { it.distanceMeters },
+            distanceUnit = DistanceUnit.forTotal(distanceWorkouts),
+        )
     }
 
     // ---------- events + data classes ----------

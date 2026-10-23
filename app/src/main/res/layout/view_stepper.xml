@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  StepperView's children (phase 8d, LogSwim.dc.html): "−" circle, the
+  value, "+" circle. Sizes and colours come from the Widget.Fitness.Stepper*
+  styles; StepperView sets the value size and width from its attributes.
+-->
+<merge xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:orientation="horizontal"
+    tools:parentTag="android.widget.LinearLayout">
+
+    <!-- StepperSymbolView: a TextView that centres the glyph's ink in the circle. -->
+    <com.elijah.fitness.ui.components.StepperSymbolView
+        android:id="@+id/stepperMinus"
+        style="@style/Widget.Fitness.StepperButton.Minus" />
+
+    <TextView
+        android:id="@+id/stepperValue"
+        style="@style/Widget.Fitness.StepperValue"
+        tools:text="60" />
+
+    <com.elijah.fitness.ui.components.StepperSymbolView
+        android:id="@+id/stepperPlus"
+        style="@style/Widget.Fitness.StepperButton.Plus" />
+</merge>

@@ -3235,3 +3235,62 @@ month swipeable, keep the UI consistent.
 - Fast `adb` flicks sometimes don't page; the untouched onboarding
   pager missed the same flicks (3/8), so it's synthetic-input timing,
   not the calendar.
+
+## Phase 8d — Swimming, rowing, calorie-based goals and the goal celebration
+
+Built from the phase-8d brief and the activities-v3 HTML designs
+(`docs/design/activities-v3/`), then tested on the emulator before the
+assignment was submitted.
+
+**Backend (Step 1)**
+- Migration `08_migration_swim_row_phase8d.sql` (idempotent, MariaDB- and
+  ANSI-mode-safe): `SWIMMING` / `ROWING` appended to the workout and goal
+  activity ENUMs; `workouts.pool_length_m`, `laps`, `calories_kcal`.
+  `01_schema.sql` updated to the same shape.
+- `WorkoutController`: laps (1–400) and pool length (10–100) only for swims
+  and only together; calories 0–20,000 for any type; routes allowed for runs,
+  rides and rows. Distance goals accept swims and rows.
+- Fixes found on the way: `PATCH /workouts/{id}` no longer returns 404 when
+  the notes are unchanged (the app treated that 404 as "deleted elsewhere");
+  `Validator::integer()` rejects JSON booleans; `POST /goals/{id}/notified`
+  is idempotent.
+
+**Domain and data (Step 2)**
+- `SwimmingWorkout` and `RowingWorkout` extend `DistanceWorkout` and only
+  override `metValue()` (7.0) and the pace split (100 m / 500 m) — the
+  inheritance example for the report. `Workout.caloriesKcal` is stored at
+  save time; `energyKcal()` falls back to `caloriesBurned()` for older rows.
+- `CalorieEstimator` (goal "Est. burn" table from the design),
+  `DurationFormatter` ("2 h 30 min" everywhere), `ActivityLabels`,
+  `TextResolver`. Unknown activity types from the server or cache are skipped,
+  never thrown.
+- Room v2 with `MIGRATION_1_2` (laps, poolLengthM, caloriesKcal). The profile
+  weight is kept on the device so offline saves still store calories.
+
+**Screens (Steps 3–8)**
+- Shared components in `ui/components/`: activity carousel (ViewPager2,
+  `ActivityCardViewHolder : BaseViewHolder`), dots, pill segmented control,
+  stepper with hold-to-repeat, duration input.
+- Log a workout sheet with swipeable activity cards; Log a swim screen; rowing
+  through the manual form and GPS tracking; all log screens share one header.
+- New goal is a one-hand bottom sheet with a live summary (per week / per day,
+  end date, estimated burn) and steppers; goal targets are Doubles (0.5 km
+  swim steps).
+- `GoalCelebrationManager` owns "goal reached": a confetti pop-up
+  (`GoalCompleteDialogFragment`, `ConfettiView`) when the app is open, the
+  system notification when it isn't, each goal once (server
+  `completed_notified` flag; a first-run pass marks already-completed goals
+  silently). The Goals-tab completion snackbar is gone.
+- History: dark selected filter chips with an edge fade, card rows (metres for
+  swims), the 60dp rounded FAB, per-filter empty states. Home's day list uses
+  the same rows.
+- Colour tokens aligned to the activities-v3 palette (see CLAUDE.md).
+
+**Docs:** removed the old design exports, the screenshot capture plan and the
+duplicate font copies; README and assignment-coverage updated.
+
+**Verified:** both flavours build; 509 unit tests pass in each flavour; lint
+0 errors; emulator checks of every new flow (swims 25 m / 50 m, manual and GPS
+rows, all goal activities and metrics, the celebration shown once, History
+filters). Migration 08 applied to local Docker; it must also be applied to
+Aiven before the backend redeploys.

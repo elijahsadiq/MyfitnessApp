@@ -10,10 +10,14 @@ import com.elijah.fitness.AppContainer
 import com.elijah.fitness.R
 import com.elijah.fitness.data.model.ActivityType
 import com.elijah.fitness.data.model.CyclingWorkout
+import com.elijah.fitness.data.model.RowingWorkout
 import com.elijah.fitness.data.model.RunningWorkout
+import com.elijah.fitness.data.model.SwimmingWorkout
 import com.elijah.fitness.data.model.Workout
 import com.elijah.fitness.data.remote.ApiResult
 import com.elijah.fitness.data.repository.WorkoutRepository
+import com.elijah.fitness.util.CalorieEstimator
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -25,7 +29,6 @@ import java.time.Clock
 import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
-import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.ZoneId
 import java.util.UUID
@@ -36,12 +39,21 @@ import java.util.UUID
  * on save. Everything else (duration, distance, notes) is read from the
  * fragment at save time — those live inside EditTexts and don't benefit from
  * a bidirectional binding.
+ *
+ * Phase 8d: also used for manual rows, and the saved workout carries its
+ * calories ([CalorieEstimator.storedWorkoutKcal] at [weightForSavingKg]) so
+ * history doesn't change if the profile weight is edited later. While the
+ * profile hasn't loaded yet nothing is stored and screens work it out later.
  */
 class LogDistanceWorkoutViewModel(
     private val activityType: ActivityType,
     private val repository: WorkoutRepository,
     private val clock: Clock = Clock.systemDefaultZone(),
-    private val zone: ZoneId = ZoneId.systemDefault()
+    private val zone: ZoneId = ZoneId.systemDefault(),
+    /** [com.elijah.fitness.data.repository.UserSettings.weightForSavingKgOrNull] at save time. */
+    private val weightForSavingKg: () -> Double? = { null },
+    /** [AppContainer.rememberLoggedActivity]: called once the save worked. */
+    private val rememberActivity: (ActivityType) -> Unit = {},
 ) : ViewModel() {
 
     private val _date = MutableStateFlow(LocalDate.now(clock))
@@ -95,7 +107,11 @@ class LogDistanceWorkoutViewModel(
 
     /**
      * Validate the current form inputs and persist a distance workout on
-     * success. Emits either [Event.Saved] or [Event.ValidationFailed] on
+     * success. The checks are the shared [LogFormRules] (start not in the
+     * future; minutes and seconds 0–59; duration above zero and at most
+     * 24 h) plus a distance above 0 and at most [MAX_DISTANCE_KM]. Emits
+     * [Event.Saved], [Event.ValidationFailed] or — when the save itself
+     * fails, including a local database error — [Event.SaveFailed] on
      * [events]. All numeric inputs are provided by the fragment because
      * they live inside `EditText`s.
      */
@@ -108,15 +124,10 @@ class LogDistanceWorkoutViewModel(
     ) {
         // A double tap (or Save + the keyboard's Done) must not send twice.
         if (_isSaving.value) return
-        val startInstant = LocalDateTime.of(_date.value, _time.value)
-            .atZone(zone)
-            .toInstant()
-        val duration = Duration.ofSeconds(
-            hours * 3_600L + minutes * 60L + seconds.toLong()
-        )
+        val startInstant = LogFormRules.startInstant(_date.value, _time.value, zone)
+        val duration = Duration.ofSeconds(LogFormRules.durationSeconds(hours, minutes, seconds))
         val errors = validate(
             startInstant = startInstant,
-            duration = duration,
             hours = hours, minutes = minutes, seconds = seconds,
             distanceKm = distanceKm,
         )
@@ -124,13 +135,32 @@ class LogDistanceWorkoutViewModel(
             viewModelScope.launch { _events.send(Event.ValidationFailed(errors)) }
             return
         }
-        val workout = buildWorkout(startInstant, duration, distanceKm!!, notes)
+        val km = distanceKm ?: return
+        // Build once to ask the class for its calories (polymorphic MET),
+        // then again with the value stored.
+        val probe = buildWorkout(startInstant, duration, km, notes, caloriesKcal = null)
+        val workout = buildWorkout(
+            startInstant, duration, km, notes,
+            caloriesKcal = CalorieEstimator.storedWorkoutKcal(probe, weightForSavingKg()),
+        )
         _isSaving.value = true
         viewModelScope.launch {
-            val result = repository.addWorkout(workout)
+            // A Room / disk failure must show an error with Retry, never
+            // crash the app (same as Log a swim).
+            val result = try {
+                repository.addWorkout(workout)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                ApiResult.Error(message = "", status = 0)
+            }
             _isSaving.value = false
             when (result) {
-                is ApiResult.Success -> _events.send(Event.Saved(workout.id))
+                is ApiResult.Success -> {
+                    // The Log a workout sheet opens on this activity next time.
+                    rememberActivity(workout.type)
+                    _events.send(Event.Saved(workout.id))
+                }
                 ApiResult.NetworkError ->
                     _events.send(Event.SaveFailed(R.string.log_error_save_network))
                 is ApiResult.Error ->
@@ -141,23 +171,20 @@ class LogDistanceWorkoutViewModel(
 
     private fun validate(
         startInstant: Instant,
-        duration: Duration,
         hours: Int,
         minutes: Int,
         seconds: Int,
         distanceKm: Double?,
     ): List<FieldError> {
         val errors = mutableListOf<FieldError>()
-        if (startInstant.isAfter(clock.instant())) {
-            errors += FieldError(Field.DATE, R.string.log_error_date_in_future)
+        LogFormRules.startError(startInstant, clock.instant())?.let {
+            errors += FieldError(Field.DATE, it)
         }
         // Phase 8c step 5 user instruction: validate the VALUES, don't
         // just cap maxLength on the EditText. Negative or over-flowed
         // digits must be an inline error, not a silent clamp.
-        if (minutes !in 0..59 || seconds !in 0..59 || hours < 0) {
-            errors += FieldError(Field.DURATION, R.string.log_error_duration_out_of_range)
-        } else if (duration.isZero || duration.isNegative) {
-            errors += FieldError(Field.DURATION, R.string.log_error_duration_zero)
+        LogFormRules.durationError(hours, minutes, seconds)?.let {
+            errors += FieldError(Field.DURATION, it)
         }
         val km = distanceKm
         when {
@@ -173,28 +200,49 @@ class LogDistanceWorkoutViewModel(
         startInstant: Instant,
         duration: Duration,
         distanceKm: Double,
-        notes: String
+        notes: String,
+        caloriesKcal: Int?,
     ): Workout {
         val id = workoutId
         val distanceMeters = distanceKm * 1_000.0
         val trimmedNotes = notes.trim().takeIf { it.isNotEmpty() }
         return when (activityType) {
-            ActivityType.RUNNING -> RunningWorkout(
-                id = id,
-                startTime = startInstant,
-                duration = duration,
-                distanceMeters = distanceMeters,
-                notes = trimmedNotes
-            )
             ActivityType.CYCLING -> CyclingWorkout(
                 id = id,
                 startTime = startInstant,
                 duration = duration,
                 distanceMeters = distanceMeters,
-                notes = trimmedNotes
+                notes = trimmedNotes,
+                caloriesKcal = caloriesKcal,
             )
-            ActivityType.WEIGHTLIFTING ->
-                error("LogDistanceWorkoutViewModel called with WEIGHTLIFTING")
+            ActivityType.ROWING -> RowingWorkout(
+                id = id,
+                startTime = startInstant,
+                duration = duration,
+                distanceMeters = distanceMeters,
+                notes = trimmedNotes,
+                caloriesKcal = caloriesKcal,
+            )
+            ActivityType.SWIMMING -> SwimmingWorkout(
+                id = id,
+                startTime = startInstant,
+                duration = duration,
+                distanceMeters = distanceMeters,
+                notes = trimmedNotes,
+                caloriesKcal = caloriesKcal,
+            )
+            // This screen is never opened for a lift (the log sheet sends
+            // those to the sets form); a run keeps the `when` total
+            // instead of crashing.
+            ActivityType.RUNNING,
+            ActivityType.WEIGHTLIFTING -> RunningWorkout(
+                id = id,
+                startTime = startInstant,
+                duration = duration,
+                distanceMeters = distanceMeters,
+                notes = trimmedNotes,
+                caloriesKcal = caloriesKcal,
+            )
         }
     }
 
@@ -212,7 +260,9 @@ class LogDistanceWorkoutViewModel(
                     activityType = activityType,
                     repository = container.workoutRepository,
                     clock = clock,
-                    zone = zone
+                    zone = zone,
+                    weightForSavingKg = { container.userSettings.weightForSavingKgOrNull() },
+                    rememberActivity = container::rememberLoggedActivity,
                 )
             }
         }

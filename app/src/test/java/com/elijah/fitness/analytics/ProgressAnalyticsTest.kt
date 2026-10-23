@@ -14,6 +14,8 @@ import org.junit.Test
 import java.time.Duration
 import java.time.Instant
 import java.time.ZoneOffset
+import com.elijah.fitness.data.model.SwimmingWorkout
+import com.elijah.fitness.data.model.RowingWorkout
 
 /**
  * Reference moment: Wednesday 2026-09-16 12:00 UTC. That week's Monday
@@ -192,4 +194,52 @@ class ProgressAnalyticsTest {
             duration = Duration.ofMinutes(minutes),
             distanceMeters = meters,
         )
+
+    // --------- Phase 8d: swims and rows ---------
+
+    @Test
+    fun `swim stats are in metres with pace per 100 m`() {
+        val swims = listOf(
+            SwimmingWorkout("s1", Instant.parse("2026-09-14T07:00:00Z"), Duration.ofSeconds(1_935), 1_500.0),
+            SwimmingWorkout("s2", Instant.parse("2026-09-15T07:00:00Z"), Duration.ofSeconds(1_200), 1_000.0),
+        )
+        val stats = ProgressAnalytics.statsFor(swims, ActivityType.SWIMMING)
+        assertEquals(2, stats.workoutCount)
+        assertEquals(2_500.0, stats.totalDistanceMeters!!, 0.0)
+        // (1935 + 1200) s over 25 × 100 m = 125.4 s
+        assertEquals(125L, stats.averageSplitSeconds)
+        assertEquals(120L, stats.bestSplitSeconds) // 1200 s / 10
+        assertEquals(1_500.0, stats.longestDistanceMeters!!, 0.0)
+        assertNull(stats.averagePaceSecondsPerKm)
+    }
+
+    @Test
+    fun `swim paces round to the nearest second`() {
+        // The design's swim: 1,500 m in 32:10 → 128.67 s → "2:09 /100 m".
+        val swim = SwimmingWorkout("s1", Instant.parse("2026-09-14T07:00:00Z"), Duration.ofSeconds(1_930), 1_500.0)
+        val stats = ProgressAnalytics.statsFor(listOf(swim), ActivityType.SWIMMING)
+        assertEquals(129L, stats.averageSplitSeconds)
+        assertEquals(129L, stats.bestSplitSeconds)
+    }
+
+    @Test
+    fun `row stats use pace per 500 m and records include the longest swim and row`() {
+        val row = RowingWorkout("r1", Instant.parse("2026-09-14T07:00:00Z"), Duration.ofSeconds(1_860), 6_000.0)
+        val stats = ProgressAnalytics.statsFor(listOf(row), ActivityType.ROWING)
+        assertEquals(155L, stats.averageSplitSeconds)
+        assertEquals(155L, stats.bestSplitSeconds)
+
+        val swim = SwimmingWorkout("s1", Instant.parse("2026-09-14T07:00:00Z"), Duration.ofMinutes(30), 1_500.0)
+        val records = ProgressAnalytics.personalRecords(listOf(row, swim))
+        assertEquals(6_000.0, records.longestRowMeters!!, 0.0)
+        assertEquals(1_500.0, records.longestSwimMeters!!, 0.0)
+        assertNull(records.longestRunMeters)
+    }
+
+    @Test
+    fun `every activity type has stats without crashing`() {
+        ActivityType.entries.forEach { type ->
+            assertEquals(ProgressStats.EMPTY, ProgressAnalytics.statsFor(emptyList(), type))
+        }
+    }
 }

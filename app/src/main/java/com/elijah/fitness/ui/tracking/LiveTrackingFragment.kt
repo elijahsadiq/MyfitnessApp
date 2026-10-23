@@ -25,7 +25,11 @@ import com.elijah.fitness.FitnessApp
 import com.elijah.fitness.R
 import com.elijah.fitness.data.model.ActivityType
 import com.elijah.fitness.data.model.CyclingWorkout
+import com.elijah.fitness.data.model.RowingWorkout
 import com.elijah.fitness.data.model.RunningWorkout
+import com.elijah.fitness.data.remote.mapper.activityTypeOrNull
+import com.elijah.fitness.data.remote.mapper.canCarryRoute
+import com.elijah.fitness.util.CalorieEstimator
 import com.elijah.fitness.databinding.FragmentLiveTrackingBinding
 import com.elijah.fitness.tracking.LocationPermissions
 import com.elijah.fitness.tracking.LocationTrackingService
@@ -48,6 +52,7 @@ import java.time.Duration
 import java.time.Instant
 import java.util.Locale
 import org.osmdroid.util.GeoPoint
+import kotlin.math.roundToLong
 
 /**
  * Live tracking screen (phase 8c step 6, audit rework).
@@ -66,9 +71,10 @@ import org.osmdroid.util.GeoPoint
  */
 class LiveTrackingFragment : BaseFragment<FragmentLiveTrackingBinding>() {
 
+    /** Runs, rides and rows can be tracked; anything else starts a run. */
     private val requestedActivityType: ActivityType by lazy {
-        arguments?.getString(ARG_ACTIVITY_TYPE)
-            ?.let { runCatching { ActivityType.valueOf(it) }.getOrNull() }
+        activityTypeOrNull(arguments?.getString(ARG_ACTIVITY_TYPE))
+            ?.takeIf { canCarryRoute(it) }
             ?: ActivityType.RUNNING
     }
 
@@ -301,7 +307,7 @@ class LiveTrackingFragment : BaseFragment<FragmentLiveTrackingBinding>() {
         )
         binding.paceText.text = formatPrimaryMetric(state, activityType, muted)
         binding.caloriesText.text = MetricText.of(
-            estimateCalories(state, activityType).toString(),
+            Formatters.formatKcalValue(estimateCalories(state, activityType)),
             getString(R.string.tracking_unit_kcal), muted,
             unitTypeface = unitFont,
         )
@@ -335,8 +341,14 @@ class LiveTrackingFragment : BaseFragment<FragmentLiveTrackingBinding>() {
 
     private fun renderLabels(activityType: ActivityType) {
         binding.trackingElapsedEyebrow.setText(
-            if (activityType == ActivityType.CYCLING) R.string.activity_type_cycling
-            else R.string.activity_type_running
+            when (activityType) {
+                ActivityType.CYCLING -> R.string.activity_type_cycling
+                ActivityType.ROWING -> R.string.activity_type_rowing
+                // Only runs, rides and rows are tracked; anything else reads as a run.
+                ActivityType.RUNNING,
+                ActivityType.SWIMMING,
+                ActivityType.WEIGHTLIFTING -> R.string.activity_type_running
+            }
         )
         binding.paceLabel.setText(
             if (activityType == ActivityType.CYCLING) R.string.tracking_stat_speed
@@ -394,10 +406,22 @@ class LiveTrackingFragment : BaseFragment<FragmentLiveTrackingBinding>() {
                 unitTypeface = unitFont,
             )
         }
-        else -> {
+        // Rowers read pace per 500 m: half the per-km pace. Paces round
+        // to the nearest second, like the saved workout's.
+        ActivityType.ROWING -> {
             val pace = state.currentPaceMsPerKm
             MetricText.of(
-                if (pace == null) DASH else Formatters.formatPaceValue(pace / 1000),
+                if (pace == null) DASH else Formatters.formatPaceValue((pace / 2_000.0).roundToLong()),
+                getString(R.string.tracking_unit_pace_slash_500m), unitColor,
+                unitTypeface = unitFont,
+            )
+        }
+        ActivityType.RUNNING,
+        ActivityType.SWIMMING,
+        ActivityType.WEIGHTLIFTING -> {
+            val pace = state.currentPaceMsPerKm
+            MetricText.of(
+                if (pace == null) DASH else Formatters.formatPaceValue((pace / 1_000.0).roundToLong()),
                 getString(R.string.tracking_unit_pace_slash_km), unitColor,
                 unitTypeface = unitFont,
             )
@@ -414,12 +438,19 @@ class LiveTrackingFragment : BaseFragment<FragmentLiveTrackingBinding>() {
                 id = "live", startTime = Instant.EPOCH,
                 duration = duration, distanceMeters = state.distanceMeters,
             )
-            else -> RunningWorkout(
+            ActivityType.ROWING -> RowingWorkout(
+                id = "live", startTime = Instant.EPOCH,
+                duration = duration, distanceMeters = state.distanceMeters,
+            )
+            ActivityType.RUNNING,
+            ActivityType.SWIMMING,
+            ActivityType.WEIGHTLIFTING -> RunningWorkout(
                 id = "live", startTime = Instant.EPOCH,
                 duration = duration, distanceMeters = state.distanceMeters,
             )
         }
-        return workout.caloriesBurned(kg).toInt()
+        // Same number the saved workout stores.
+        return CalorieEstimator.workoutKcal(workout, kg)
     }
 
     // ---------- controls ----------

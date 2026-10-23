@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Light stat tile on the goal-complete card. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <solid android:color="@color/background_warm" />
+    <corners android:radius="@dimen/goal_complete_tile_radius" />
+</shape>

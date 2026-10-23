@@ -1,15 +1,14 @@
 package com.elijah.fitness.ui.tracking.map
 
 import android.view.MotionEvent
+import android.view.ViewConfiguration
 import com.elijah.fitness.tracking.BoundingBoxDegrees
 import com.elijah.fitness.tracking.RouteGeometry
 import com.elijah.fitness.tracking.TrackPoint
-import org.osmdroid.events.MapListener
-import org.osmdroid.events.ScrollEvent
-import org.osmdroid.events.ZoomEvent
 import org.osmdroid.util.BoundingBox
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
+import kotlin.math.hypot
 
 /**
  * Camera / follow-mode controller for a [MapView] (phase 8c step 3).
@@ -19,10 +18,10 @@ import org.osmdroid.views.MapView
  * controller stays in no-follow mode.
  *
  * On the **tracking screen** the controller follows the current
- * position until the user drags the map, then turns following off.
- * The re-centre button on the overlay calls [followCurrent] with
- * `true` to opt back in and immediately pans to the last-known
- * fix.
+ * position until the user drags or pinches the map, then turns
+ * following off. The re-centre button on the overlay calls
+ * [followCurrent] with `true` to opt back in and immediately pans to
+ * the last-known fix.
  *
  * ### Why we need our own controller
  *
@@ -30,39 +29,41 @@ import org.osmdroid.views.MapView
  * as a built-in — it only has `controller.animateTo(point)`. We
  * either call that on every state emission (and never let the user
  * pan freely) or we respect the user's gesture. This class takes
- * the second path: a `MapListener` watches for scroll + zoom
- * events, and a touch listener distinguishes a user gesture from a
- * programmatic pan. Only user gestures turn follow off.
+ * the second path.
+ *
+ * ### Only a real gesture stops following
+ * Following turns off when a finger moves further than the touch slop,
+ * or a second finger lands (pinch). It does **not** listen to the map's
+ * scroll events: osmdroid fires one for every frame of an `animateTo`
+ * and for every `setCenter` / centre offset change, so a scroll-based
+ * check switched following off by itself right after the screen opened
+ * (the map then stayed on the phone's old last-known position while the
+ * route was drawn off screen). A plain tap doesn't count either.
  */
 class MapCameraController(
     private val mapView: MapView,
 ) {
 
     private var following: Boolean = true
-    private var lastPanWasProgrammatic: Boolean = false
+
+    private val touchSlopPx: Int = ViewConfiguration.get(mapView.context).scaledTouchSlop
+    private var downX = 0f
+    private var downY = 0f
 
     init {
-        // Detect user-initiated scrolls / zooms. A programmatic pan
-        // from `followCurrentPosition` also fires `onScroll`, so we
-        // mark those with [lastPanWasProgrammatic] and ignore them.
-        mapView.addMapListener(object : MapListener {
-            override fun onScroll(event: ScrollEvent?): Boolean {
-                if (!lastPanWasProgrammatic) following = false
-                lastPanWasProgrammatic = false
-                return false
-            }
-
-            override fun onZoom(event: ZoomEvent?): Boolean = false
-        })
-
-        // Any ACTION_DOWN is unambiguously a user touch — safer than
-        // relying on the MapListener alone, which also fires for
-        // flings continuing after the finger lifts.
+        // Returns false so the map still handles every touch itself.
         mapView.setOnTouchListener { _, event ->
-            if (event.actionMasked == MotionEvent.ACTION_DOWN) {
-                following = false
+            when (event.actionMasked) {
+                MotionEvent.ACTION_DOWN -> {
+                    downX = event.x
+                    downY = event.y
+                }
+                // A second finger: pinch-zoom or a two-finger drag.
+                MotionEvent.ACTION_POINTER_DOWN -> following = false
+                MotionEvent.ACTION_MOVE ->
+                    if (hypot(event.x - downX, event.y - downY) > touchSlopPx) following = false
             }
-            false // let the map process the event
+            false
         }
     }
 
@@ -77,12 +78,11 @@ class MapCameraController(
     /**
      * Smoothly re-centre on [point]. When follow mode is on this is
      * called on every tracking emission; when it's off, nothing
-     * happens. The internal flag stops a programmatic pan from
-     * incorrectly turning follow off.
+     * happens. Programmatic moves never turn following off (see the
+     * class docs).
      */
     fun followCurrentPosition(point: GeoPoint) {
         if (!following) return
-        lastPanWasProgrammatic = true
         mapView.controller.animateTo(point)
     }
 
@@ -100,7 +100,6 @@ class MapCameraController(
         val bbox = RouteGeometry.boundingBox(points, padFraction) ?: return
         val paddingPx = (FIT_SCREEN_PADDING_DP * mapView.resources.displayMetrics.density).toInt()
         mapView.post {
-            lastPanWasProgrammatic = true
             mapView.zoomToBoundingBox(bbox.toOsm(), animated, paddingPx)
         }
     }

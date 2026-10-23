@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Stepper "+" button (phase 8d, LogSwim.dc.html): a 44dp lime circle,
+  inset inside the 48dp touch target. The ripple stays inside the circle.
+-->
+<ripple xmlns:android="http://schemas.android.com/apk/res/android"
+    android:color="@color/confetti_lime_mid">
+    <item>
+        <inset android:inset="@dimen/stepper_button_inset">
+            <shape android:shape="oval">
+                <solid android:color="@color/lime_accent" />
+            </shape>
+        </inset>
+    </item>
+    <item android:id="@android:id/mask">
+        <inset android:inset="@dimen/stepper_button_inset">
+            <shape android:shape="oval">
+                <solid android:color="@color/white" />
+            </shape>
+        </inset>
+    </item>
+</ripple>

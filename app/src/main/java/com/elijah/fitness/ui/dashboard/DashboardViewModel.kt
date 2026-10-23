@@ -8,6 +8,7 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.elijah.fitness.AppContainer
 import com.elijah.fitness.R
+import com.elijah.fitness.data.model.DistanceUnit
 import com.elijah.fitness.data.model.DistanceWorkout
 import com.elijah.fitness.data.model.GoalProgressCalculator
 import com.elijah.fitness.data.remote.ApiResult
@@ -104,11 +105,13 @@ class DashboardViewModel(
         val today = today()
         val date = selected ?: today
         val onDay = CalendarMath.workoutsOn(workouts, date, zone)
+        val distanceWorkouts = onDay.filterIsInstance<DistanceWorkout>()
         DayUi(
             date = date,
             today = today,
             rows = onDay.map { HistoryItem.Row(it, it.id in unsynced) },
-            distanceMeters = onDay.filterIsInstance<DistanceWorkout>().sumOf { it.distanceMeters },
+            distanceMeters = distanceWorkouts.sumOf { it.distanceMeters },
+            distanceUnit = DistanceUnit.forTotal(distanceWorkouts),
         )
     }.stateIn(
         scope = viewModelScope,
@@ -145,7 +148,6 @@ class DashboardViewModel(
 
     init {
         refresh()
-        refreshProfile()
     }
 
     /** Pick a day on the calendar. Future days fall back to today. */
@@ -159,7 +161,13 @@ class DashboardViewModel(
         _calendarExpanded.value = expanded
     }
 
+    /**
+     * Reload the workouts and the profile. The profile is part of it so
+     * the Retry after an offline start also brings back the real body
+     * weight (calories are only stored with a workout once it's known).
+     */
     fun refresh() {
+        refreshProfile()
         viewModelScope.launch {
             _isLoading.value = true
             when (repository.refresh()) {
@@ -175,7 +183,7 @@ class DashboardViewModel(
 
     /**
      * Hydrate the local body-metrics cache from `/me` on every dashboard
-     * open. New sessions already got these on login; this covers
+     * open and every [refresh]. New sessions already got these on login; this covers
      * the case of an existing token that pre-dates the BMI feature and
      * so has an empty height in [UserSettings]. Silent on failure — the
      * BMI tile just stays in its "missing" state.
@@ -194,12 +202,16 @@ class DashboardViewModel(
 
     private fun today(): LocalDate = clock.instant().atZone(zone).toLocalDate()
 
-    /** The workout list under the hero card. */
+    /**
+     * The workout list under the hero card. [distanceUnit]: a day of
+     * only swims totals in metres, like History's section headers.
+     */
     data class DayUi(
         val date: LocalDate,
         val today: LocalDate,
         val rows: List<HistoryItem.Row>,
         val distanceMeters: Double,
+        val distanceUnit: DistanceUnit = DistanceUnit.KILOMETRES,
     ) {
         val isToday: Boolean get() = date == today
     }

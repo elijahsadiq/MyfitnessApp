@@ -19,13 +19,13 @@
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:paddingHorizontal="@dimen/screen_margin"
-        android:paddingTop="10dp"
+        android:paddingTop="@dimen/manage_goal_padding_top"
         android:paddingBottom="@dimen/space_xl">
 
         <!-- Drag handle -->
         <View
-            android:layout_width="40dp"
-            android:layout_height="4dp"
+            android:layout_width="@dimen/sheet_handle_width"
+            android:layout_height="@dimen/sheet_handle_height"
             android:layout_gravity="center_horizontal"
             android:background="@drawable/bg_goal_sheet_handle" />
 
@@ -33,23 +33,23 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="18dp"
+            android:layout_marginTop="@dimen/manage_goal_header_gap"
             android:gravity="center_vertical"
             android:orientation="horizontal">
 
             <FrameLayout
-                android:layout_width="48dp"
-                android:layout_height="48dp"
+                android:layout_width="@dimen/manage_goal_icon_tile"
+                android:layout_height="@dimen/manage_goal_icon_tile"
                 android:background="@drawable/bg_goal_header_icon">
 
                 <ImageView
                     android:id="@+id/manageGoalIcon"
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
+                    android:layout_width="@dimen/manage_goal_icon"
+                    android:layout_height="@dimen/manage_goal_icon"
                     android:layout_gravity="center"
                     android:contentDescription="@string/goals_row_icon_content_description"
                     app:tint="@color/text_primary"
-                    tools:src="@drawable/ic_bike_24" />
+                    tools:src="@drawable/ic_bike_outline_24" />
             </FrameLayout>
 
             <LinearLayout
@@ -59,24 +59,24 @@
                 android:layout_weight="1"
                 android:orientation="vertical">
 
+                <!-- 18sp Bold title and a 13sp Regular subtitle (Manage.dc.html).
+                     The subtitle's parts are glued with non-breaking spaces
+                     (GoalDisplay.manageSubtitle), so it wraps between parts. -->
                 <TextView
                     android:id="@+id/manageGoalTitle"
-                    style="@style/TextAppearance.Fitness.HeadlineSm"
+                    style="@style/TextAppearance.Fitness.SheetHeaderTitle"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:ellipsize="end"
                     android:maxLines="2"
-                    android:textSize="18sp"
                     tools:text="Ride 100 km in 30 days" />
 
                 <TextView
                     android:id="@+id/manageGoalSubtitle"
-                    style="@style/TextAppearance.Fitness.LabelMd"
+                    style="@style/TextAppearance.Fitness.FieldHint"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="2dp"
-                    android:textAllCaps="false"
-                    android:textColor="@color/text_secondary"
+                    android:layout_marginTop="@dimen/manage_goal_subtitle_gap"
                     tools:text="Cycling · Distance · started Thu 24 Sep" />
             </LinearLayout>
 
@@ -89,7 +89,7 @@
                 android:clickable="true"
                 android:contentDescription="@string/manage_goal_close_content_description"
                 android:focusable="true"
-                android:padding="12dp"
+                android:padding="@dimen/manage_goal_close_padding"
                 android:src="@drawable/ic_close_24"
                 app:tint="@color/text_primary" />
         </LinearLayout>
@@ -115,7 +115,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:textColor="@color/text_primary"
-                    android:textSize="26sp"
+                    android:textSize="@dimen/text_size_manage_goal_current"
                     tools:text="58" />
 
                 <TextView
@@ -123,12 +123,12 @@
                     style="@style/TextAppearance.Fitness.LabelMd"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="6dp"
+                    android:layout_marginStart="@dimen/manage_goal_of_target_gap"
                     android:gravity="bottom"
-                    android:paddingBottom="4dp"
+                    android:paddingBottom="@dimen/manage_goal_value_baseline_lift"
                     android:textAllCaps="false"
                     android:textColor="@color/text_secondary"
-                    android:textSize="15sp"
+                    android:textSize="@dimen/text_size_manage_goal_of_target"
                     tools:text="of 100 km" />
             </LinearLayout>
 
@@ -138,10 +138,10 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:gravity="bottom"
-                android:paddingBottom="4dp"
+                android:paddingBottom="@dimen/manage_goal_value_baseline_lift"
                 android:textAllCaps="false"
                 android:textColor="@color/text_primary"
-                android:textSize="15sp"
+                android:textSize="@dimen/text_size_manage_goal_of_target"
                 android:textStyle="bold"
                 tools:text="58%" />
         </LinearLayout>
@@ -150,13 +150,13 @@
             android:id="@+id/manageGoalProgress"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
+            android:layout_marginTop="@dimen/manage_goal_progress_gap"
             app:indicatorColor="@color/lime_accent"
             app:trackColor="@color/surface_container_high"
-            app:trackCornerRadius="5dp"
+            app:trackCornerRadius="@dimen/manage_goal_progress_radius"
             app:trackStopIndicatorSize="0dp"
             app:indicatorTrackGapSize="0dp"
-            app:trackThickness="10dp"
+            app:trackThickness="@dimen/manage_goal_progress_thickness"
             tools:progress="58" />
 
         <!-- =========== Stat tiles =========== -->
@@ -173,26 +173,24 @@
                 android:layout_weight="1"
                 android:background="@drawable/bg_goal_stat_tile"
                 android:orientation="vertical"
-                android:padding="12dp">
+                android:padding="@dimen/manage_goal_stat_tile_padding">
 
+                <!-- 12sp Regular label (Manage.dc.html). -->
                 <TextView
-                    style="@style/TextAppearance.Fitness.LabelMd"
+                    style="@style/TextAppearance.Fitness.FieldLabel"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="@string/manage_goal_stat_avg_per_day"
-                    android:textAllCaps="false"
-                    android:textColor="@color/text_secondary"
-                    android:textSize="12sp" />
+                    android:text="@string/manage_goal_stat_avg_per_day" />
 
                 <TextView
                     android:id="@+id/manageGoalStatAvg"
                     style="@style/TextAppearance.Fitness.LabelMd"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
+                    android:layout_marginTop="@dimen/manage_goal_stat_value_gap"
                     android:textAllCaps="false"
                     android:textColor="@color/text_primary"
-                    android:textSize="16sp"
+                    android:textSize="@dimen/text_size_manage_goal_stat_value"
                     android:textStyle="bold"
                     tools:text="4.8 km" />
             </LinearLayout>
@@ -207,26 +205,23 @@
                 android:layout_weight="1"
                 android:background="@drawable/bg_goal_stat_tile"
                 android:orientation="vertical"
-                android:padding="12dp">
+                android:padding="@dimen/manage_goal_stat_tile_padding">
 
                 <TextView
-                    style="@style/TextAppearance.Fitness.LabelMd"
+                    style="@style/TextAppearance.Fitness.FieldLabel"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="@string/manage_goal_stat_needed_per_day"
-                    android:textAllCaps="false"
-                    android:textColor="@color/text_secondary"
-                    android:textSize="12sp" />
+                    android:text="@string/manage_goal_stat_needed_per_day" />
 
                 <TextView
                     android:id="@+id/manageGoalStatNeeded"
                     style="@style/TextAppearance.Fitness.LabelMd"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
+                    android:layout_marginTop="@dimen/manage_goal_stat_value_gap"
                     android:textAllCaps="false"
                     android:textColor="@color/text_primary"
-                    android:textSize="16sp"
+                    android:textSize="@dimen/text_size_manage_goal_stat_value"
                     android:textStyle="bold"
                     tools:text="2.3 km" />
             </LinearLayout>
@@ -241,16 +236,13 @@
                 android:layout_weight="1"
                 android:background="@drawable/bg_goal_stat_tile"
                 android:orientation="vertical"
-                android:padding="12dp">
+                android:padding="@dimen/manage_goal_stat_tile_padding">
 
                 <TextView
                     android:id="@+id/manageGoalStatSessionsLabel"
-                    style="@style/TextAppearance.Fitness.LabelMd"
+                    style="@style/TextAppearance.Fitness.FieldLabel"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textAllCaps="false"
-                    android:textColor="@color/text_secondary"
-                    android:textSize="12sp"
                     tools:text="Rides logged" />
 
                 <TextView
@@ -258,10 +250,10 @@
                     style="@style/TextAppearance.Fitness.LabelMd"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
+                    android:layout_marginTop="@dimen/manage_goal_stat_value_gap"
                     android:textAllCaps="false"
                     android:textColor="@color/text_primary"
-                    android:textSize="16sp"
+                    android:textSize="@dimen/text_size_manage_goal_stat_value"
                     android:textStyle="bold"
                     tools:text="9" />
             </LinearLayout>
@@ -280,17 +272,17 @@
             <LinearLayout
                 android:id="@+id/manageGoalActionEdit"
                 android:layout_width="match_parent"
-                android:layout_height="58dp"
+                android:layout_height="@dimen/manage_goal_action_row_height"
                 android:background="@drawable/bg_goal_action_row"
                 android:clickable="true"
                 android:focusable="true"
                 android:gravity="center_vertical"
                 android:orientation="horizontal"
-                android:paddingHorizontal="16dp">
+                android:paddingHorizontal="@dimen/manage_goal_action_row_padding">
 
                 <ImageView
-                    android:layout_width="20dp"
-                    android:layout_height="20dp"
+                    android:layout_width="@dimen/manage_goal_action_icon"
+                    android:layout_height="@dimen/manage_goal_action_icon"
                     android:contentDescription="@null"
                     android:src="@drawable/ic_edit_24"
                     app:tint="@color/text_primary" />
@@ -299,15 +291,15 @@
                     style="@style/TextAppearance.Fitness.BodyLg"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="14dp"
+                    android:layout_marginStart="@dimen/manage_goal_action_label_gap"
                     android:layout_weight="1"
                     android:text="@string/manage_goal_action_edit"
                     android:textColor="@color/text_primary"
                     android:textStyle="bold" />
 
                 <ImageView
-                    android:layout_width="18dp"
-                    android:layout_height="18dp"
+                    android:layout_width="@dimen/manage_goal_action_chevron"
+                    android:layout_height="@dimen/manage_goal_action_chevron"
                     android:contentDescription="@null"
                     android:src="@drawable/ic_arrow_forward_24"
                     app:tint="@color/text_secondary" />
@@ -316,33 +308,33 @@
             <View
                 android:id="@+id/manageGoalDividerAfterEdit"
                 android:layout_width="match_parent"
-                android:layout_height="1dp"
+                android:layout_height="@dimen/stroke_hairline"
                 android:background="@color/divider" />
 
             <!-- Make main goal -->
             <LinearLayout
                 android:id="@+id/manageGoalActionMakeMain"
                 android:layout_width="match_parent"
-                android:layout_height="58dp"
+                android:layout_height="@dimen/manage_goal_action_row_height"
                 android:background="@drawable/bg_goal_action_row"
                 android:clickable="true"
                 android:focusable="true"
                 android:gravity="center_vertical"
                 android:orientation="horizontal"
-                android:paddingHorizontal="16dp">
+                android:paddingHorizontal="@dimen/manage_goal_action_row_padding">
 
                 <ImageView
-                    android:layout_width="20dp"
-                    android:layout_height="20dp"
+                    android:layout_width="@dimen/manage_goal_action_icon"
+                    android:layout_height="@dimen/manage_goal_action_icon"
                     android:contentDescription="@null"
-                    android:src="@drawable/ic_trophy_24"
+                    android:src="@drawable/ic_pin_24"
                     app:tint="@color/text_primary" />
 
                 <TextView
                     style="@style/TextAppearance.Fitness.BodyLg"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="14dp"
+                    android:layout_marginStart="@dimen/manage_goal_action_label_gap"
                     android:layout_weight="1"
                     android:text="@string/manage_goal_action_make_main"
                     android:textColor="@color/text_primary"
@@ -352,24 +344,24 @@
             <View
                 android:id="@+id/manageGoalDividerAfterMakeMain"
                 android:layout_width="match_parent"
-                android:layout_height="1dp"
+                android:layout_height="@dimen/stroke_hairline"
                 android:background="@color/divider" />
 
             <!-- Add 7 more days -->
             <LinearLayout
                 android:id="@+id/manageGoalActionExtend"
                 android:layout_width="match_parent"
-                android:layout_height="58dp"
+                android:layout_height="@dimen/manage_goal_action_row_height"
                 android:background="@drawable/bg_goal_action_row"
                 android:clickable="true"
                 android:focusable="true"
                 android:gravity="center_vertical"
                 android:orientation="horizontal"
-                android:paddingHorizontal="16dp">
+                android:paddingHorizontal="@dimen/manage_goal_action_row_padding">
 
                 <ImageView
-                    android:layout_width="20dp"
-                    android:layout_height="20dp"
+                    android:layout_width="@dimen/manage_goal_action_icon"
+                    android:layout_height="@dimen/manage_goal_action_icon"
                     android:contentDescription="@null"
                     android:src="@drawable/ic_calendar_plus_24"
                     app:tint="@color/text_primary" />
@@ -378,7 +370,7 @@
                     style="@style/TextAppearance.Fitness.BodyLg"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="14dp"
+                    android:layout_marginStart="@dimen/manage_goal_action_label_gap"
                     android:layout_weight="1"
                     android:text="@string/manage_goal_action_extend"
                     android:textColor="@color/text_primary"
@@ -388,24 +380,24 @@
             <View
                 android:id="@+id/manageGoalDividerAfterExtend"
                 android:layout_width="match_parent"
-                android:layout_height="1dp"
+                android:layout_height="@dimen/stroke_hairline"
                 android:background="@color/divider" />
 
             <!-- Delete goal -->
             <LinearLayout
                 android:id="@+id/manageGoalActionDelete"
                 android:layout_width="match_parent"
-                android:layout_height="58dp"
+                android:layout_height="@dimen/manage_goal_action_row_height"
                 android:background="@drawable/bg_goal_action_row"
                 android:clickable="true"
                 android:focusable="true"
                 android:gravity="center_vertical"
                 android:orientation="horizontal"
-                android:paddingHorizontal="16dp">
+                android:paddingHorizontal="@dimen/manage_goal_action_row_padding">
 
                 <ImageView
-                    android:layout_width="20dp"
-                    android:layout_height="20dp"
+                    android:layout_width="@dimen/manage_goal_action_icon"
+                    android:layout_height="@dimen/manage_goal_action_icon"
                     android:contentDescription="@null"
                     android:src="@drawable/ic_delete_24"
                     app:tint="@color/destructive" />
@@ -414,7 +406,7 @@
                     style="@style/TextAppearance.Fitness.BodyLg"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="14dp"
+                    android:layout_marginStart="@dimen/manage_goal_action_label_gap"
                     android:layout_weight="1"
                     android:text="@string/manage_goal_action_delete"
                     android:textColor="@color/destructive"

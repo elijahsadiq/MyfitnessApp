@@ -10,9 +10,9 @@ the examiner (and I) can scan against the mark scheme.
 
 | Requirement | Status | Where |
 |---|---|---|
-| **RecyclerView** (visibly used) | ✅ Shipped | `app/src/main/res/layout/fragment_workout_history.xml:176`, `fragment_goals.xml:16`, `fragment_log_strength_workout.xml:191`, Home's day list in `fragment_dashboard.xml` (reuses `WorkoutAdapter`) and the Home calendar's two ViewPager2s (RecyclerView-backed, `CalendarPageAdapter`). Adapters: `WorkoutAdapter`, `GoalsAdapter`, `StrengthSetAdapter`, `CalendarPageAdapter`. Screenshot: `docs/screenshots/geolocation_3_route_on_detail_screen.png` (adapter visible in the History row that leads into the detail screen). |
+| **RecyclerView** (visibly used) | ✅ Shipped | `app/src/main/res/layout/fragment_workout_history.xml:176`, `fragment_goals.xml:16`, `fragment_log_strength_workout.xml:191`, Home's day list in `fragment_dashboard.xml` (reuses `WorkoutAdapter`) and the Home calendar's two ViewPager2s (RecyclerView-backed, `CalendarPageAdapter`). Adapters: `WorkoutAdapter`, `GoalsAdapter`, `StrengthSetAdapter`, `CalendarPageAdapter`. |
 | **FloatingActionButton** (visibly used) | ✅ Shipped | **`fragment_workout_history.xml` → `addWorkoutFab`** (phase 8c step 1 reinstatement) — a `com.google.android.material.floatingactionbutton.FloatingActionButton` styled as `Widget.Fitness.FAB` (lime circle, `ic_add_24`), pinned bottom-right of the History screen, opening the "Log a workout" sheet. A second, mini FAB (`newGoalFab`, `fragment_goals.xml:24`) sits on the Goals screen once goals exist. Neither may be removed. |
-| **Geolocation** | ✅ Shipped | Engine: `app/src/main/java/com/elijah/fitness/tracking/`. Service: `LocationTrackingService.kt` (foreground, `type=location`). UI: `ui/tracking/LiveTrackingFragment.kt` (phase 8c step 6 rebuild — one-screen dark map with Lock + hold-to-unlock, GPS strength pill, pause/resume with visible gap in the polyline), `ui/history/WorkoutDetailFragment.kt` + `FullScreenMapFragment.kt` (phase 8c step 7 — dark map card + full-screen interactive map on expand). Dark map renderer: `ui/tracking/map/` (`DarkMapStyler`, `RoutePolylineRenderer`, `MapCameraController`). Storage: `route_points` table (migration 04). Screenshots: `docs/screenshots/geolocation_*.png` + `tracking-live.png`, `tracking-locked.png`, `workout-detail.png`, `workout-detail-fullmap.png` (phase 8c step 8). |
+| **Geolocation** | ✅ Shipped | Engine: `app/src/main/java/com/elijah/fitness/tracking/`. Service: `LocationTrackingService.kt` (foreground, `type=location`). UI: `ui/tracking/LiveTrackingFragment.kt` (phase 8c step 6 rebuild — one-screen dark map with Lock + hold-to-unlock, GPS strength pill, pause/resume with visible gap in the polyline), `ui/history/WorkoutDetailFragment.kt` + `FullScreenMapFragment.kt` (phase 8c step 7 — dark map card + full-screen interactive map on expand). Dark map renderer: `ui/tracking/map/` (`DarkMapStyler`, `RoutePolylineRenderer`, `MapCameraController`). Storage: `route_points` table (migration 04). |
 | **Three inheritance hierarchies** | ✅ Shipped + KDoc'd | `Workout.kt` (hierarchy #1), `BaseFragment.kt` (#2), `BaseViewHolder.kt` (#3). Phase-7 bonus: `Goal.kt` (#4). All four carry their inheritance-example KDoc for the report. |
 
 ### Core feature set
@@ -48,7 +48,7 @@ the examiner (and I) can scan against the mark scheme.
 | Offline logging | ✅ | `data/local/db/` (Room: `workouts`, `strength_sets`, `route_points`, `cached_goals`) + `data/repository/OfflineFirstWorkoutRepository.kt`. Saves, note edits and deletes land in Room first. |
 | Sync once connectivity returns | ✅ | `data/sync/WorkoutSyncWorker.kt` + `WorkManagerSyncScheduler` (`NetworkType.CONNECTED`, exponential back-off). Duplicate-safe through the client UUID + idempotent `POST /workouts`. Screenshots: `offline_history.png`, `offline_detail.png` (cloud-off marker / "Not synced yet"). |
 | Notifications: reminders | ✅ | `notifications/DailyReminderWorker.kt` + `DailyReminderScheduler` + `ReminderPlanner` (skips days with a workout). Profile → Notifications → Daily reminder + time. |
-| Notifications: achievements | ✅ | `notifications/GoalAchievementNotifier.kt` → "Goal achieved". Profile → Goal alerts. Local notifications only; no Firebase push (the report explains the difference). |
+| Notifications: achievements | ✅ | `notifications/GoalCelebrationManager.kt` → "Goal achieved" (app in the background; in-app goal-complete pop-up otherwise). Profile → Goal alerts. Local notifications only; no Firebase push (the report explains the difference). |
 | Touch-based input | ✅ | FAB + bottom sheet, steppers, swipe-to-delete with Undo, hold-to-unlock on tracking, 48dp targets. |
 
 ## Task 1b — architecture + design chapter cites
@@ -97,34 +97,9 @@ export JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"
 
 ## Report screenshots
 
-See `docs/screenshots/README.md` for the capture plan. Required
-figures:
-
-| # | Filename | Captures |
-|---|---|---|
-| 1 | `geolocation_1_permission_dialog.png` | OS location permission dialog |
-| 2 | `geolocation_2_live_tracking_in_progress.png` | Live tracking screen mid-run |
-| 3 | `geolocation_3_route_on_detail_screen.png` | Saved route on detail (replaces the pre-8c "route + splits" shot — splits removed) |
-| 4 | `geolocation_4_route_points_in_phpmyadmin.png` | `route_points` table rows |
-| 5 | `geolocation_5_foreground_notification.png` | Ongoing tracking notification *(optional)* |
-
-Phase 8c step 8 adds six new figures from the logging + maps redesign.
-Each sits next to its design (`docs/design/logging-v2/<matching>.dc.html`):
-
-| # | Filename | Captures |
-|---|---|---|
-| 6 | `log-sheet.png` | "Log a workout" bottom sheet with the three activity tiles + context options (Track with GPS / Enter manually for distance activities). |
-| 7 | `log-manual.png` | Manual entry form with dark summary card at the top — showing a non-zero pace / speed / calories after filling the fields. |
-| 8 | `tracking-live.png` | Live-tracking screen with the glowing lime polyline on the dark map, GPS pill reading **GPS strong**, non-zero stats and the pause / lock / finish controls. |
-| 9 | `tracking-locked.png` | Lock overlay covering the screen; "Hold to unlock" pill visible mid-progress. |
-| 10 | `workout-detail.png` | Finished workout screen — self-drawn header, dark map card with activity pill + expand button + distance pill, 2 × 2 stat grid with highlighted lime pace card. |
-| 11 | `workout-detail-fullmap.png` | Full-screen interactive map opened via the expand button; close pill top-right. |
-
-Shoot the base figures on the emulator using the Hyde Park GPX fixture
-at `docs/testing/sample_route.gpx`. Walkthrough is in
-`docs/testing/README.md`. For the phase 8c figures, follow the
-"Pending user action" walkthrough blocks in `docs/dev-log.md` phase 8c
-step 6 (tracking) and step 7 (detail).
+All screenshots and diagrams are in the written report (Figures 1–19).
+The GPS flow can be replayed on the emulator with the Hyde Park fixture
+`docs/testing/sample_route.gpx` (see `docs/testing/README.md`).
 
 ## Attributions
 

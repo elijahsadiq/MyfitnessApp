@@ -12,9 +12,9 @@
     <color name="black">#FF000000</color>
 
     <!-- Semantic surface palette -->
-    <color name="background_warm">#F9FAF6</color>          <!-- canvas -->
+    <color name="background_warm">#F5F6F2</color>          <!-- canvas (activities-v3) -->
     <color name="surface_white">#FFFFFF</color>            <!-- resting cards, inputs -->
-    <color name="surface_container_low">#F3F4F0</color>    <!-- row icon tiles -->
+    <color name="surface_container_low">#F1F3EC</color>    <!-- icon tiles (activities-v3) -->
     <color name="surface_container">#EDEEEA</color>        <!-- soft chip bg -->
     <color name="surface_container_high">#E7E9E5</color>   <!-- section bg, pills -->
     <color name="surface_container_highest">#E2E3DF</color><!-- deepest tonal container -->
@@ -24,7 +24,7 @@
 
     <!-- Semantic text palette -->
     <color name="text_primary">#1A1C1A</color>             <!-- on light -->
-    <color name="text_secondary">#5D5F5B</color>           <!-- muted/meta -->
+    <color name="text_secondary">#6B7066</color>           <!-- labels, captions on light (activities-v3) -->
     <color name="text_on_lime">#111410</color>             <!-- strict: text on #D4F26A only -->
     <color name="text_on_dark">#FFFFFF</color>             <!-- on charcoal/dark hero -->
     <color name="text_on_dark_muted">#E2E3DF</color>       <!-- units on dark hero -->
@@ -88,4 +88,22 @@
     <color name="tracking_panel_button">#2A2E27</color>
     <!-- Lock overlay over the live map: map_background at 80 % alpha. -->
     <color name="tracking_lock_scrim">#CC0C0E0B</color>
+
+    <!--
+      Phase 8d — activities-v3 tokens (docs/design/activities-v3). The
+      dark cards reuse surface_charcoal, selected segments / chips reuse
+      surface_dark, card borders reuse divider.
+    -->
+    <color name="surface_dark_tile">#2A2E27</color>      <!-- stat tiles inside dark cards -->
+    <color name="text_muted_on_dark">#B4B9AE</color>     <!-- secondary text on dark cards -->
+    <color name="divider_soft">#ECEEE7</color>           <!-- thin row dividers -->
+    <color name="dot_inactive">#D3D6CD</color>           <!-- carousel dots, sheet drag handles -->
+    <color name="text_placeholder">#8A8F84</color>       <!-- placeholder / hint text -->
+    <color name="text_body_muted">#555A50</color>        <!-- muted body copy on light -->
+    <color name="text_pill">#454A40</color>              <!-- text inside pale pills -->
+    <color name="confetti_lime_mid">#C6E85A</color>      <!-- confetti -->
+    <color name="confetti_lime_soft">#E8F7B0</color>     <!-- confetti -->
+    <color name="scrim_celebration">#9E111410</color>    <!-- 62 % text_on_lime behind the goal pop-up -->
+    <!-- History chip-row edge fade: background_warm at 0% alpha (phase 8d step 8). -->
+    <color name="background_warm_clear">#00F5F6F2</color>
 </resources>

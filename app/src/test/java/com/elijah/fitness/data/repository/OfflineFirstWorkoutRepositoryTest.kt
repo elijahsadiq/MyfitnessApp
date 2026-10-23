@@ -2,9 +2,11 @@ package com.elijah.fitness.data.repository
 
 import com.elijah.fitness.data.local.db.FakeWorkoutDao
 import com.elijah.fitness.data.local.db.SyncState
+import com.elijah.fitness.data.model.RowingWorkout
 import com.elijah.fitness.data.model.RunningWorkout
 import com.elijah.fitness.data.model.StrengthSet
 import com.elijah.fitness.data.model.StrengthWorkout
+import com.elijah.fitness.data.model.SwimmingWorkout
 import com.elijah.fitness.data.remote.ApiResult
 import com.elijah.fitness.data.remote.api.WorkoutApi
 import com.elijah.fitness.data.remote.dto.ApiEnvelope
@@ -42,6 +44,91 @@ class OfflineFirstWorkoutRepositoryTest {
         scope = backgroundScope,
         isOnline = { server.online },
     )
+
+    // --------- Phase 8d ---------
+
+    @Test
+    fun `a swim saved offline uploads laps, pool length and calories`() = runTest {
+        server.online = false
+        val repo = repo()
+        val swim = SwimmingWorkout(
+            id = "sw1", startTime = Instant.parse("2026-10-18T07:00:00Z"),
+            duration = Duration.ofSeconds(1_935), distanceMeters = 1_500.0,
+            poolLengthM = 25, laps = 60, caloriesKcal = 270,
+        )
+        repo.addWorkout(swim)
+        assertEquals(swim, repo.observeWorkouts().first().single())
+
+        server.online = true
+        repo.syncPending()
+
+        val uploaded = server.rows.getValue("sw1")
+        assertEquals("SWIMMING", uploaded.activityType)
+        assertEquals(60, uploaded.laps)
+        assertEquals(25, uploaded.poolLengthM)
+        assertEquals(270, uploaded.caloriesKcal)
+        assertEquals(SyncState.SYNCED, dao.row("sw1")?.syncState)
+    }
+
+    @Test
+    fun `a refresh from a server without the new fields keeps the stored calories, laps and pool`() = runTest {
+        val repo = repo()
+        val swim = SwimmingWorkout(
+            id = "sw2", startTime = Instant.parse("2026-10-18T07:00:00Z"),
+            duration = Duration.ofSeconds(1_930), distanceMeters = 1_500.0,
+            poolLengthM = 25, laps = 60, caloriesKcal = 270,
+        )
+        repo.addWorkout(swim)
+        assertEquals(SyncState.SYNCED, dao.row("sw2")?.syncState)
+        // A backend from before migration 08 doesn't keep the new columns.
+        server.rows["sw2"] = server.rows.getValue("sw2").copy(caloriesKcal = null, laps = null, poolLengthM = null)
+
+        assertTrue(repo.refresh() is ApiResult.Success)
+
+        val shown = repo.observeWorkouts().first().single() as SwimmingWorkout
+        assertEquals(270, shown.caloriesKcal)
+        assertEquals(60, shown.laps)
+        assertEquals(25, shown.poolLengthM)
+    }
+
+    @Test
+    fun `a refresh still takes the server's values when it has them`() = runTest {
+        val repo = repo()
+        repo.addWorkout(run("r9"))
+        server.rows["r9"] = server.rows.getValue("r9").copy(caloriesKcal = 512)
+
+        assertTrue(repo.refresh() is ApiResult.Success)
+
+        assertEquals(512, repo.observeWorkouts().first().single().caloriesKcal)
+    }
+
+    @Test
+    fun `a server workout of an unknown type is skipped, the rest still show`() = runTest {
+        server.seed(
+            WorkoutDto(
+                id = 0, clientUuid = "hike", activityType = "HIKING",
+                startTime = "2026-10-18T07:00:00Z", durationSeconds = 3_600, distanceMeters = 8_000.0,
+                createdAt = "2026-10-18T07:00:00Z", updatedAt = "2026-10-18T07:00:00Z",
+            )
+        )
+        server.seed(
+            WorkoutDto(
+                id = 0, clientUuid = "row", activityType = "ROWING",
+                startTime = "2026-10-18T08:00:00Z", durationSeconds = 1_860, distanceMeters = 6_000.0,
+                caloriesKcal = 345,
+                createdAt = "2026-10-18T08:00:00Z", updatedAt = "2026-10-18T08:00:00Z",
+            )
+        )
+        val repo = repo()
+
+        assertTrue(repo.refresh() is ApiResult.Success)
+
+        val shown = repo.observeWorkouts().first()
+        assertEquals(listOf("row"), shown.map { it.id })
+        assertTrue(shown.single() is RowingWorkout)
+        assertEquals(345, shown.single().caloriesKcal)
+        assertNull(repo.getWorkout("hike"))
+    }
 
     @Test
     fun `offline save shows at once as unsynced and queues a sync`() = runTest {
@@ -373,6 +460,9 @@ class OfflineFirstWorkoutRepositoryTest {
             startTime = startTime,
             durationSeconds = durationSeconds,
             distanceMeters = distanceMeters,
+            poolLengthM = poolLengthM,
+            laps = laps,
+            caloriesKcal = caloriesKcal,
             notes = notes,
             sets = sets.mapIndexed { i, s -> StrengthSetDto(i + 1, s.exerciseName, s.reps, s.weightKg) },
             routePoints = routePoints.map {

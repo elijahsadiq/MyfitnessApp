@@ -168,7 +168,14 @@ class CalendarCardView @JvmOverloads constructor(
         (pager.getChildAt(0) as? RecyclerView)?.itemAnimator = null
         pager.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
             override fun onPageSelected(position: Int) {
-                if (!syncingPagers) onSwiped(position)
+                // Our own syncPagers move, not a swipe (checked now, while
+                // the flag is still set).
+                if (syncingPagers) return
+                // ViewPager2 calls this from inside its RecyclerView's
+                // scroll callback, where the pages' adapter must not be
+                // updated (RecyclerView logs an IllegalStateException).
+                // Handle the swipe on the next frame instead.
+                pager.post { onSwiped(position) }
             }
         })
     }

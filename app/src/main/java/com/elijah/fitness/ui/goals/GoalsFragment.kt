@@ -18,6 +18,7 @@ import com.elijah.fitness.databinding.FragmentGoalsBinding
 import com.elijah.fitness.ui.base.BaseFragment
 import com.elijah.fitness.ui.base.SnackKind
 import com.elijah.fitness.ui.base.navigateSafe
+import com.elijah.fitness.util.ResourcesTextResolver
 import com.google.android.material.snackbar.Snackbar
 
 /**
@@ -94,10 +95,12 @@ class GoalsFragment : BaseFragment<FragmentGoalsBinding>() {
         }
 
         parentFragmentManager.setFragmentResultListener(
-            NewGoalFragment.FRAGMENT_RESULT_KEY, viewLifecycleOwner,
+            NewGoalBottomSheet.FRAGMENT_RESULT_KEY, viewLifecycleOwner,
         ) { _, result ->
-            if (result.getBoolean(NewGoalFragment.RESULT_SAVED_KEY, false)) {
+            if (result.getBoolean(NewGoalBottomSheet.RESULT_SAVED_KEY, false)) {
                 snackbar(R.string.new_goal_saved_snackbar, Snackbar.LENGTH_SHORT, kind = SnackKind.SUCCESS).show()
+            } else if (result.getBoolean(NewGoalBottomSheet.RESULT_UNAVAILABLE_KEY, false)) {
+                snackbar(R.string.new_goal_edit_unavailable_snackbar, kind = SnackKind.ERROR).show()
             }
         }
 
@@ -118,7 +121,6 @@ class GoalsFragment : BaseFragment<FragmentGoalsBinding>() {
                 is GoalsViewModel.ErrorEvent.Network -> showRetrySnackbar(event.messageRes)
                 is GoalsViewModel.ErrorEvent.Generic -> showRetrySnackbar(event.messageRes)
                 is GoalsViewModel.ErrorEvent.DeletedWithUndo -> showUndoSnackbar(event.goalId)
-                is GoalsViewModel.ErrorEvent.GoalCompleted -> showCompletionSnackbar(event.title)
                 GoalsViewModel.ErrorEvent.MainGoalChanged ->
                     snackbar(R.string.goals_main_updated_snackbar, Snackbar.LENGTH_SHORT, kind = SnackKind.SUCCESS).show()
                 GoalsViewModel.ErrorEvent.Extended ->
@@ -132,14 +134,14 @@ class GoalsFragment : BaseFragment<FragmentGoalsBinding>() {
     private fun openNewGoalSheet() {
         findNavController().navigateSafe(
             R.id.action_goals_to_new_goal,
-            NewGoalFragment.argsFor(goalId = null),
+            NewGoalBottomSheet.argsFor(goalId = null),
         )
     }
 
     private fun openQuickStart(suggestion: GoalSuggestion) {
         findNavController().navigateSafe(
             R.id.action_goals_to_new_goal,
-            NewGoalFragment.argsFor(
+            NewGoalBottomSheet.argsFor(
                 prefillActivity = suggestion.activity,
                 prefillMetric = suggestion.metric,
                 prefillTarget = suggestion.target,
@@ -162,10 +164,11 @@ class GoalsFragment : BaseFragment<FragmentGoalsBinding>() {
         // across — "Try again" means a new goal with today as day 1.
         findNavController().navigateSafe(
             R.id.action_goals_to_new_goal,
-            NewGoalFragment.argsFor(
+            NewGoalBottomSheet.argsFor(
                 prefillActivity = NewGoalViewModel.ActivityOption.fromApi(goal.goal.activityType),
                 prefillMetric = goal.goal.goalType(),
-                prefillTarget = goal.goal.targetValue.toInt().coerceAtLeast(1),
+                // A Double all the way: a 10.5 km swim stays 10.5 km.
+                prefillTarget = goal.goal.targetValue,
                 prefillDays = goal.goal.durationDays,
             ),
         )
@@ -174,7 +177,7 @@ class GoalsFragment : BaseFragment<FragmentGoalsBinding>() {
     private fun onEditRequested(goalId: String) {
         findNavController().navigateSafe(
             R.id.action_goals_to_new_goal,
-            NewGoalFragment.argsFor(goalId = goalId),
+            NewGoalBottomSheet.argsFor(goalId = goalId),
         )
     }
 
@@ -192,7 +195,7 @@ class GoalsFragment : BaseFragment<FragmentGoalsBinding>() {
         val goal = findGoalById(goalId) ?: return
         DeleteGoalConfirmDialog.newInstance(
             goalId = goal.id,
-            title = goal.displayTitle(),
+            title = goal.displayTitle(ResourcesTextResolver(resources)),
             activityType = goal.activityType,
         ).show(parentFragmentManager, "delete_goal_confirm")
     }
@@ -226,10 +229,6 @@ class GoalsFragment : BaseFragment<FragmentGoalsBinding>() {
         snackbar(messageRes, kind = SnackKind.ERROR)
             .setAction(R.string.goals_retry) { viewModel.refresh() }
             .show()
-    }
-
-    private fun showCompletionSnackbar(title: String) {
-        snackbar(getString(R.string.goals_completed_snackbar, title), kind = SnackKind.SUCCESS).show()
     }
 
     private companion object {

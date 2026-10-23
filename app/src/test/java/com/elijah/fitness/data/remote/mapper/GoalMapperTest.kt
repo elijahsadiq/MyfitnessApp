@@ -6,7 +6,13 @@ import com.elijah.fitness.data.model.DurationGoal
 import com.elijah.fitness.data.model.GoalType
 import com.elijah.fitness.data.model.StrengthVolumeGoal
 import com.elijah.fitness.data.model.WorkoutCountGoal
+import com.elijah.fitness.data.remote.NetworkModule
 import com.elijah.fitness.data.remote.dto.GoalDto
+import com.elijah.fitness.data.remote.dto.UpdateGoalRequestDto
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -108,5 +114,72 @@ class GoalMapperTest {
         for (t in GoalType.entries) {
             assertEquals(t, GoalType.fromWire(t.wire()))
         }
+    }
+
+    // --------- Phase 8d ---------
+
+    @Test
+    fun `swim and row distance goals map`() {
+        val swim = dto(goalType = "distance", activityType = "SWIMMING", target = 10.0).toDomain()
+        assertTrue(swim is DistanceGoal)
+        assertEquals(ActivityType.SWIMMING, swim.activityType)
+        val row = dto(goalType = "count", activityType = "ROWING").toDomain()
+        assertTrue(row is WorkoutCountGoal)
+        assertEquals(ActivityType.ROWING, row.activityType)
+    }
+
+    @Test
+    fun `an unknown activity skips the goal instead of crashing`() {
+        assertNull(dto(goalType = "count", activityType = "HIKING").toDomainOrNull())
+        assertNull(dto(goalType = "calories").toDomainOrNull())
+        assertNull(dto(goalType = "distance", activityType = "WEIGHTLIFTING").toDomainOrNull())
+        val goals = listOf(
+            dto(id = 1, goalType = "count", activityType = "SWIMMING"),
+            dto(id = 2, goalType = "count", activityType = "HIKING"),
+        ).mapNotNull { it.toDomainOrNull() }
+        assertEquals(listOf("1"), goals.map { it.id })
+    }
+
+    // ---------- PUT /goals/{id} body ----------
+
+    /** The update body exactly as Retrofit sends it (the app's own Json config). */
+    private fun updateJson(activityType: ActivityType?): JsonObject {
+        val body = buildUpdateGoalRequest(
+            title = "Be active for 2 h 30 min in 14 days",
+            activityType = activityType,
+            goalType = GoalType.DURATION,
+            targetValue = 150.0,
+            durationDays = 14,
+        )
+        return NetworkModule.json
+            .parseToJsonElement(NetworkModule.json.encodeToString(UpdateGoalRequestDto.serializer(), body))
+            .jsonObject
+    }
+
+    @Test
+    fun `an update to any activity sends activityType as an explicit null`() {
+        // Left out, the server would keep the old activity (it merges
+        // missing fields from the stored row) and the edit would be lost.
+        val json = updateJson(activityType = null)
+        assertTrue("activityType must be present", json.containsKey("activityType"))
+        assertEquals(JsonNull, json["activityType"])
+        assertEquals("duration", json["goalType"]!!.jsonPrimitive.content)
+        assertEquals(14, json["durationDays"]!!.jsonPrimitive.content.toInt())
+    }
+
+    @Test
+    fun `an update to one activity sends its wire name`() {
+        val json = updateJson(activityType = ActivityType.ROWING)
+        assertEquals("ROWING", json["activityType"]!!.jsonPrimitive.content)
+        assertTrue(json["activityType"]!!.jsonPrimitive.isString)
+    }
+
+    @Test
+    fun `the update body reads its activity back as a name or null`() {
+        val any = buildUpdateGoalRequest("T", null, GoalType.COUNT, 12.0, 30)
+        val swim = buildUpdateGoalRequest("T", ActivityType.SWIMMING, GoalType.DISTANCE, 10.5, 30)
+        assertNull(any.activityTypeName)
+        assertEquals("SWIMMING", swim.activityTypeName)
+        assertEquals(10.5, swim.targetValue, 0.0)
     }
 }

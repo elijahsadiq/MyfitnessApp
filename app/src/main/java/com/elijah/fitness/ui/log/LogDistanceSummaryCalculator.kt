@@ -2,23 +2,31 @@ package com.elijah.fitness.ui.log
 
 import com.elijah.fitness.data.model.ActivityType
 import com.elijah.fitness.data.model.CyclingWorkout
+import com.elijah.fitness.data.model.RowingWorkout
 import com.elijah.fitness.data.model.RunningWorkout
+import com.elijah.fitness.data.model.SwimmingWorkout
+import com.elijah.fitness.util.CalorieEstimator
 import java.time.Duration
 import java.time.Instant
+import kotlin.math.roundToInt
 
 /**
  * Pure-Kotlin live-summary helper for the manual log form (phase 8c
- * step 5). The fragment calls [calculate] on every text change and
- * renders the result into the dark summary card.
+ * step 5; swims and rows since phase 8d). The fragment calls
+ * [calculate] on every text change and renders the result into the
+ * dark summary card.
  *
  * ### Reuse of the domain calorie model
  *
- * Calories go through the existing `Workout.caloriesBurned(kg)`
- * formula by **building a temporary `RunningWorkout` or
- * `CyclingWorkout` and asking it**. That keeps the formula in one
- * place (`Workout.kt`), uses the real profile weight (never the
- * design's placeholder 70 kg), and keeps this calculator free of
- * Android imports so it stays JVM-testable.
+ * Calories go through [CalorieEstimator.workoutKcal] by **building a
+ * temporary workout of the right class — `RunningWorkout`,
+ * `CyclingWorkout`, `SwimmingWorkout` or `RowingWorkout` — and asking
+ * it** (each class supplies its own MET through polymorphism). That
+ * keeps the formula in one place, gives the same number the saved
+ * workout stores, uses the profile weight (or the 70 kg fallback the
+ * caller passes), and keeps this calculator free of Android imports so
+ * it stays JVM-testable. The split pace comes from the same probe: per
+ * km for runs and rides, per 500 m for rows, per 100 m for swims.
  */
 object LogDistanceSummaryCalculator {
 
@@ -29,12 +37,18 @@ object LogDistanceSummaryCalculator {
      * distance), which triggers the "Add a time and distance…" copy.
      */
     data class Summary(
-        /** Avg-pace in whole seconds per kilometre. */
+        /** Avg-pace in seconds per kilometre, rounded to the nearest second. */
         val paceSecondsPerKm: Int,
         /** Avg speed, km / h. */
         val speedKmh: Double,
         /** Rounded calories, kcal. */
         val calories: Int,
+        /**
+         * Pace over the activity's own split (phase 8d): per km for runs,
+         * per 500 m for rows, per 100 m for swims. Rounded to the
+         * nearest second, 0 below 10 m.
+         */
+        val splitPaceSeconds: Int = paceSecondsPerKm,
     )
 
     /**
@@ -46,10 +60,11 @@ object LogDistanceSummaryCalculator {
      *   values are treated as zero.
      * @param distanceKm distance in km. `null` or non-positive counts
      *   as empty.
-     * @param activity routes the calorie calculation to the right MET
-     *   value (running vs cycling).
-     * @param bodyWeightKg profile weight — never the design's 70 kg
-     *   placeholder.
+     * @param activity picks the workout class, so the calories use its
+     *   MET and the split pace its distance (running, cycling, swimming,
+     *   rowing). A lift has no distance summary: `null`.
+     * @param bodyWeightKg profile weight (the 70 kg fallback while the
+     *   profile has none).
      */
     fun calculate(
         durationSeconds: Long,
@@ -65,7 +80,8 @@ object LogDistanceSummaryCalculator {
         val meters = km * 1_000.0
         val hoursDecimal = durationSeconds / 3_600.0
         val speedKmh = km / hoursDecimal
-        val paceSecondsPerKm = (durationSeconds.toDouble() / km).toInt()
+        // Rounded to the nearest second, like every saved workout's pace.
+        val paceSecondsPerKm = (durationSeconds.toDouble() / km).roundToInt()
             .coerceAtLeast(0)
 
         // Dummy startTime is fine — `caloriesBurned` only reads duration
@@ -80,14 +96,27 @@ object LogDistanceSummaryCalculator {
                 id = "probe", startTime = probeStart,
                 duration = duration, distanceMeters = meters, notes = null,
             )
+            ActivityType.SWIMMING -> SwimmingWorkout(
+                id = "probe", startTime = probeStart,
+                duration = duration, distanceMeters = meters, notes = null,
+            )
+            ActivityType.ROWING -> RowingWorkout(
+                id = "probe", startTime = probeStart,
+                duration = duration, distanceMeters = meters, notes = null,
+            )
             ActivityType.WEIGHTLIFTING -> return null
         }
-        val calories = probe.caloriesBurned(bodyWeightKg).toInt().coerceAtLeast(0)
+        // Same number the workout stores when it's saved.
+        val calories = CalorieEstimator.workoutKcal(probe, bodyWeightKg)
+        // Same rounded split pace the saved workout shows (2:09 /100 m
+        // for 1,500 m in 32:10), straight from the class's own split.
+        val splitPace = probe.paceSecondsPerSplit().toInt().coerceAtLeast(0)
 
         return Summary(
             paceSecondsPerKm = paceSecondsPerKm,
             speedKmh = speedKmh,
             calories = calories,
+            splitPaceSeconds = splitPace,
         )
     }
 }

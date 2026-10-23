@@ -17,9 +17,12 @@ import com.elijah.fitness.FitnessApp
 import com.elijah.fitness.R
 import com.elijah.fitness.data.model.ActivityType
 import com.elijah.fitness.data.model.CyclingWorkout
+import com.elijah.fitness.data.model.DistanceUnit
 import com.elijah.fitness.data.model.DistanceWorkout
+import com.elijah.fitness.data.model.RowingWorkout
 import com.elijah.fitness.data.model.RunningWorkout
 import com.elijah.fitness.data.model.StrengthWorkout
+import com.elijah.fitness.data.model.SwimmingWorkout
 import com.elijah.fitness.data.model.Workout
 import com.elijah.fitness.data.model.WorkoutDetail
 import com.elijah.fitness.databinding.FragmentWorkoutDetailBinding
@@ -33,13 +36,16 @@ import com.elijah.fitness.ui.main.MainActivity
 import com.elijah.fitness.ui.tracking.map.DarkMapStyler
 import com.elijah.fitness.ui.tracking.map.MapCameraController
 import com.elijah.fitness.ui.tracking.map.RoutePolylineRenderer
+import com.elijah.fitness.util.DurationFormatter
 import com.elijah.fitness.util.Fonts
 import com.elijah.fitness.util.Formatters
+import com.elijah.fitness.util.MeasureText
 import com.elijah.fitness.util.MetricText
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
+import java.time.Duration
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -184,35 +190,38 @@ class WorkoutDetailFragment : BaseFragment<FragmentWorkoutDetailBinding>() {
         binding.detailSubtitle.text = formatSubtitle(workout)
     }
 
+    /** "Morning run", "Evening swim", "Night workout" … (shared with the History rows). */
     @StringRes
-    private fun timeOfDayTitleRes(workout: Workout): Int {
-        if (workout is StrengthWorkout) return R.string.detail_time_strength
-        val hour = workout.startTime.atZone(ZoneId.systemDefault()).hour
-        val isRun = workout.type == ActivityType.RUNNING
-        return when (hour) {
-            in 5..11 -> if (isRun) R.string.detail_time_morning_run else R.string.detail_time_morning_ride
-            in 12..16 -> if (isRun) R.string.detail_time_afternoon_run else R.string.detail_time_afternoon_ride
-            in 17..20 -> if (isRun) R.string.detail_time_evening_run else R.string.detail_time_evening_ride
-            else -> if (isRun) R.string.detail_time_night_run else R.string.detail_time_night_ride
-        }
-    }
+    private fun timeOfDayTitleRes(workout: Workout): Int = WorkoutTitles.timeOfDayTitleRes(workout)
 
     private fun formatSubtitle(workout: Workout): String {
         val zone = ZoneId.systemDefault()
         val localDate = workout.startTime.atZone(zone).toLocalDate()
         val today = LocalDate.now(zone)
         val dayFmt = subtitleDayFormatter
+        // A no-break space keeps "10:10 AM" together when the subtitle
+        // wraps onto its second line on a narrow screen.
         val timeFmt = DateTimeFormatter.ofPattern(
-            if (DateFormat.is24HourFormat(requireContext())) "HH:mm" else "h:mm a",
+            if (DateFormat.is24HourFormat(requireContext())) "HH:mm" else "h:mm\u00A0a",
             Locale.getDefault(),
         )
         val dayText = dayFmt.format(localDate)
         val timeText = timeFmt.format(workout.startTime.atZone(zone))
-        return when (localDate) {
+        val whenText = when (localDate) {
             today -> getString(R.string.detail_subtitle_today, dayText, timeText)
             today.minusDays(1) -> getString(R.string.detail_subtitle_yesterday, dayText, timeText)
             else -> getString(R.string.detail_subtitle_default, dayText, timeText)
         }
+        // A pool swim also says how it was swum: "60 × 25 m".
+        val swim = (workout as? SwimmingWorkout)?.takeIf { it.hasValidPoolLaps() }
+            ?: return whenText
+        val laps = swim.laps ?: return whenText
+        val pool = swim.poolLengthM ?: return whenText
+        return getString(
+            R.string.detail_subtitle_with_pool,
+            whenText,
+            getString(R.string.swim_laps_of_pool, laps, pool),
+        )
     }
 
     // ---------- map ----------
@@ -225,7 +234,11 @@ class WorkoutDetailFragment : BaseFragment<FragmentWorkoutDetailBinding>() {
         binding.mapActivityPillLabel.setText(
             when (workout.type) {
                 ActivityType.CYCLING -> R.string.detail_map_pill_ride
-                else -> R.string.detail_map_pill_run
+                ActivityType.ROWING -> R.string.detail_map_pill_row
+                // Swims and lifts never carry a route; runs are the default.
+                ActivityType.RUNNING,
+                ActivityType.SWIMMING,
+                ActivityType.WEIGHTLIFTING -> R.string.detail_map_pill_run
             }
         )
         val distanceKm = (workout as DistanceWorkout).distanceKm()
@@ -254,24 +267,52 @@ class WorkoutDetailFragment : BaseFragment<FragmentWorkoutDetailBinding>() {
         )
         when (workout) {
             is RunningWorkout -> {
-                setStatCard(cards[0], R.string.detail_stat_distance, formatDistanceValue(workout.distanceKm()), getString(R.string.log_distance_unit), highlighted = false)
-                setStatCard(cards[1], R.string.detail_stat_duration, formatDurationValue(workout.duration.seconds), null, highlighted = false)
+                bindDistanceCard(cards[0], workout)
+                bindDurationCard(cards[1], workout.duration)
                 setStatCard(cards[2], R.string.detail_stat_avg_pace, Formatters.formatPaceValue(workout.paceSecondsPerKm()), getString(R.string.detail_stat_pace_unit), highlighted = true)
                 setStatCard(cards[3], R.string.detail_stat_calories, caloriesText(workout), getString(R.string.detail_stat_calories_unit), highlighted = false)
             }
             is CyclingWorkout -> {
-                setStatCard(cards[0], R.string.detail_stat_distance, formatDistanceValue(workout.distanceKm()), getString(R.string.log_distance_unit), highlighted = false)
-                setStatCard(cards[1], R.string.detail_stat_duration, formatDurationValue(workout.duration.seconds), null, highlighted = false)
+                bindDistanceCard(cards[0], workout)
+                bindDurationCard(cards[1], workout.duration)
                 setStatCard(cards[2], R.string.detail_stat_avg_speed, String.format(Locale.getDefault(), "%.1f", workout.averageSpeedKmh()), getString(R.string.detail_stat_speed_unit), highlighted = true)
+                setStatCard(cards[3], R.string.detail_stat_calories, caloriesText(workout), getString(R.string.detail_stat_calories_unit), highlighted = false)
+            }
+            // Swims: distance in metres (their distanceUnit), pace per 100 m.
+            is SwimmingWorkout -> {
+                bindDistanceCard(cards[0], workout)
+                bindDurationCard(cards[1], workout.duration)
+                setStatCard(cards[2], R.string.detail_stat_avg_pace, Formatters.formatPaceValue(workout.pacePer100mSeconds()), getString(R.string.detail_stat_pace_unit_100m), highlighted = true)
+                setStatCard(cards[3], R.string.detail_stat_calories, caloriesText(workout), getString(R.string.detail_stat_calories_unit), highlighted = false)
+            }
+            // Rows: distance in km, pace per 500 m (the rowing split).
+            is RowingWorkout -> {
+                bindDistanceCard(cards[0], workout)
+                bindDurationCard(cards[1], workout.duration)
+                setStatCard(cards[2], R.string.detail_stat_avg_pace, Formatters.formatPaceValue(workout.pacePer500mSeconds()), getString(R.string.detail_stat_pace_unit_500m), highlighted = true)
                 setStatCard(cards[3], R.string.detail_stat_calories, caloriesText(workout), getString(R.string.detail_stat_calories_unit), highlighted = false)
             }
             is StrengthWorkout -> {
                 setStatCard(cards[0], R.string.detail_stat_volume, formatVolumeValue(workout.totalVolumeKg()), getString(R.string.detail_stat_volume_unit), highlighted = false)
-                setStatCard(cards[1], R.string.detail_stat_duration, formatDurationValue(workout.duration.seconds), null, highlighted = false)
+                bindDurationCard(cards[1], workout.duration)
                 setStatCard(cards[2], R.string.detail_stat_sets, workout.sets.size.toString(), resources.getQuantityString(R.plurals.detail_stat_sets_unit, workout.sets.size), highlighted = true)
                 setStatCard(cards[3], R.string.detail_stat_calories, caloriesText(workout), getString(R.string.detail_stat_calories_unit), highlighted = false)
             }
         }
+    }
+
+    /**
+     * The Distance card, in the unit the workout's class picks
+     * ([DistanceWorkout.distanceUnit]): "5.20 km", or "1,500 m" for a swim.
+     */
+    private fun bindDistanceCard(card: ViewDetailStatCardBinding, workout: DistanceWorkout) {
+        val (value, unit) = when (workout.distanceUnit) {
+            DistanceUnit.KILOMETRES ->
+                formatDistanceValue(workout.distanceKm()) to getString(R.string.log_distance_unit)
+            DistanceUnit.METRES ->
+                Formatters.formatMetresValue(workout.distanceMeters) to getString(R.string.detail_stat_distance_unit_m)
+        }
+        setStatCard(card, R.string.detail_stat_distance, value, unit, highlighted = false)
     }
 
     private fun setStatCard(
@@ -280,6 +321,43 @@ class WorkoutDetailFragment : BaseFragment<FragmentWorkoutDetailBinding>() {
         value: String,
         unit: String?,
         highlighted: Boolean,
+    ) = setStatCard(card, labelRes, highlighted) { unitColor ->
+        MetricText.of(value, unit, unitColor, unitTypeface = unitFont)
+    }
+
+    /**
+     * The Duration card in [DurationFormatter]'s words, like History and
+     * Home: "32 min", "1 h 2 min" (numbers big, units small); "45 s"
+     * under a minute.
+     */
+    private fun bindDurationCard(card: ViewDetailStatCardBinding, duration: Duration) {
+        setStatCard(card, R.string.detail_stat_duration, highlighted = false) { unitColor ->
+            val seconds = duration.seconds.coerceAtLeast(0L)
+            if (seconds < 60L) {
+                MetricText.of(
+                    seconds.toString(),
+                    getString(R.string.duration_unit_seconds),
+                    unitColor,
+                    unitTypeface = unitFont,
+                )
+            } else {
+                MetricText.duration(
+                    totalMinutes = seconds / 60L,
+                    hoursUnit = getString(R.string.duration_unit_hours),
+                    minutesUnit = getString(R.string.duration_unit_minutes),
+                    unitColor = unitColor,
+                    unitTypeface = unitFont,
+                )
+            }
+        }
+    }
+
+    /** [text] gets the muted colour the unit should be drawn in. */
+    private fun setStatCard(
+        card: ViewDetailStatCardBinding,
+        @StringRes labelRes: Int,
+        highlighted: Boolean,
+        text: (unitColor: Int) -> CharSequence,
     ) {
         val ctx = requireContext()
         val labelColor = ContextCompat.getColor(ctx, if (highlighted) R.color.text_on_dark else R.color.text_secondary)
@@ -290,7 +368,7 @@ class WorkoutDetailFragment : BaseFragment<FragmentWorkoutDetailBinding>() {
         card.detailStatCardLabel.setText(labelRes)
         card.detailStatCardLabel.setTextColor(labelColor)
         card.detailStatCardValue.setTextColor(valueColor)
-        card.detailStatCardValue.text = MetricText.of(value, unit, labelColor, unitTypeface = unitFont)
+        card.detailStatCardValue.text = text(labelColor)
     }
 
     /** Weightlifting: list every set — exercise, then "8 reps × 80 kg". */
@@ -316,21 +394,11 @@ class WorkoutDetailFragment : BaseFragment<FragmentWorkoutDetailBinding>() {
     private fun formatVolumeValue(kg: Double): String =
         String.format(Locale.getDefault(), "%,.0f", kg)
 
-    private fun formatDurationValue(totalSeconds: Long): String {
-        val h = totalSeconds / 3_600
-        val m = (totalSeconds % 3_600) / 60
-        val s = totalSeconds % 60
-        return if (h > 0) {
-            String.format(Locale.getDefault(), "%dh %02dm", h, m)
-        } else {
-            String.format(Locale.getDefault(), "%dm %02ds", m, s)
-        }
-    }
-
+    /** The calories stored at save time, or worked out now for older workouts. */
     private fun caloriesText(workout: Workout): String {
         val weight = (requireContext().applicationContext as FitnessApp)
             .container.userSettings.bodyWeightKg.value
-        return workout.caloriesBurned(weight).toInt().toString()
+        return Formatters.formatKcalValue(workout.energyKcal(weight))
     }
 
     // ---------- notes ----------
@@ -392,29 +460,50 @@ class WorkoutDetailFragment : BaseFragment<FragmentWorkoutDetailBinding>() {
     }
 
     private fun shareBodyFor(workout: Workout): String {
+        val ctx = requireContext()
         val title = getString(timeOfDayTitleRes(workout))
+        val duration = DurationFormatter.format(ctx, workout.duration)
+        // Distance in the unit the class picks ("5.20 km", "1,500 m").
+        val distance = (workout as? DistanceWorkout)
+            ?.let { MeasureText.distance(ctx, it.distanceMeters, it.distanceUnit) }
         return when (workout) {
             is RunningWorkout -> getString(
                 R.string.detail_share_body_distance,
                 title,
-                workout.distanceKm(),
-                Formatters.formatDuration(workout.duration),
+                distance,
+                duration,
                 Formatters.formatPaceValue(workout.paceSecondsPerKm()),
                 getString(R.string.detail_stat_pace_unit),
             )
             is CyclingWorkout -> getString(
                 R.string.detail_share_body_distance,
                 title,
-                workout.distanceKm(),
-                Formatters.formatDuration(workout.duration),
+                distance,
+                duration,
                 String.format(Locale.getDefault(), "%.1f", workout.averageSpeedKmh()),
                 getString(R.string.detail_stat_speed_unit),
+            )
+            is SwimmingWorkout -> getString(
+                R.string.detail_share_body_distance,
+                title,
+                distance,
+                duration,
+                Formatters.formatPaceValue(workout.pacePer100mSeconds()),
+                getString(R.string.detail_stat_pace_unit_100m),
+            )
+            is RowingWorkout -> getString(
+                R.string.detail_share_body_distance,
+                title,
+                distance,
+                duration,
+                Formatters.formatPaceValue(workout.pacePer500mSeconds()),
+                getString(R.string.detail_stat_pace_unit_500m),
             )
             is StrengthWorkout -> getString(
                 R.string.detail_share_body_strength,
                 title,
                 workout.sets.size,
-                Formatters.formatDuration(workout.duration),
+                duration,
             )
             else -> title
         }

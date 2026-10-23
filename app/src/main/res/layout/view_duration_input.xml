@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  DurationInputView's three cells (phase 8d, LogSwim.dc.html): white
+  cards 10dp apart, each "number unit" ("0 h", "32 min", "10 s"). The
+  card's border follows its field's focus (addStatesFromChildren).
+-->
+<merge xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:orientation="horizontal"
+    tools:parentTag="android.widget.LinearLayout">
+
+    <LinearLayout
+        android:id="@+id/durationHoursCell"
+        style="@style/Widget.Fitness.DurationCell">
+
+        <EditText
+            android:id="@+id/durationHoursInput"
+            style="@style/Widget.Fitness.DurationCellInput"
+            android:hint="@string/log_duration_hint"
+            android:importantForAutofill="no"
+            tools:text="0" />
+
+        <TextView
+            style="@style/Widget.Fitness.DurationCellUnit"
+            android:text="@string/duration_unit_hours" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/durationMinutesCell"
+        style="@style/Widget.Fitness.DurationCell"
+        android:layout_marginStart="@dimen/duration_cell_gap">
+
+        <EditText
+            android:id="@+id/durationMinutesInput"
+            style="@style/Widget.Fitness.DurationCellInput"
+            android:hint="@string/log_duration_hint"
+            android:importantForAutofill="no"
+            tools:text="32" />
+
+        <TextView
+            style="@style/Widget.Fitness.DurationCellUnit"
+            android:text="@string/duration_unit_minutes" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/durationSecondsCell"
+        style="@style/Widget.Fitness.DurationCell"
+        android:layout_marginStart="@dimen/duration_cell_gap">
+
+        <EditText
+            android:id="@+id/durationSecondsInput"
+            style="@style/Widget.Fitness.DurationCellInput"
+            android:hint="@string/log_duration_hint"
+            android:importantForAutofill="no"
+            tools:text="10" />
+
+        <TextView
+            style="@style/Widget.Fitness.DurationCellUnit"
+            android:text="@string/duration_unit_seconds" />
+    </LinearLayout>
+</merge>

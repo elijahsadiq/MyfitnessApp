@@ -2,9 +2,11 @@ package com.elijah.fitness.ui.history
 
 import com.elijah.fitness.data.model.ActivityType
 import com.elijah.fitness.data.model.CyclingWorkout
+import com.elijah.fitness.data.model.DistanceUnit
 import com.elijah.fitness.data.model.RunningWorkout
 import com.elijah.fitness.data.model.StrengthSet
 import com.elijah.fitness.data.model.StrengthWorkout
+import com.elijah.fitness.data.model.SwimmingWorkout
 import com.elijah.fitness.data.model.Workout
 import com.elijah.fitness.data.repository.WorkoutDeleteCoordinator
 import com.elijah.fitness.data.repository.WorkoutRepository
@@ -68,6 +70,51 @@ class HistoryViewModelTest {
         vm.setFilter(HistoryViewModel.Filter.WEIGHTLIFTING)
         val list = vm.workouts.first { list -> list.size == 1 && list[0].type == ActivityType.WEIGHTLIFTING }
         assertEquals(1, list.size)
+    }
+
+    @Test
+    fun `a swim-only section totals in metres, a mixed one in km`() = runTest {
+        val clock = Clock.fixed(Instant.parse("2026-10-07T12:00:00Z"), ZoneOffset.UTC)
+        val repo = InMemoryTestRepo(
+            listOf(
+                // This week: two swims only.
+                SwimmingWorkout(
+                    id = "swim-1",
+                    startTime = Instant.parse("2026-10-06T07:00:00Z"),
+                    duration = Duration.ofMinutes(32),
+                    distanceMeters = 1_500.0,
+                    poolLengthM = 25,
+                    laps = 60,
+                ),
+                SwimmingWorkout(
+                    id = "swim-2",
+                    startTime = Instant.parse("2026-10-05T07:00:00Z"),
+                    duration = Duration.ofMinutes(20),
+                    distanceMeters = 1_000.0,
+                ),
+                // Earlier: a swim and a run.
+                SwimmingWorkout(
+                    id = "swim-old",
+                    startTime = Instant.parse("2026-09-20T07:00:00Z"),
+                    duration = Duration.ofMinutes(20),
+                    distanceMeters = 1_000.0,
+                ),
+                RunningWorkout(
+                    id = "run-old",
+                    startTime = Instant.parse("2026-09-21T07:00:00Z"),
+                    duration = Duration.ofMinutes(30),
+                    distanceMeters = 5_000.0,
+                ),
+            )
+        )
+        val vm = HistoryViewModel(repo, newDeleteCoordinator(repo), clock, ZoneOffset.UTC)
+
+        val headers = vm.sectioned.first { it.size == 6 }.filterIsInstance<HistoryItem.SectionHeader>()
+        assertEquals(2, headers.size)
+        assertEquals(DistanceUnit.METRES, headers[0].distanceUnit)
+        assertEquals(2_500.0, headers[0].distanceMeters, 0.001)
+        assertEquals(DistanceUnit.KILOMETRES, headers[1].distanceUnit)
+        assertEquals(6_000.0, headers[1].distanceMeters, 0.001)
     }
 
     @Test

@@ -1,14 +1,13 @@
 package com.elijah.fitness.ui.log
 
 import android.os.Bundle
-import android.text.format.DateFormat
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.view.inputmethod.EditorInfo
-import android.widget.EditText
 import androidx.appcompat.app.AlertDialog
 import androidx.core.os.bundleOf
+import androidx.core.view.ViewCompat
 import androidx.core.view.isVisible
 import androidx.core.widget.doAfterTextChanged
 import androidx.fragment.app.viewModels
@@ -21,14 +20,9 @@ import com.elijah.fitness.databinding.DialogAddSetBinding
 import com.elijah.fitness.databinding.FragmentLogStrengthWorkoutBinding
 import com.elijah.fitness.ui.base.BaseFragment
 import com.elijah.fitness.ui.base.SnackKind
+import com.elijah.fitness.ui.base.navigateSafe
 import com.elijah.fitness.ui.history.WorkoutDetailFragment
-import com.google.android.material.datepicker.CalendarConstraints
-import com.google.android.material.datepicker.DateValidatorPointBackward
-import com.google.android.material.datepicker.MaterialDatePicker
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import com.google.android.material.timepicker.MaterialTimePicker
-import com.google.android.material.timepicker.TimeFormat
-import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.ZoneId
@@ -36,9 +30,12 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 /**
- * Weightlifting log form. Same look and flow as the run / ride form:
- * When (date + time), How long?, Sets, Notes, and a Save button pinned
- * to the bottom. Sets are added through a dialog and stored in the
+ * Weightlifting log form ("Log a workout"). Same look and flow as the
+ * run / ride / row form: the Log a swim header (round back button +
+ * title), When (date + time), How long?, Sets, Notes, and a Save button
+ * pinned to the bottom. Saving checks the [LogFormRules] every form
+ * shares (start not in the future, minutes and seconds 0–59, duration
+ * above zero and at most 24 h) and needs at least one set. Sets are added through a dialog and stored in the
  * ViewModel; the RecyclerView only displays them, so the classic
  * "EditTexts inside recycled rows" trap is avoided. Saving opens the new
  * workout's detail screen, exactly like a saved run.
@@ -63,10 +60,17 @@ class LogStrengthWorkoutFragment : BaseFragment<FragmentLogStrengthWorkoutBindin
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        // A date / time picker that was open when the screen was rebuilt still answers.
+        LogDateTimePickers.reattach(this, ::onDatePicked, ::onTimePicked)
 
-        // The shared toolbar handles the top; the pinned Save bar clears
-        // the gesture bar, or the keyboard while it's open.
+        // The screen draws its own header (like Log a swim), so the status
+        // bar is cleared here; the pinned Save bar clears the gesture bar,
+        // or the keyboard while it's open.
+        applyInsets(binding.root, top = true, sides = true)
         applyBottomNavInset(binding.logSaveContainer)
+
+        ViewCompat.setAccessibilityHeading(binding.logTitle, true)
+        binding.logBack.setOnClickListener { findNavController().navigateUp() }
 
         binding.setsList.adapter = setsAdapter
         binding.setsList.layoutManager = LinearLayoutManager(requireContext())
@@ -76,8 +80,8 @@ class LogStrengthWorkoutFragment : BaseFragment<FragmentLogStrengthWorkoutBindin
         binding.addSetButton.setOnClickListener { showAddSetDialog() }
         binding.saveButton.setOnClickListener { attemptSave() }
 
-        listOf(binding.hoursInput, binding.minutesInput, binding.secondsInput).forEach { input ->
-            input.doAfterTextChanged { binding.durationError.isVisible = false }
+        binding.durationInput.doOnDurationChanged {
+            bindingOrNull?.durationError?.isVisible = false
         }
 
         collectOnStart(viewModel.date) { renderDate(it) }
@@ -112,56 +116,30 @@ class LogStrengthWorkoutFragment : BaseFragment<FragmentLogStrengthWorkoutBindin
             today.minusDays(1) -> getString(R.string.log_date_eyebrow_yesterday)
             else -> date.format(WEEKDAY_FORMATTER)
         }
-        binding.logDateValue.text = date.format(DATE_FORMATTER)
+        binding.logDateValue.text = date.format(LogDateTimePickers.dateFormatter())
     }
 
     private fun renderTime(time: LocalTime) {
         // "14:31" or "2:31 PM", following the phone's 24-hour setting.
-        binding.logTimeValue.text = time.format(
-            DateTimeFormatter.ofPattern(
-                if (DateFormat.is24HourFormat(requireContext())) "HH:mm" else "h:mm a",
-                Locale.getDefault(),
-            )
-        )
+        binding.logTimeValue.text = time.format(LogDateTimePickers.timeFormatter(requireContext()))
     }
 
     private fun showDatePicker() {
-        val constraints = CalendarConstraints.Builder()
-            .setValidator(DateValidatorPointBackward.now())
-            .build()
-        val selectionMillis = viewModel.date.value
-            .atStartOfDay(ZoneId.of("UTC"))
-            .toInstant()
-            .toEpochMilli()
-        val picker = MaterialDatePicker.Builder.datePicker()
-            .setTitleText(R.string.log_date_picker_title)
-            .setSelection(selectionMillis)
-            .setCalendarConstraints(constraints)
-            .build()
-        picker.addOnPositiveButtonClickListener { millis ->
-            val picked = Instant.ofEpochMilli(millis).atZone(ZoneId.of("UTC")).toLocalDate()
-            viewModel.setDate(picked)
-            binding.logDateError.isVisible = false
-        }
-        picker.show(parentFragmentManager, "date-picker")
+        LogDateTimePickers.showDatePicker(this, viewModel.date.value, ::onDatePicked)
     }
 
     private fun showTimePicker() {
-        val current = viewModel.time.value
-        val picker = MaterialTimePicker.Builder()
-            .setTimeFormat(
-                if (DateFormat.is24HourFormat(requireContext())) TimeFormat.CLOCK_24H
-                else TimeFormat.CLOCK_12H
-            )
-            .setHour(current.hour)
-            .setMinute(current.minute)
-            .setTitleText(R.string.log_time_picker_title)
-            .build()
-        picker.addOnPositiveButtonClickListener {
-            viewModel.setTime(LocalTime.of(picker.hour, picker.minute))
-            binding.logDateError.isVisible = false
-        }
-        picker.show(parentFragmentManager, "time-picker")
+        LogDateTimePickers.showTimePicker(this, viewModel.time.value, ::onTimePicked)
+    }
+
+    private fun onDatePicked(date: LocalDate) {
+        viewModel.setDate(date)
+        bindingOrNull?.logDateError?.isVisible = false
+    }
+
+    private fun onTimePicked(time: LocalTime) {
+        viewModel.setTime(time)
+        bindingOrNull?.logDateError?.isVisible = false
     }
 
     /**
@@ -210,14 +188,11 @@ class LogStrengthWorkoutFragment : BaseFragment<FragmentLogStrengthWorkoutBindin
         form.exerciseInput.requestFocus()
     }
 
-    private fun readInt(input: EditText): Int =
-        input.text?.toString()?.trim()?.toIntOrNull() ?: 0
-
     private fun attemptSave() {
         viewModel.save(
-            hours = readInt(binding.hoursInput),
-            minutes = readInt(binding.minutesInput),
-            seconds = readInt(binding.secondsInput),
+            hours = binding.durationInput.hours,
+            minutes = binding.durationInput.minutes,
+            seconds = binding.durationInput.seconds,
             notes = binding.notesInput.text?.toString().orEmpty()
         )
     }
@@ -239,7 +214,7 @@ class LogStrengthWorkoutFragment : BaseFragment<FragmentLogStrengthWorkoutBindin
     }
 
     private fun onSaved(clientUuid: String) {
-        findNavController().navigate(
+        findNavController().navigateSafe(
             R.id.action_log_strength_to_detail,
             bundleOf(WorkoutDetailFragment.ARG_CLIENT_UUID to clientUuid),
         )
@@ -255,8 +230,6 @@ class LogStrengthWorkoutFragment : BaseFragment<FragmentLogStrengthWorkoutBindin
         private const val MAX_REPS = 100
         private const val MAX_WEIGHT_KG = 500.0
 
-        private val DATE_FORMATTER: DateTimeFormatter =
-            DateTimeFormatter.ofPattern("EEE d MMM", Locale.getDefault())
         private val WEEKDAY_FORMATTER: DateTimeFormatter =
             DateTimeFormatter.ofPattern("EEEE", Locale.getDefault())
     }

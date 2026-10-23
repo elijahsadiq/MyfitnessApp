@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  White form card with an input inside (phase 8d, LogSwim.dc.html):
+  radius 20, 1dp divider border, 2dp text_on_lime border while the input
+  has focus. Duration cells (via addStatesFromChildren) and the notes
+  field.
+-->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_focused="true">
+        <shape android:shape="rectangle">
+            <solid android:color="@color/surface_white" />
+            <corners android:radius="@dimen/field_card_radius" />
+            <stroke
+                android:width="@dimen/stroke_focused"
+                android:color="@color/text_on_lime" />
+        </shape>
+    </item>
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="@color/surface_white" />
+            <corners android:radius="@dimen/field_card_radius" />
+            <stroke
+                android:width="@dimen/stroke_hairline"
+                android:color="@color/divider" />
+        </shape>
+    </item>
+</selector>

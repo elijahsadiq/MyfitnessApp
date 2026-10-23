@@ -3,7 +3,7 @@ package com.elijah.fitness.ui.history
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Rect
-import android.graphics.drawable.ColorDrawable
+import android.graphics.drawable.GradientDrawable
 import android.graphics.drawable.Drawable
 import android.util.TypedValue
 import androidx.core.content.ContextCompat
@@ -27,7 +27,7 @@ class WorkoutSwipeToDeleteCallback(
     private val onSwipedLeft: (position: Int) -> Unit,
 ) : ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT) {
 
-    private var background: ColorDrawable? = null
+    private var background: GradientDrawable? = null
     private var trashIcon: Drawable? = null
 
     override fun getMovementFlags(
@@ -70,20 +70,35 @@ class WorkoutSwipeToDeleteCallback(
 
         if (background == null) {
             val color = ContextCompat.getColor(itemView.context, R.color.destructive)
-            background = ColorDrawable(color)
+            // Rounded to the row card's 20dp corners so the red never
+            // pokes out square behind the card.
+            background = GradientDrawable().apply {
+                shape = GradientDrawable.RECTANGLE
+                setColor(color)
+                cornerRadius = itemView.resources.getDimension(R.dimen.radius_row)
+            }
             trashIcon = ContextCompat.getDrawable(itemView.context, R.drawable.ic_delete_24)?.apply {
                 setTint(Color.WHITE)
             }
         }
 
         if (dX < 0f) {
-            background?.setBounds(
-                itemView.right + dX.toInt(),
-                itemView.top,
-                itemView.right,
-                itemView.bottom,
-            )
-            background?.draw(c)
+            // Draw the full row-sized rounded shape but clip it to the
+            // revealed strip (plus one corner radius, so the red also fills
+            // behind the sliding card's rounded trailing corners).
+            val radius = itemView.resources.getDimension(R.dimen.radius_row)
+            background?.let { bg ->
+                bg.setBounds(itemView.left, itemView.top, itemView.right, itemView.bottom)
+                val save = c.save()
+                c.clipRect(
+                    (itemView.right + dX - radius).coerceAtLeast(itemView.left.toFloat()),
+                    itemView.top.toFloat(),
+                    itemView.right.toFloat(),
+                    itemView.bottom.toFloat(),
+                )
+                bg.draw(c)
+                c.restoreToCount(save)
+            }
 
             val icon = trashIcon
             if (icon != null) {

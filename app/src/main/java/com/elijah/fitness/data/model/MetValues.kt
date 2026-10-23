@@ -19,7 +19,7 @@ object MetValues {
         kmh < 11.3 -> 9.8
         kmh < 12.9 -> 11.0
         kmh < 14.5 -> 11.8
-        else -> 12.8    
+        else -> 12.8
     }
 
     /** MET for cycling at [kmh]. Returns 0 for non-positive speeds. */
@@ -29,9 +29,22 @@ object MetValues {
         kmh < 19.0 -> 6.8
         kmh < 22.0 -> 8.0
         kmh < 25.0 -> 10.0
-        else -> 12.0    
+        else -> 12.0
     }
 
     /** MET for general resistance/weight training at moderate effort. */
     const val WEIGHTLIFTING_MODERATE: Double = 3.5
+
+    /**
+     * Swimming laps at a light to moderate effort, as listed in the
+     * Compendium. One value for every pace: swims are logged after the
+     * session, so there is no live speed to band on.
+     */
+    const val SWIMMING: Double = 7.0
+
+    /**
+     * Rowing (boat or machine) at a moderate effort, as listed in the
+     * Compendium. One value for every pace, like [SWIMMING].
+     */
+    const val ROWING: Double = 7.0
 }

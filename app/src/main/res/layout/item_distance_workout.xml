@@ -1,60 +1,52 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout
+<!--
+  History / Home day-list row for a run, ride, swim or row (activities-v3
+  History.dc.html): white card, 46dp icon tile, title + "date · time ·
+  kcal", and the distance on the right (metres for swims, km otherwise).
+-->
+<com.google.android.material.card.MaterialCardView
     xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:minHeight="72dp"
-    android:paddingHorizontal="16dp"
-    android:paddingVertical="12dp"
-    android:background="?attr/selectableItemBackground">
+    style="@style/Widget.Fitness.HistoryRow">
 
-    <ImageView
-        android:id="@+id/activityIcon"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
-        android:padding="8dp"
-        android:contentDescription="@string/history_activity_icon_content_description"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        tools:src="@drawable/ic_run_24"
-        tools:tint="@color/text_primary" />
-
-    <TextView
-        android:id="@+id/typeAndDate"
-        style="?attr/textAppearanceTitleSmall"
-        android:layout_width="0dp"
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginStart="12dp"
-        android:maxLines="1"
-        android:ellipsize="end"
-        app:layout_constraintEnd_toStartOf="@id/paceOrSpeed"
-        app:layout_constraintStart_toEndOf="@id/activityIcon"
-        app:layout_constraintTop_toTopOf="@id/activityIcon"
-        tools:text="Running · Wed 10 Sep" />
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:padding="@dimen/history_row_padding">
 
-    <TextView
-        android:id="@+id/distanceAndDuration"
-        style="?attr/textAppearanceBodySmall"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="2dp"
-        android:textColor="?attr/colorOnSurfaceVariant"
-        app:layout_constraintEnd_toStartOf="@id/paceOrSpeed"
-        app:layout_constraintStart_toStartOf="@id/typeAndDate"
-        app:layout_constraintTop_toBottomOf="@id/typeAndDate"
-        tools:text="5.20 km · 28 min" />
+        <ImageView
+            android:id="@+id/activityIcon"
+            android:layout_width="@dimen/history_row_icon_tile"
+            android:layout_height="@dimen/history_row_icon_tile"
+            android:background="@drawable/bg_history_row_icon_tile"
+            android:importantForAccessibility="no"
+            android:padding="@dimen/history_row_icon_padding"
+            tools:src="@drawable/ic_swim_24"
+            tools:tint="@color/text_on_lime" />
 
-    <TextView
-        android:id="@+id/paceOrSpeed"
-        style="?attr/textAppearanceTitleSmall"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:textColor="@color/text_primary"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        tools:text="5:30 /km" />
-</androidx.constraintlayout.widget.ConstraintLayout>
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/history_row_text_gap"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/workoutTitle"
+                style="@style/Widget.Fitness.HistoryRowTitle"
+                tools:text="Morning swim" />
+
+            <TextView
+                android:id="@+id/workoutSubtitle"
+                style="@style/Widget.Fitness.HistoryRowSubtitle"
+                tools:text="Today · 32 min · 270 kcal" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/workoutValue"
+            style="@style/Widget.Fitness.HistoryRowValue"
+            tools:text="1,500 m" />
+    </LinearLayout>
+</com.google.android.material.card.MaterialCardView>

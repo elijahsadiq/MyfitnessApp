@@ -4,7 +4,9 @@
   (fragment_log_distance_workout.xml): "When" date + time cards, the
   "How long?" duration card, a white card holding the sets, notes, and a
   lime Save button pinned to the bottom (thumb reach, clears the gesture
-  bar and the keyboard via the fragment's inset helper).
+  bar and the keyboard via the fragment's inset helper). The header
+  (round back button + "Log a workout") is the Log a swim header; the
+  shared toolbar is hidden on this screen.
 -->
 <androidx.constraintlayout.widget.ConstraintLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
@@ -29,18 +31,34 @@
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:paddingHorizontal="@dimen/screen_margin"
-            android:paddingTop="@dimen/space_md">
+            android:paddingTop="@dimen/log_header_padding_top">
+
+            <!-- =========== Header (same as Log a swim) =========== -->
+            <LinearLayout
+                android:id="@+id/logHeader"
+                style="@style/Widget.Fitness.LogHeaderRow">
+
+                <ImageButton
+                    android:id="@+id/logBack"
+                    style="@style/Widget.Fitness.HeaderBackButton"
+                    android:contentDescription="@string/action_back_content_description" />
+
+                <TextView
+                    android:id="@+id/logTitle"
+                    style="@style/Widget.Fitness.LogHeaderTitle"
+                    android:text="@string/log_strength_title" />
+            </LinearLayout>
 
             <!-- =========== When =========== -->
             <TextView
                 style="@style/Widget.Fitness.FormSectionTitle"
-                android:layout_marginTop="0dp"
+                android:layout_marginTop="@dimen/log_header_gap_below"
                 android:text="@string/log_when_header" />
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
+                android:layout_marginTop="@dimen/form_label_gap"
                 android:baselineAligned="false"
                 android:orientation="horizontal">
 
@@ -50,13 +68,13 @@
                     android:contentDescription="@string/log_field_date">
 
                     <FrameLayout
-                        android:layout_width="36dp"
-                        android:layout_height="36dp"
+                        android:layout_width="@dimen/log_when_icon_tile"
+                        android:layout_height="@dimen/log_when_icon_tile"
                         android:background="@drawable/bg_log_when_icon">
 
                         <ImageView
-                            android:layout_width="18dp"
-                            android:layout_height="18dp"
+                            android:layout_width="@dimen/log_when_icon"
+                            android:layout_height="@dimen/log_when_icon"
                             android:layout_gravity="center"
                             android:contentDescription="@null"
                             android:src="@drawable/ic_calendar_24"
@@ -66,7 +84,7 @@
                     <LinearLayout
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:layout_marginStart="12dp"
+                        android:layout_marginStart="@dimen/log_when_label_gap"
                         android:layout_weight="1"
                         android:orientation="vertical">
 
@@ -87,7 +105,7 @@
                 </LinearLayout>
 
                 <Space
-                    android:layout_width="10dp"
+                    android:layout_width="@dimen/log_when_cards_gap"
                     android:layout_height="match_parent" />
 
                 <LinearLayout
@@ -96,13 +114,13 @@
                     android:contentDescription="@string/log_field_time">
 
                     <FrameLayout
-                        android:layout_width="36dp"
-                        android:layout_height="36dp"
+                        android:layout_width="@dimen/log_when_icon_tile"
+                        android:layout_height="@dimen/log_when_icon_tile"
                         android:background="@drawable/bg_log_when_icon">
 
                         <ImageView
-                            android:layout_width="18dp"
-                            android:layout_height="18dp"
+                            android:layout_width="@dimen/log_when_icon"
+                            android:layout_height="@dimen/log_when_icon"
                             android:layout_gravity="center"
                             android:contentDescription="@null"
                             android:src="@drawable/ic_history_24"
@@ -112,7 +130,7 @@
                     <LinearLayout
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:layout_marginStart="12dp"
+                        android:layout_marginStart="@dimen/log_when_label_gap"
                         android:layout_weight="1"
                         android:orientation="vertical">
 
@@ -143,75 +161,13 @@
                 style="@style/Widget.Fitness.FormSectionTitle"
                 android:text="@string/log_how_long_header" />
 
-            <LinearLayout
+            <!-- Shared h / min / s cells (phase 8d, same as Log a swim). -->
+            <com.elijah.fitness.ui.components.DurationInputView
+                android:id="@+id/durationInput"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
-                android:background="@drawable/bg_log_form_card"
-                android:baselineAligned="false"
-                android:gravity="top"
-                android:orientation="horizontal"
-                android:padding="@dimen/card_padding">
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:gravity="center_horizontal"
-                    android:orientation="vertical">
-
-                    <EditText
-                        android:id="@+id/hoursInput"
-                        style="@style/Widget.Fitness.DurationCell"
-                        android:contentDescription="@string/log_duration_hours_label"
-                        android:maxLength="2" />
-
-                    <TextView
-                        style="@style/Widget.Fitness.DurationCellLabel"
-                        android:text="@string/log_duration_hours_label" />
-                </LinearLayout>
-
-                <TextView style="@style/Widget.Fitness.DurationColon" />
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:gravity="center_horizontal"
-                    android:orientation="vertical">
-
-                    <EditText
-                        android:id="@+id/minutesInput"
-                        style="@style/Widget.Fitness.DurationCell"
-                        android:contentDescription="@string/log_duration_minutes_label"
-                        android:maxLength="2" />
-
-                    <TextView
-                        style="@style/Widget.Fitness.DurationCellLabel"
-                        android:text="@string/log_duration_minutes_label" />
-                </LinearLayout>
-
-                <TextView style="@style/Widget.Fitness.DurationColon" />
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:gravity="center_horizontal"
-                    android:orientation="vertical">
-
-                    <EditText
-                        android:id="@+id/secondsInput"
-                        style="@style/Widget.Fitness.DurationCell"
-                        android:contentDescription="@string/log_duration_seconds_label"
-                        android:imeOptions="actionDone"
-                        android:maxLength="2" />
-
-                    <TextView
-                        style="@style/Widget.Fitness.DurationCellLabel"
-                        android:text="@string/log_duration_seconds_label" />
-                </LinearLayout>
-            </LinearLayout>
+                android:layout_marginTop="@dimen/form_label_gap"
+                android:imeOptions="actionDone" />
 
             <TextView
                 android:id="@+id/durationError"
@@ -223,7 +179,7 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="22dp"
+                android:layout_marginTop="@dimen/log_form_section_gap"
                 android:gravity="center_vertical"
                 android:orientation="horizontal">
 
@@ -244,13 +200,13 @@
                     android:paddingEnd="@dimen/space_lg"
                     android:text="@string/log_strength_add_set_button"
                     app:icon="@drawable/ic_add_24"
-                    app:iconSize="18dp" />
+                    app:iconSize="@dimen/log_add_set_icon" />
             </LinearLayout>
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
+                android:layout_marginTop="@dimen/form_label_gap"
                 android:background="@drawable/bg_log_form_card"
                 android:orientation="vertical"
                 android:paddingVertical="@dimen/space_xs">
@@ -271,7 +227,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:gravity="center"
-                    android:minHeight="64dp"
+                    android:minHeight="@dimen/log_sets_empty_min_height"
                     android:padding="@dimen/card_padding"
                     android:text="@string/log_strength_sets_empty"
                     android:textColor="@color/text_secondary" />
@@ -287,7 +243,7 @@
             <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="22dp"
+                android:layout_marginTop="@dimen/log_form_section_gap"
                 android:gravity="center_vertical"
                 android:orientation="horizontal">
 
@@ -300,7 +256,7 @@
                     style="@style/TextAppearance.Fitness.LabelMd"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="6dp"
+                    android:layout_marginStart="@dimen/log_notes_optional_gap"
                     android:text="@string/log_notes_optional_suffix"
                     android:textColor="@color/text_secondary" />
             </LinearLayout>
@@ -309,7 +265,7 @@
                 android:id="@+id/notesInput"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
+                android:layout_marginTop="@dimen/form_label_gap"
                 android:background="@drawable/bg_log_form_card"
                 android:gravity="top|start"
                 android:hint="@string/log_notes_hint"
@@ -319,7 +275,7 @@
                 android:padding="@dimen/card_padding"
                 android:textColor="@color/text_primary"
                 android:textColorHint="@color/text_secondary"
-                android:textSize="15sp" />
+                android:textSize="@dimen/text_size_notes" />
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 
@@ -334,7 +290,7 @@
             android:id="@+id/saveButton"
             style="@style/Widget.Fitness.Button.Primary"
             android:layout_width="match_parent"
-            android:layout_height="56dp"
+            android:layout_height="@dimen/button_cta_height"
             android:text="@string/log_save_button"
             app:icon="@drawable/ic_check_24"
             app:iconGravity="textStart" />

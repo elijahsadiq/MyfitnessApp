@@ -14,7 +14,7 @@ import com.elijah.fitness.data.remote.dto.GoalDto
 import com.elijah.fitness.data.remote.mapper.buildCreateGoalRequest
 import com.elijah.fitness.data.remote.mapper.buildUpdateGoalRequest
 import com.elijah.fitness.data.remote.mapper.toCacheDto
-import com.elijah.fitness.data.remote.mapper.toDomain
+import com.elijah.fitness.data.remote.mapper.toDomainOrNull
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -65,7 +65,9 @@ class RemoteGoalRepository(
         if (cacheLoaded) return
         cacheLoaded = true
         val cached = cache?.all().orEmpty().mapNotNull { row ->
-            runCatching { cacheJson.decodeFromString(GoalDto.serializer(), row.json).toDomain() }.getOrNull()
+            runCatching { cacheJson.decodeFromString(GoalDto.serializer(), row.json) }
+                .getOrNull()
+                ?.toDomainOrNull()
         }
         // A refresh that already landed is fresher than the cache.
         if (_goals.value.isEmpty() && cached.isNotEmpty()) {
@@ -77,8 +79,9 @@ class RemoteGoalRepository(
         loadCacheOnce()
         return when (val result = apiCall { goalApi.list() }) {
             is ApiResult.Success -> {
+                // mapNotNull: a goal this version can't read is skipped.
                 publish(result.data
-                    .map { it.toDomain() }
+                    .mapNotNull { it.toDomainOrNull() }
                     .sortedByDescending { it.createdAt })
                 ApiResult.Success(Unit)
             }
@@ -100,7 +103,8 @@ class RemoteGoalRepository(
         )
         return when (val result = apiCall { goalApi.create(body) }) {
             is ApiResult.Success -> {
-                val added = result.data.toDomain()
+                val added = result.data.toDomainOrNull()
+                    ?: return refresh().let { ApiResult.Success(Unit) }
                 publish((listOf(added) + _goals.value.filterNot { it.id == added.id })
                     .sortedByDescending { it.createdAt })
                 ApiResult.Success(Unit)
@@ -121,7 +125,8 @@ class RemoteGoalRepository(
         val body = buildUpdateGoalRequest(title, activityType, goalType, targetValue, durationDays)
         return when (val result = apiCall { goalApi.update(id.toLong(), body) }) {
             is ApiResult.Success -> {
-                val updated = result.data.toDomain()
+                val updated = result.data.toDomainOrNull()
+                    ?: return refresh().let { ApiResult.Success(Unit) }
                 publish(_goals.value
                     .map { if (it.id == updated.id) updated else it }
                     .sortedByDescending { it.createdAt })
@@ -142,10 +147,11 @@ class RemoteGoalRepository(
             ApiResult.NetworkError -> ApiResult.NetworkError
         }
 
-    override suspend fun markCompletedNotified(id: String): ApiResult<Unit> =
-        when (val result = apiCall { goalApi.markNotified(id.toLong()) }) {
+    override suspend fun markCompletedNotified(id: String): ApiResult<Unit> {
+        return when (val result = apiCall { goalApi.markNotified(id.toLong()) }) {
             is ApiResult.Success -> {
-                val updated = result.data.toDomain()
+                val updated = result.data.toDomainOrNull()
+                    ?: return refresh().let { ApiResult.Success(Unit) }
                 publish(_goals.value.map {
                     if (it.id == updated.id) updated else it
                 })
@@ -154,18 +160,20 @@ class RemoteGoalRepository(
             is ApiResult.Error -> result
             ApiResult.NetworkError -> ApiResult.NetworkError
         }
+    }
 
     /**
      * Making a goal the main also flips `is_main` on every other goal in
      * the local list to false, so the UI reflects the single-main
      * invariant without waiting for a refresh.
      */
-    override suspend fun makeMainGoal(id: String): ApiResult<Unit> =
-        when (val result = apiCall { goalApi.makeMain(id.toLong()) }) {
+    override suspend fun makeMainGoal(id: String): ApiResult<Unit> {
+        return when (val result = apiCall { goalApi.makeMain(id.toLong()) }) {
             is ApiResult.Success -> {
                 // Server returned the newly-main DTO; locally, clear every
                 // other goal's isMain and replace the matched one.
-                val newMain = result.data.toDomain()
+                val newMain = result.data.toDomainOrNull()
+                    ?: return refresh().let { ApiResult.Success(Unit) }
                 publish(_goals.value.map { goal ->
                     when {
                         goal.id == newMain.id -> newMain
@@ -178,12 +186,14 @@ class RemoteGoalRepository(
             is ApiResult.Error -> result
             ApiResult.NetworkError -> ApiResult.NetworkError
         }
+    }
 
     override suspend fun extendGoal(id: String, days: Int): ApiResult<Unit> {
         val body = ExtendGoalRequestDto(days = days)
         return when (val result = apiCall { goalApi.extend(id.toLong(), body) }) {
             is ApiResult.Success -> {
-                val updated = result.data.toDomain()
+                val updated = result.data.toDomainOrNull()
+                    ?: return refresh().let { ApiResult.Success(Unit) }
                 publish(_goals.value.map {
                     if (it.id == updated.id) updated else it
                 })

@@ -1,9 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
   Manual log form (phase 8c step 5). Rebuilt from LogRun.dc.html; the
-  same layout serves running + cycling. The dark summary card updates
-  as the user types; the Save button is pinned to the bottom via a
-  ConstraintLayout + the inset-aware helper on the fragment.
+  same layout serves running, cycling and rowing (phase 8d). The header
+  (round back button + "Log a run" / "Log a ride" / "Log a row") is the
+  Log a swim header; the shared toolbar is hidden on this screen. The duration
+  cells are the shared DurationInputView (LogSwim.dc.html). The dark
+  summary card updates as the user types; the Save button is pinned to
+  the bottom via a ConstraintLayout + the inset-aware helper on the
+  fragment.
 -->
 <androidx.constraintlayout.widget.ConstraintLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
@@ -28,15 +32,33 @@
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:paddingHorizontal="@dimen/screen_margin"
-            android:paddingTop="@dimen/space_md">
+            android:paddingTop="@dimen/log_header_padding_top">
+
+            <!-- =========== Header (same as Log a swim) =========== -->
+            <LinearLayout
+                android:id="@+id/logHeader"
+                style="@style/Widget.Fitness.LogHeaderRow">
+
+                <ImageButton
+                    android:id="@+id/logBack"
+                    style="@style/Widget.Fitness.HeaderBackButton"
+                    android:contentDescription="@string/action_back_content_description" />
+
+                <!-- "Log a run" / "Log a ride" / "Log a row", set by the fragment. -->
+                <TextView
+                    android:id="@+id/logTitle"
+                    style="@style/Widget.Fitness.LogHeaderTitle"
+                    android:text="@string/log_run_title" />
+            </LinearLayout>
 
             <!-- =========== Live summary (dark) =========== -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/log_header_gap_below"
                 android:background="@drawable/bg_goal_main_card_bg"
                 android:orientation="vertical"
-                android:padding="18dp">
+                android:padding="@dimen/log_summary_padding">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -47,16 +69,16 @@
                     <LinearLayout
                         android:id="@+id/logSummaryActivityPill"
                         android:layout_width="wrap_content"
-                        android:layout_height="28dp"
+                        android:layout_height="@dimen/log_summary_pill_height"
                         android:background="@drawable/bg_log_summary_pill"
                         android:gravity="center_vertical"
                         android:orientation="horizontal"
-                        android:paddingHorizontal="12dp">
+                        android:paddingHorizontal="@dimen/log_summary_pill_padding">
 
                         <ImageView
                             android:id="@+id/logSummaryActivityIcon"
-                            android:layout_width="15dp"
-                            android:layout_height="15dp"
+                            android:layout_width="@dimen/log_summary_pill_icon"
+                            android:layout_height="@dimen/log_summary_pill_icon"
                             android:contentDescription="@null"
                             android:src="@drawable/ic_run_24"
                             app:tint="@color/lime_accent" />
@@ -66,7 +88,7 @@
                             style="@style/TextAppearance.Fitness.LabelMd"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:layout_marginStart="6dp"
+                            android:layout_marginStart="@dimen/log_summary_pill_gap"
                             android:textAllCaps="false"
                             android:textColor="@color/lime_accent"
                             android:textStyle="bold"
@@ -78,7 +100,7 @@
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="14dp"
+                    android:layout_marginTop="@dimen/log_summary_stats_gap"
                     android:baselineAligned="false"
                     android:orientation="horizontal">
 
@@ -153,7 +175,7 @@
                     style="@style/TextAppearance.Fitness.LabelMd"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="10dp"
+                    android:layout_marginTop="@dimen/log_summary_note_gap"
                     android:text="@string/log_summary_incomplete"
                     android:textAllCaps="false"
                     android:textColor="@color/goal_main_muted" />
@@ -164,14 +186,14 @@
                 style="@style/TextAppearance.Fitness.HeadlineSm"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="22dp"
+                android:layout_marginTop="@dimen/log_form_section_gap"
                 android:text="@string/log_when_header"
-                android:textSize="16sp" />
+                android:textSize="@dimen/text_size_log_form_section" />
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
+                android:layout_marginTop="@dimen/form_label_gap"
                 android:baselineAligned="false"
                 android:orientation="horizontal">
 
@@ -179,7 +201,7 @@
                     android:id="@+id/logDateCard"
                     android:layout_width="0dp"
                     android:layout_height="match_parent"
-                    android:minHeight="64dp"
+                    android:minHeight="@dimen/log_when_card_min_height"
                     android:foreground="?attr/selectableItemBackground"
                     android:paddingVertical="@dimen/space_sm"
                     android:layout_weight="1"
@@ -188,16 +210,16 @@
                     android:focusable="true"
                     android:gravity="center_vertical"
                     android:orientation="horizontal"
-                    android:paddingHorizontal="14dp">
+                    android:paddingHorizontal="@dimen/log_when_card_padding">
 
                     <FrameLayout
-                        android:layout_width="36dp"
-                        android:layout_height="36dp"
+                        android:layout_width="@dimen/log_when_icon_tile"
+                        android:layout_height="@dimen/log_when_icon_tile"
                         android:background="@drawable/bg_log_when_icon">
 
                         <ImageView
-                            android:layout_width="18dp"
-                            android:layout_height="18dp"
+                            android:layout_width="@dimen/log_when_icon"
+                            android:layout_height="@dimen/log_when_icon"
                             android:layout_gravity="center"
                             android:contentDescription="@null"
                             android:src="@drawable/ic_calendar_24"
@@ -207,7 +229,7 @@
                     <LinearLayout
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:layout_marginStart="12dp"
+                        android:layout_marginStart="@dimen/log_when_label_gap"
                         android:layout_weight="1"
                         android:orientation="vertical">
 
@@ -227,21 +249,21 @@
                             android:layout_height="wrap_content"
                             android:textAllCaps="false"
                             android:textColor="@color/text_primary"
-                            android:textSize="15sp"
+                            android:textSize="@dimen/text_size_log_when_value"
                             android:textStyle="bold"
                             tools:text="Wed 7 Oct" />
                     </LinearLayout>
                 </LinearLayout>
 
                 <Space
-                    android:layout_width="10dp"
+                    android:layout_width="@dimen/log_when_cards_gap"
                     android:layout_height="match_parent" />
 
                 <LinearLayout
                     android:id="@+id/logTimeCard"
                     android:layout_width="0dp"
                     android:layout_height="match_parent"
-                    android:minHeight="64dp"
+                    android:minHeight="@dimen/log_when_card_min_height"
                     android:foreground="?attr/selectableItemBackground"
                     android:paddingVertical="@dimen/space_sm"
                     android:layout_weight="1"
@@ -250,16 +272,16 @@
                     android:focusable="true"
                     android:gravity="center_vertical"
                     android:orientation="horizontal"
-                    android:paddingHorizontal="14dp">
+                    android:paddingHorizontal="@dimen/log_when_card_padding">
 
                     <FrameLayout
-                        android:layout_width="36dp"
-                        android:layout_height="36dp"
+                        android:layout_width="@dimen/log_when_icon_tile"
+                        android:layout_height="@dimen/log_when_icon_tile"
                         android:background="@drawable/bg_log_when_icon">
 
                         <ImageView
-                            android:layout_width="18dp"
-                            android:layout_height="18dp"
+                            android:layout_width="@dimen/log_when_icon"
+                            android:layout_height="@dimen/log_when_icon"
                             android:layout_gravity="center"
                             android:contentDescription="@null"
                             android:src="@drawable/ic_history_24"
@@ -269,7 +291,7 @@
                     <LinearLayout
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:layout_marginStart="12dp"
+                        android:layout_marginStart="@dimen/log_when_label_gap"
                         android:layout_weight="1"
                         android:orientation="vertical">
 
@@ -288,7 +310,7 @@
                             android:layout_height="wrap_content"
                             android:textAllCaps="false"
                             android:textColor="@color/text_primary"
-                            android:textSize="15sp"
+                            android:textSize="@dimen/text_size_log_when_value"
                             android:textStyle="bold"
                             tools:text="22:45" />
                     </LinearLayout>
@@ -300,7 +322,7 @@
                 style="@style/TextAppearance.Fitness.LabelMd"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
+                android:layout_marginTop="@dimen/log_form_error_gap"
                 android:textAllCaps="false"
                 android:textColor="@color/error_material"
                 android:visibility="gone"
@@ -312,155 +334,23 @@
                 style="@style/TextAppearance.Fitness.HeadlineSm"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="22dp"
+                android:layout_marginTop="@dimen/log_form_section_gap"
                 android:text="@string/log_how_long_header"
-                android:textSize="16sp" />
+                android:textSize="@dimen/text_size_log_form_section" />
 
-            <LinearLayout
+            <!-- Shared h / min / s cells (phase 8d, same as Log a swim). -->
+            <com.elijah.fitness.ui.components.DurationInputView
+                android:id="@+id/durationInput"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
-                android:background="@drawable/bg_log_form_card"
-                android:baselineAligned="false"
-                android:gravity="top"
-                android:orientation="horizontal"
-                android:padding="16dp">
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:gravity="center_horizontal"
-                    android:orientation="vertical">
-
-                    <EditText
-                        android:id="@+id/hoursInput"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:background="@drawable/bg_log_duration_cell"
-                        android:gravity="center"
-                        android:imeOptions="actionNext"
-                        android:importantForAutofill="no"
-                        android:inputType="number"
-                        android:maxLength="2"
-                        android:minHeight="64dp"
-                        android:textColor="@color/text_primary"
-                        android:fontFamily="@font/plus_jakarta_sans_extrabold"
-                        app:fontFamily="@font/plus_jakarta_sans_extrabold"
-                        android:hint="@string/log_duration_hint"
-                        android:textColorHint="@color/outline_variant"
-                        android:textSize="34sp"
-                        tools:text="0" />
-
-                    <TextView
-                        style="@style/TextAppearance.Fitness.LabelMd"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="6dp"
-                        android:text="@string/log_duration_hours_label"
-                        android:textAllCaps="false"
-                        android:textColor="@color/text_secondary" />
-                </LinearLayout>
-
-                <TextView
-                    style="@style/TextAppearance.Fitness.DisplayMetric"
-                    android:layout_width="wrap_content"
-                    android:layout_height="64dp"
-                    android:gravity="center"
-                    android:paddingHorizontal="4dp"
-                    android:text=":"
-                    android:textColor="@color/goal_main_muted"
-                    android:textSize="28sp" />
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:gravity="center_horizontal"
-                    android:orientation="vertical">
-
-                    <EditText
-                        android:id="@+id/minutesInput"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:background="@drawable/bg_log_duration_cell"
-                        android:gravity="center"
-                        android:imeOptions="actionNext"
-                        android:importantForAutofill="no"
-                        android:inputType="number"
-                        android:maxLength="2"
-                        android:minHeight="64dp"
-                        android:textColor="@color/text_primary"
-                        android:fontFamily="@font/plus_jakarta_sans_extrabold"
-                        app:fontFamily="@font/plus_jakarta_sans_extrabold"
-                        android:hint="@string/log_duration_hint"
-                        android:textColorHint="@color/outline_variant"
-                        android:textSize="34sp"
-                        tools:text="30" />
-
-                    <TextView
-                        style="@style/TextAppearance.Fitness.LabelMd"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="6dp"
-                        android:text="@string/log_duration_minutes_label"
-                        android:textAllCaps="false"
-                        android:textColor="@color/text_secondary" />
-                </LinearLayout>
-
-                <TextView
-                    style="@style/TextAppearance.Fitness.DisplayMetric"
-                    android:layout_width="wrap_content"
-                    android:layout_height="64dp"
-                    android:gravity="center"
-                    android:paddingHorizontal="4dp"
-                    android:text=":"
-                    android:textColor="@color/goal_main_muted"
-                    android:textSize="28sp" />
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:gravity="center_horizontal"
-                    android:orientation="vertical">
-
-                    <EditText
-                        android:id="@+id/secondsInput"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:background="@drawable/bg_log_duration_cell"
-                        android:gravity="center"
-                        android:imeOptions="actionNext"
-                        android:importantForAutofill="no"
-                        android:inputType="number"
-                        android:maxLength="2"
-                        android:minHeight="64dp"
-                        android:textColor="@color/text_primary"
-                        android:fontFamily="@font/plus_jakarta_sans_extrabold"
-                        app:fontFamily="@font/plus_jakarta_sans_extrabold"
-                        android:hint="@string/log_duration_hint"
-                        android:textColorHint="@color/outline_variant"
-                        android:textSize="34sp"
-                        tools:text="0" />
-
-                    <TextView
-                        style="@style/TextAppearance.Fitness.LabelMd"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="6dp"
-                        android:text="@string/log_duration_seconds_label"
-                        android:textAllCaps="false"
-                        android:textColor="@color/text_secondary" />
-                </LinearLayout>
-            </LinearLayout>
+                android:layout_marginTop="@dimen/form_label_gap" />
 
             <TextView
                 android:id="@+id/logDurationError"
                 style="@style/TextAppearance.Fitness.LabelMd"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
+                android:layout_marginTop="@dimen/log_form_error_gap"
                 android:textAllCaps="false"
                 android:textColor="@color/error_material"
                 android:visibility="gone"
@@ -472,19 +362,19 @@
                 style="@style/TextAppearance.Fitness.HeadlineSm"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="22dp"
+                android:layout_marginTop="@dimen/log_form_section_gap"
                 android:text="@string/log_how_far_header"
-                android:textSize="16sp" />
+                android:textSize="@dimen/text_size_log_form_section" />
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
+                android:layout_marginTop="@dimen/form_label_gap"
                 android:background="@drawable/bg_log_form_card"
                 android:gravity="center_vertical"
                 android:orientation="horizontal"
-                android:paddingHorizontal="20dp"
-                android:paddingVertical="12dp">
+                android:paddingHorizontal="@dimen/log_distance_card_padding_horizontal"
+                android:paddingVertical="@dimen/log_distance_card_padding_vertical">
 
                 <EditText
                     android:id="@+id/distanceInput"
@@ -497,22 +387,22 @@
                     android:imeOptions="actionDone"
                     android:importantForAutofill="no"
                     android:inputType="numberDecimal"
-                    android:minHeight="64dp"
+                    android:minHeight="@dimen/log_distance_input_min_height"
                     android:textColor="@color/text_primary"
                     android:textColorHint="@color/outline_variant"
                     android:fontFamily="@font/plus_jakarta_sans_extrabold"
                         app:fontFamily="@font/plus_jakarta_sans_extrabold"
-                    android:textSize="44sp" />
+                    android:textSize="@dimen/text_size_log_distance_input" />
 
                 <TextView
                     style="@style/TextAppearance.Fitness.LabelMd"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="10dp"
+                    android:layout_marginStart="@dimen/log_distance_unit_gap"
                     android:text="@string/log_distance_unit"
                     android:textAllCaps="false"
                     android:textColor="@color/text_secondary"
-                    android:textSize="18sp"
+                    android:textSize="@dimen/text_size_log_distance_unit"
                     android:textStyle="bold" />
             </LinearLayout>
 
@@ -521,7 +411,7 @@
                 style="@style/TextAppearance.Fitness.LabelMd"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
+                android:layout_marginTop="@dimen/log_form_error_gap"
                 android:textAllCaps="false"
                 android:textColor="@color/error_material"
                 android:visibility="gone"
@@ -532,7 +422,7 @@
             <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="22dp"
+                android:layout_marginTop="@dimen/log_form_section_gap"
                 android:gravity="center_vertical"
                 android:orientation="horizontal">
 
@@ -541,13 +431,13 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/log_notes_label"
-                    android:textSize="16sp" />
+                    android:textSize="@dimen/text_size_log_form_section" />
 
                 <TextView
                     style="@style/TextAppearance.Fitness.LabelMd"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="6dp"
+                    android:layout_marginStart="@dimen/log_notes_optional_gap"
                     android:text="@string/log_notes_optional_suffix"
                     android:textAllCaps="false"
                     android:textColor="@color/text_secondary" />
@@ -557,17 +447,17 @@
                 android:id="@+id/notesInput"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
+                android:layout_marginTop="@dimen/form_label_gap"
                 android:background="@drawable/bg_log_form_card"
                 android:gravity="top|start"
                 android:hint="@string/log_notes_hint"
                 android:importantForAutofill="no"
                 android:inputType="textMultiLine|textCapSentences"
                 android:minLines="3"
-                android:padding="16dp"
+                android:padding="@dimen/card_padding"
                 android:textColor="@color/text_primary"
                 android:textColorHint="@color/text_secondary"
-                android:textSize="15sp" />
+                android:textSize="@dimen/text_size_notes" />
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 
@@ -582,7 +472,7 @@
             android:id="@+id/saveButton"
             style="@style/Widget.Fitness.Button.Primary"
             android:layout_width="match_parent"
-            android:layout_height="56dp"
+            android:layout_height="@dimen/button_cta_height"
             app:icon="@drawable/ic_check_24"
             app:iconGravity="textStart"
             tools:text="Save run" />

@@ -22,11 +22,14 @@ import java.time.LocalDate
  * shape as [com.elijah.fitness.data.model.Workout.id]), so `.toString()`
  * bridges them. The mapper never trusts the server on invariants — it
  * lets the subclass `init { require(...) }` throw if the server sent a
- * nonsense combination like distance-on-weightlifting.
+ * nonsense combination like distance-on-weightlifting. Lists go through
+ * [toDomainOrNull] so one bad goal is skipped instead of crashing.
  */
 fun GoalDto.toDomain(): Goal {
     val start = LocalDate.parse(startDate)
-    val activity = activityType?.let { ActivityType.valueOf(it) }
+    val activity = activityType?.let { raw ->
+        activityTypeOrNull(raw) ?: throw IllegalArgumentException("Unknown activityType: $raw")
+    }
     val created = Instant.parse(createdAt)
 
     return when (GoalType.fromWire(goalType)) {
@@ -58,6 +61,13 @@ fun GoalDto.toDomain(): Goal {
 }
 
 /**
+ * [toDomain] that returns `null` instead of throwing — for an activity
+ * this app version doesn't know (a goal created by a newer app), an
+ * unknown goal type, a bad date or an invalid combination.
+ */
+fun GoalDto.toDomainOrNull(): Goal? = runCatching { toDomain() }.getOrNull()
+
+/**
  * Build the create-request payload from the raw fields the user picked
  * in the "New goal" screen. The client supplies its local `startDate`
  * and the server validates it's within ±1 day of the server's today.
@@ -86,7 +96,8 @@ fun buildUpdateGoalRequest(
     durationDays: Int,
 ): UpdateGoalRequestDto = UpdateGoalRequestDto(
     title = title,
-    activityType = activityType?.name,
+    // Always present, `null` included: see UpdateGoalRequestDto.activityType.
+    activityType = UpdateGoalRequestDto.activityTypeJson(activityType?.name),
     goalType = goalType.wire(),
     targetValue = targetValue,
     durationDays = durationDays,

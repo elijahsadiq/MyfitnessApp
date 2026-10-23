@@ -17,13 +17,16 @@ import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
+import com.elijah.fitness.testutil.StringsXmlText
+import com.elijah.fitness.data.model.SwimmingWorkout
+import com.elijah.fitness.data.model.RowingWorkout
 
 class InsightEngineTest {
 
     private val zone = ZoneOffset.UTC
     private val now: Instant = Instant.parse("2026-09-16T12:00:00Z") // Wed
     private val clock: Clock = Clock.fixed(now, zone)
-    private val engine = InsightEngine(clock = clock, zone = zone)
+    private val engine = InsightEngine(text = StringsXmlText, clock = clock, zone = zone)
 
     @Test
     fun `no workouts yields no insights`() {
@@ -186,4 +189,28 @@ class InsightEngineTest {
             duration = Duration.ofMinutes(minutes),
             distanceMeters = meters,
         )
+
+    // --------- Phase 8d: swims and rows, copy from strings.xml ---------
+
+    @Test
+    fun `dormancy covers swimming`() {
+        val workouts: List<Workout> = listOf(
+            run("2026-09-14T10:00:00Z", meters = 5_000.0, minutes = 25),
+            SwimmingWorkout(
+                "swim", Instant.parse("2026-09-04T10:00:00Z"), Duration.ofMinutes(30), 1_500.0,
+            ),
+        )
+        val dorm = engine.rank(workouts).firstOrNull { it.kind == Insight.Kind.Dormancy }
+        assertEquals("You haven't swum in 12 days.", dorm?.text)
+    }
+
+    @Test
+    fun `volume change covers rowing`() {
+        val workouts: List<Workout> = listOf(
+            RowingWorkout("r1", Instant.parse("2026-09-08T07:00:00Z"), Duration.ofMinutes(30), 5_000.0),
+            RowingWorkout("r2", Instant.parse("2026-09-15T07:00:00Z"), Duration.ofMinutes(40), 7_000.0),
+        )
+        val vol = engine.rank(workouts).firstOrNull { it.kind == Insight.Kind.VolumeChange }
+        assertEquals("You rowed 40% further than last week.", vol?.text)
+    }
 }

@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Log a swim</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#111410}a:hover{color:#3A3F36}
+</style>
+</helmet>
+<div style="width: 390px; height: 1040px; box-sizing: border-box; background: #F5F6F2; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; color: #111410; padding: 20px 20px 28px; display: flex; flex-direction: column; gap: 20px">
+
+<div style="display: flex; align-items: center; gap: 12px">
+<a href="LogSheet.dc.html" aria-label="Back" style="width: 44px; height: 44px; flex: none; border-radius: 999px; background: #FFFFFF; border: 1px solid #E4E6E0; display: flex; align-items: center; justify-content: center; color: #111410"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"></path></svg></a>
+<h1 style="margin: 0; font-size: 22px; font-weight: 800; letter-spacing: -0.02em">Log a swim</h1>
+</div>
+
+<section aria-label="Live summary" style="padding: 20px; border-radius: 26px; background: #1C1F1A; color: #FFFFFF; display: flex; flex-direction: column; gap: 16px">
+<div style="display: flex; align-items: center; justify-content: space-between">
+<span style="font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #B4B9AE">Average pace</span>
+<span style="width: 36px; height: 36px; border-radius: 12px; background: #D4F26A; color: #111410; display: flex; align-items: center; justify-content: center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="17" cy="6" r="2"></circle><path d="M4 12.5l4.5-3.5 3 3 4.5-2"></path><path d="M2 17c1.7 0 2.3-1 4-1s2.3 1 4 1 2.3-1 4-1 2.3 1 4 1 2.3-1 4-1"></path><path d="M2 21c1.7 0 2.3-1 4-1s2.3 1 4 1 2.3-1 4-1 2.3 1 4 1 2.3-1 4-1"></path></svg></span>
+</div>
+<span><span style="font-size: 50px; line-height: 1; font-weight: 800; letter-spacing: -0.03em; color: #D4F26A">{{pace}}</span><span style="font-size: 16px; color: #B4B9AE"> /100 m</span></span>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px">
+<div style="padding: 12px 14px; border-radius: 16px; background: #2A2E27; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 12px; color: #B4B9AE">Distance</span><span style="font-size: 20px; font-weight: 800">{{distance}}</span></div>
+<div style="padding: 12px 14px; border-radius: 16px; background: #2A2E27; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 12px; color: #B4B9AE">Calories</span><span style="font-size: 20px; font-weight: 800">{{kcal}} kcal</span></div>
+</div>
+</section>
+
+<div style="display: flex; flex-direction: column; gap: 10px">
+<span style="font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #6B7066">When</span>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px">
+<div style="padding: 14px; border-radius: 20px; background: #FFFFFF; border: 1px solid #E4E6E0; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 12px; color: #6B7066">Date</span><span style="font-size: 16px; font-weight: 700">Today, Mon 19 Oct</span></div>
+<div style="padding: 14px; border-radius: 20px; background: #FFFFFF; border: 1px solid #E4E6E0; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 12px; color: #6B7066">Start time</span><span style="font-size: 16px; font-weight: 700">7:10 AM</span></div>
+</div>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 10px">
+<span id="pool-label" style="font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #6B7066">Pool length</span>
+<div role="radiogroup" aria-labelledby="pool-label" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; padding: 5px; border-radius: 999px; background: #FFFFFF; border: 1px solid #E4E6E0">
+<button type="button" role="radio" aria-checked="{{p25On}}" onClick="{{pick25}}" style="height: 42px; border-radius: 999px; font: inherit; font-size: 15px; font-weight: 700; cursor: pointer; {{p25}}">25 m</button>
+<button type="button" role="radio" aria-checked="{{p50On}}" onClick="{{pick50}}" style="height: 42px; border-radius: 999px; font: inherit; font-size: 15px; font-weight: 700; cursor: pointer; {{p50}}">50 m</button>
+</div>
+</div>
+
+<div style="padding: 16px; border-radius: 20px; background: #FFFFFF; border: 1px solid #E4E6E0; display: flex; align-items: center; justify-content: space-between; gap: 12px">
+<div style="display: flex; flex-direction: column; gap: 2px">
+<span style="font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #6B7066">Laps</span>
+<span style="font-size: 13px; color: #6B7066">{{lapsHint}}</span>
+</div>
+<div style="display: flex; align-items: center; gap: 10px">
+<button type="button" aria-label="One lap fewer" onClick="{{minus}}" style="width: 44px; height: 44px; border-radius: 999px; border: 1px solid #E4E6E0; background: #F5F6F2; font: inherit; font-size: 22px; font-weight: 700; color: #111410; cursor: pointer">−</button>
+<span aria-live="polite" style="min-width: 48px; text-align: center; font-size: 28px; font-weight: 800">{{laps}}</span>
+<button type="button" aria-label="One lap more" onClick="{{plus}}" style="width: 44px; height: 44px; border-radius: 999px; border: 0; background: #D4F26A; font: inherit; font-size: 22px; font-weight: 700; color: #111410; cursor: pointer">+</button>
+</div>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 10px">
+<span style="font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #6B7066">Duration</span>
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px">
+<div style="padding: 12px 14px; border-radius: 20px; background: #FFFFFF; border: 1px solid #E4E6E0; display: flex; align-items: baseline; gap: 6px"><span style="font-size: 26px; font-weight: 800">0</span><span style="font-size: 13px; color: #6B7066">h</span></div>
+<div style="padding: 12px 14px; border-radius: 20px; background: #FFFFFF; border: 2px solid #111410; display: flex; align-items: baseline; gap: 6px"><span style="font-size: 26px; font-weight: 800">32</span><span style="font-size: 13px; color: #6B7066">min</span></div>
+<div style="padding: 12px 14px; border-radius: 20px; background: #FFFFFF; border: 1px solid #E4E6E0; display: flex; align-items: baseline; gap: 6px"><span style="font-size: 26px; font-weight: 800">10</span><span style="font-size: 13px; color: #6B7066">s</span></div>
+</div>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 10px">
+<span style="font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #6B7066">Notes</span>
+<div style="min-height: 84px; box-sizing: border-box; padding: 14px; border-radius: 20px; background: #FFFFFF; border: 1px solid #E4E6E0; font-size: 15px; color: #8A8F84">How did it feel? Drills, strokes, kit…</div>
+</div>
+
+<button type="button" style="margin-top: auto; height: 56px; border-radius: 999px; border: 0; background: #D4F26A; font: inherit; font-size: 16px; font-weight: 800; color: #111410; cursor: pointer">Save swim</button>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":1040}}'>
+class Component extends DCLogic {
+renderVals() {
+var self = this;
+var s = Object.assign({ pool: 25, laps: 60 }, this.state || {});
+var secs = 32 * 60 + 10;
+var dist = s.pool * s.laps;
+var per100 = dist > 0 ? Math.round(secs / (dist / 100)) : 0;
+var pace = Math.floor(per100 / 60) + ':' + String(per100 % 60).padStart(2, '0');
+var kcal = Math.round(7.0 * 72 * (secs / 3600));
+var on = 'background: #121411; color: #FFFFFF; border: 0';
+var off = 'background: transparent; color: #111410; border: 0';
+return {
+pace: dist > 0 ? pace : '0:00',
+distance: dist.toLocaleString('en-GB') + ' m',
+kcal: kcal,
+laps: s.laps,
+lapsHint: s.laps + ' × ' + s.pool + ' m = ' + dist.toLocaleString('en-GB') + ' m',
+p25: s.pool === 25 ? on : off,
+p50: s.pool === 50 ? on : off,
+p25On: s.pool === 25 ? 'true' : 'false',
+p50On: s.pool === 50 ? 'true' : 'false',
+pick25: function () { self.setState({ pool: 25 }); },
+pick50: function () { self.setState({ pool: 50 }); },
+minus: function () { self.setState({ laps: Math.max(1, s.laps - 1) }); },
+plus: function () { self.setState({ laps: Math.min(400, s.laps + 1) }); }
+};
+}
+}
+</script>
+</body>
+</html>

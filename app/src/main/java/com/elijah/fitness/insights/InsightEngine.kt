@@ -1,13 +1,13 @@
 package com.elijah.fitness.insights
 
+import com.elijah.fitness.R
 import com.elijah.fitness.data.model.ActivityType
-import com.elijah.fitness.data.model.CyclingWorkout
 import com.elijah.fitness.data.model.DistanceWorkout
-import com.elijah.fitness.data.model.Goal
 import com.elijah.fitness.data.model.GoalWithProgress
 import com.elijah.fitness.data.model.RunningWorkout
 import com.elijah.fitness.data.model.StrengthWorkout
 import com.elijah.fitness.data.model.Workout
+import com.elijah.fitness.util.TextResolver
 import java.time.Clock
 import java.time.DayOfWeek
 import java.time.LocalDate
@@ -19,7 +19,8 @@ import kotlin.math.roundToInt
 
 /**
  * Pure-Kotlin rule engine. No Android imports; the Home ViewModel drives
- * it, the fragment binds whatever string comes out.
+ * it, the fragment binds whatever string comes out. The wording lives in
+ * `strings.xml` / `plurals.xml` and is read through [text] (phase 8d).
  *
  * ### Enough data
  * Each rule declares its own "enough data" check inline. The engine
@@ -27,6 +28,7 @@ import kotlin.math.roundToInt
  * back to the [Insight.Kind.Fallback] copy in that case.
  */
 class InsightEngine(
+    private val text: TextResolver,
     private val clock: Clock = Clock.systemDefaultZone(),
     private val zone: ZoneId = ZoneId.systemDefault(),
 ) {
@@ -64,7 +66,7 @@ class InsightEngine(
             .maxOfOrNull { it.distanceMeters } ?: 0.0
         if (recentLongestRun > priorLongestRun && recentLongestRun >= 1_000.0) {
             insights += Insight(
-                text = "New personal record: longest run — ${formatKm(recentLongestRun)} km.",
+                text = text.string(R.string.insight_pr_longest_run, formatKm(recentLongestRun)),
                 priority = 10,
                 kind = Insight.Kind.PersonalRecord,
             )
@@ -77,7 +79,7 @@ class InsightEngine(
             val previousBest = priorOneRm[exercise] ?: 0.0
             if (kg > previousBest + 0.5) {
                 insights += Insight(
-                    text = "New personal record on $exercise.",
+                    text = text.string(R.string.insight_pr_exercise, exercise),
                     priority = 10,
                     kind = Insight.Kind.PersonalRecord,
                 )
@@ -124,7 +126,7 @@ class InsightEngine(
 
         return listOf(
             Insight(
-                text = "At this rate you'll reach your goal by the ${ordinal(projected.dayOfMonth)}.",
+                text = text.string(R.string.insight_goal_projection, ordinal(projected.dayOfMonth)),
                 priority = 20,
                 kind = Insight.Kind.GoalProjection,
             )
@@ -152,7 +154,9 @@ class InsightEngine(
 
         return listOf(
             Insight(
-                text = "Your average pace improved by $diffSeconds seconds per kilometre this month.",
+                text = text.plural(
+                    R.plurals.insight_pace_improved, diffSeconds.toInt(), diffSeconds.toInt(),
+                ),
                 priority = 30,
                 kind = Insight.Kind.PaceImprovement,
             )
@@ -160,24 +164,23 @@ class InsightEngine(
     }
 
     // -----------------------------------------------------------------
-    // Rule 4 — "you ran X% further than last week"
+    // Rule 4 — "you ran X% further than last week" (any distance sport)
     // -----------------------------------------------------------------
     private fun volumeChangeInsight(workouts: List<Workout>): List<Insight> {
         val today = clock.instant().atZone(zone).toLocalDate()
         val thisWeekStart = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
         val lastWeekStart = thisWeekStart.minusWeeks(1)
 
-        for (type in listOf(ActivityType.RUNNING, ActivityType.CYCLING)) {
+        for (type in DISTANCE_TYPES) {
             val thisWeek = distanceSum(workouts, type, thisWeekStart, thisWeekStart.plusWeeks(1))
             val lastWeek = distanceSum(workouts, type, lastWeekStart, thisWeekStart)
             if (lastWeek <= 0.0 || thisWeek <= 0.0) continue
             val diffPct = ((thisWeek - lastWeek) / lastWeek) * 100.0
             if (abs(diffPct) < 10.0) continue // too small to be worth saying
-            val verb = if (type == ActivityType.RUNNING) "ran" else "cycled"
-            val direction = if (diffPct > 0) "further" else "less"
+            val res = volumeChangeRes(type, further = diffPct > 0) ?: continue
             return listOf(
                 Insight(
-                    text = "You $verb ${abs(diffPct).roundToInt()}% $direction than last week.",
+                    text = text.string(res, abs(diffPct).roundToInt()),
                     priority = 40,
                     kind = Insight.Kind.VolumeChange,
                 )
@@ -186,25 +189,34 @@ class InsightEngine(
         return emptyList()
     }
 
+    /** "You ran / cycled / swam / rowed X% further|less …". */
+    private fun volumeChangeRes(type: ActivityType, further: Boolean): Int? = when (type) {
+        ActivityType.RUNNING ->
+            if (further) R.string.insight_volume_further_run else R.string.insight_volume_less_run
+        ActivityType.CYCLING ->
+            if (further) R.string.insight_volume_further_ride else R.string.insight_volume_less_ride
+        ActivityType.SWIMMING ->
+            if (further) R.string.insight_volume_further_swim else R.string.insight_volume_less_swim
+        ActivityType.ROWING ->
+            if (further) R.string.insight_volume_further_row else R.string.insight_volume_less_row
+        ActivityType.WEIGHTLIFTING -> null // no distance to compare
+    }
+
     // -----------------------------------------------------------------
     // Rule 5 — dormancy nudge
     // -----------------------------------------------------------------
     private fun dormancyInsight(workouts: List<Workout>): List<Insight> {
         if (workouts.isEmpty()) return emptyList()
         val now = clock.instant()
-        for (type in listOf(ActivityType.RUNNING, ActivityType.CYCLING)) {
+        for (type in DISTANCE_TYPES) {
             val latest = workouts.filter { it.type == type }
                 .maxByOrNull { it.startTime } ?: continue
             val days = ChronoUnit.DAYS.between(latest.startTime, now)
             if (days in 7..60) {
-                val label = when (type) {
-                    ActivityType.RUNNING -> "run"
-                    ActivityType.CYCLING -> "cycled"
-                    else -> continue
-                }
+                val res = dormancyRes(type) ?: continue
                 return listOf(
                     Insight(
-                        text = "You haven't $label in $days days.",
+                        text = text.plural(res, days.toInt(), days.toInt()),
                         priority = 50,
                         kind = Insight.Kind.Dormancy,
                     )
@@ -212,6 +224,15 @@ class InsightEngine(
             }
         }
         return emptyList()
+    }
+
+    /** "You haven't run / cycled / swum / rowed in N days." */
+    private fun dormancyRes(type: ActivityType): Int? = when (type) {
+        ActivityType.RUNNING -> R.plurals.insight_dormant_run
+        ActivityType.CYCLING -> R.plurals.insight_dormant_ride
+        ActivityType.SWIMMING -> R.plurals.insight_dormant_swim
+        ActivityType.ROWING -> R.plurals.insight_dormant_row
+        ActivityType.WEIGHTLIFTING -> null
     }
 
     // -----------------------------------------------------------------
@@ -250,24 +271,24 @@ class InsightEngine(
             .sumOf { it.distanceMeters }
     }
 
+    /** "1st", "2nd", "23rd", "11th" … — English ordinal rules, words from strings.xml. */
     private fun ordinal(dayOfMonth: Int): String {
-        val suffix = when {
-            dayOfMonth % 100 in 11..13 -> "th"
-            dayOfMonth % 10 == 1 -> "st"
-            dayOfMonth % 10 == 2 -> "nd"
-            dayOfMonth % 10 == 3 -> "rd"
-            else -> "th"
+        val res = when {
+            dayOfMonth % 100 in 11..13 -> R.string.insight_ordinal_th
+            dayOfMonth % 10 == 1 -> R.string.insight_ordinal_st
+            dayOfMonth % 10 == 2 -> R.string.insight_ordinal_nd
+            dayOfMonth % 10 == 3 -> R.string.insight_ordinal_rd
+            else -> R.string.insight_ordinal_th
         }
-        return "$dayOfMonth$suffix"
+        return text.string(res, dayOfMonth)
     }
 
     private fun formatKm(meters: Double): String = "%.1f".format(meters / 1000.0)
 
-    /** Keep the previous CyclingWorkout generic path reachable for type-safety. */
-    @Suppress("unused")
-    private fun forceCyclingReference(workout: CyclingWorkout): Workout = workout
-
-    /** Avoid an unused-import warning on `Goal` since the signature exposes it. */
-    @Suppress("unused")
-    private fun forceGoalReference(goal: Goal): Goal = goal
+    private companion object {
+        /** The sports compared week on week, in the order they're checked. */
+        val DISTANCE_TYPES = listOf(
+            ActivityType.RUNNING, ActivityType.CYCLING, ActivityType.SWIMMING, ActivityType.ROWING,
+        )
+    }
 }

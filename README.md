@@ -1,6 +1,7 @@
 # My Fitness App
 
-An Android app for tracking running, cycling, and weightlifting workouts.
+An Android app for tracking running, cycling, swimming, rowing and
+weightlifting ("Workout") sessions.
 Written in Kotlin with XML Views + ViewBinding (no Jetpack Compose),
 MVVM, manual DI through `AppContainer`, coroutines and `StateFlow`.
 Talks to a plain PHP + MySQL backend.
@@ -10,11 +11,17 @@ accompanies this repository.
 
 ## Features
 
-- **Dashboard** — current week's momentum, hero card with sessions /
-  active minutes / distance / kcal, lime streak pill, Material 3 week
-  strip with lime dots on active days, personalised insight card.
-- **History** — section-headered list of past workouts with weekly
-  momentum chart. Tap a row to open the detail screen (map and stats
+- **Home** — week strip that pulls down into a swipeable month calendar
+  (lime dots on active days); pick any day to see that week's sessions /
+  active time / distance / kcal and the day's workouts; streak pill and
+  personalised insight card.
+- **Logging** — a "Log a workout" sheet with swipeable activity cards
+  (Running, Cycling, Swimming, Rowing, Workout); GPS or manual entry for
+  runs, rides and rows; a Log a swim screen (pool length × laps, live
+  pace per 100 m); a strength log with sets. Calories are worked out from
+  MET values and the profile weight and saved with each workout.
+- **History** — activity filter chips, card rows and a section-headered
+  list of past workouts with a weekly momentum chart. Tap a row to open the detail screen (map and stats
   for GPS workouts).
 - **Live GPS tracking** — `FusedLocationProviderClient` behind a
   foreground service; three-filter noise suppression (accuracy, min
@@ -22,36 +29,39 @@ accompanies this repository.
   stop with on-screen save. Works with no connection: the route is
   stored on the phone until it syncs. See `docs/dev-log.md` phase 8a
   for the design decisions.
-- **Goals** — distance / count / duration / volume targets over a
-  chosen number of days (1–365); three-section layout (Active /
-  Completed / Ended) with a featured main goal.
+- **Goals** — distance / sessions / time / weight targets over a chosen
+  number of days (1–365), created on a one-hand New goal sheet with a
+  live summary and estimated calorie burn; Active / Completed / Ended
+  sections with a featured main goal; a confetti celebration pop-up the
+  first time a goal is completed.
 - **Progress + analytics** — period selector (Week / Month / Year),
   activity chips, period bar chart, trend chart (pace / speed /
   volume), per-activity statistics cards, lifetime personal records.
 - **Profile** — avatar upload with Android photo picker, editable
   name / weight / height, BMI with category, three summary tiles,
-  password-gated account deletion, notification switches.
+  account deletion confirmed by typing DELETE, notification switches.
 - **Offline logging + sync** (phase 10) — workouts are saved in an
   on-phone Room database first; a WorkManager job uploads anything
   saved offline once the phone is back online. Unsynced workouts show
   a cloud-off marker.
 - **Notifications** (phase 10) — an optional daily reminder at a
   chosen time (skipped if you already logged a workout that day) and
-  a "Goal achieved" alert. Both are local notifications posted by the
+  a "Goal achieved" alert when the app is in the background (the
+  celebration pop-up shows instead when it is open). Both are local notifications posted by the
   phone; there is no Firebase push.
 
 ## Required components (assignment brief)
 
-- **RecyclerView** — `fragment_workout_history.xml`, `fragment_goals.xml`, `fragment_log_strength_workout.xml`.
-- **FloatingActionButton** — History FAB + Goals mini-FAB.
+- **RecyclerView** — `fragment_workout_history.xml`, `fragment_goals.xml`, `fragment_log_strength_workout.xml`, Home's day list, and the ViewPager2 activity carousels (RecyclerView-based).
+- **FloatingActionButton** — History FAB (opens the Log a workout sheet) + Goals FAB.
 - **Geolocation** — `app/src/main/java/com/elijah/fitness/tracking/`
   (engine, service, filter constants) + `ui/tracking/LiveTrackingFragment`.
 
 The three inheritance hierarchies the written report explains:
 
-1. `Workout` → `DistanceWorkout` → `RunningWorkout` / `CyclingWorkout` (+ `StrengthWorkout`).
+1. `Workout` → `DistanceWorkout` → `RunningWorkout` / `CyclingWorkout` / `SwimmingWorkout` / `RowingWorkout` (+ `StrengthWorkout`).
 2. `BaseFragment<VB : ViewBinding>` — every fragment extends it.
-3. `BaseViewHolder<T>` → the two workout view holders.
+3. `BaseViewHolder<T>` → the workout, goal, calendar and activity-card view holders.
 
 Plus a fourth, phase-7 addition:
 4. `Goal` → `DistanceGoal` / `WorkoutCountGoal` / `DurationGoal` / `StrengthVolumeGoal`.
@@ -67,8 +77,10 @@ map.
   API ends up at <http://localhost:8080>; phpMyAdmin at <http://localhost:8081>.
 - **XAMPP (what the examiner is likely to use)**: see the "Option B"
   section of [`backend/README.md`](backend/README.md). Copy the
-  `fitness-api/` folder into XAMPP's `htdocs`, import the seven SQL
-  files in order via phpMyAdmin.
+  `fitness-api/` folder into XAMPP's `htdocs`, then import
+  `backend/sql/01_schema.sql` and `backend/sql/02_seed.sql` via phpMyAdmin.
+  `database/fitness_app_demo.sql` (in the submission zip) is a full dump
+  of the demo database, including swims, rows and GPS routes.
 
 ### 2. Android app
 
@@ -125,18 +137,17 @@ assignment-coverage requirements are the same.
 │   │   ├── insights/              Phase 8 — personalised-insights rule engine
 │   │   ├── notifications/         Phase 10 — daily reminder + goal alerts
 │   │   └── ui/                    Fragments + view-models, one package per screen
-│   └── src/test/java/…            263 pure-JVM unit tests (as of phase 10)
+│   └── src/test/java/…            509 pure-JVM unit tests
 ├── backend/               PHP + MySQL API (framework-free)
 │   ├── fitness-api/               The actual API (Composer-free)
 │   ├── sql/                       Schema + seed + migrations
-│   └── api-tests.http             42 end-to-end request cases
+│   └── api-tests.http             End-to-end request cases (REST Client format)
 ├── docs/
-│   ├── dev-log.md                 Per-step design journal (phase 1 → phase 8)
-│   ├── design/                    Stitch design exports (reference)
+│   ├── dev-log.md                 Per-step design journal
+│   ├── design/activities-v3/      HTML design mock-ups for the latest screens
 │   ├── testing/sample_route.gpx   GPX fixture for the live-tracking demo
-│   ├── screenshots/README.md      Report-screenshot capture plan
-│   ├── assignment-coverage.md     Brief requirements → implementation map
-│   └── prompts/                   The phase briefs this project was built from
+│   ├── licenses/                  Font licence
+│   └── assignment-coverage.md     Brief requirements → implementation map
 └── gradle/libs.versions.toml      Dependency catalogue
 ```
 

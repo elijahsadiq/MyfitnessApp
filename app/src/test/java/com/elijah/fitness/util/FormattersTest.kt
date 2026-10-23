@@ -2,7 +2,6 @@ package com.elijah.fitness.util
 
 import org.junit.Assert.assertEquals
 import org.junit.Test
-import java.time.Duration
 import java.time.Instant
 import java.time.ZoneId
 import java.util.Locale
@@ -19,27 +18,6 @@ class FormattersTest {
         // 2026-09-10 12:00 UTC is Thursday in Europe/London
         val instant = Instant.parse("2026-09-10T12:00:00Z")
         assertEquals("Thu 10 Sep", Formatters.formatDate(instant, zoneLondon, locale))
-    }
-
-    @Test
-    fun `formatDuration for sub-hour prints minutes`() {
-        assertEquals("32 min", Formatters.formatDuration(Duration.ofMinutes(32), locale))
-    }
-
-    @Test
-    fun `formatDuration under a minute prints seconds`() {
-        assertEquals("45 s", Formatters.formatDuration(Duration.ofSeconds(45), locale))
-    }
-
-    @Test
-    fun `formatDuration for hours prints h and mm`() {
-        val d = Duration.ofMinutes(65)
-        assertEquals("1h 05m", Formatters.formatDuration(d, locale))
-    }
-
-    @Test
-    fun `formatDuration for exact hour prints 00 minutes`() {
-        assertEquals("2h 00m", Formatters.formatDuration(Duration.ofHours(2), locale))
     }
 
     @Test
@@ -60,5 +38,25 @@ class FormattersTest {
     @Test
     fun `formatSpeed returns one decimal km per hour`() {
         assertEquals("22.4 km/h", Formatters.formatSpeed(22.42, locale))
+    }
+
+    // Phase 8d: goal amounts are Doubles (swims move in 0.5 km steps).
+
+    @Test
+    fun `formatGoalAmount keeps whole numbers whole and halves to one decimal`() {
+        assertEquals("10", Formatters.formatGoalAmount(10.0, locale))
+        assertEquals("10.5", Formatters.formatGoalAmount(10.5, locale))
+        assertEquals("6.5", Formatters.formatGoalAmount(6.5, locale))
+        assertEquals("20,000", Formatters.formatGoalAmount(20_000.0, locale))
+        assertEquals("12.3", Formatters.formatGoalAmount(12.25, locale))
+        assertEquals("0", Formatters.formatGoalAmount(Double.NaN, locale))
+    }
+
+    @Test
+    fun `formatTenths rounds to one decimal and drops a trailing zero`() {
+        assertEquals("1.7", Formatters.formatTenths(50.0 / 30.0, locale))
+        assertEquals("2.8", Formatters.formatTenths(12.0 * 7.0 / 30.0, locale))
+        assertEquals("2", Formatters.formatTenths(1.96, locale))
+        assertEquals("11.7", Formatters.formatTenths(50.0 * 7.0 / 30.0, locale))
     }
 }

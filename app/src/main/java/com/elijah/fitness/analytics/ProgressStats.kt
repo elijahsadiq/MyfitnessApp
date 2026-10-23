@@ -24,6 +24,12 @@ data class ProgressStats(
     val totalSets: Int?,
     val totalVolumeKg: Double?,
     val mostFrequentExercise: String?,
+    /**
+     * Swims and rows (phase 8d): average and best pace per split, in
+     * seconds — per 100 m for swims, per 500 m for rows.
+     */
+    val averageSplitSeconds: Long? = null,
+    val bestSplitSeconds: Long? = null,
 ) {
     companion object {
         val EMPTY = ProgressStats(
@@ -52,6 +58,8 @@ data class PersonalRecords(
     val longestRunMeters: Double?,
     val longestRideMeters: Double?,
     val bestOneRepMaxes: Map<String, Double>, // exercise → best 1RM (kg)
+    val longestSwimMeters: Double? = null,
+    val longestRowMeters: Double? = null,
 ) {
     companion object {
         val EMPTY = PersonalRecords(

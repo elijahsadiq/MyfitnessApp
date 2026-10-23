@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- White form card (phase 8d, LogSwim.dc.html): radius 20, 1dp divider border. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="@color/surface_white" />
+    <corners android:radius="@dimen/field_card_radius" />
+    <stroke
+        android:width="@dimen/stroke_hairline"
+        android:color="@color/divider" />
+</shape>

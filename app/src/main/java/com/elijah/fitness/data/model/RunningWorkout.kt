@@ -13,26 +13,20 @@ class RunningWorkout(
     startTime: Instant,
     duration: Duration,
     distanceMeters: Double,
-    notes: String? = null
-) : DistanceWorkout(id, startTime, duration, notes, distanceMeters) {
+    notes: String? = null,
+    caloriesKcal: Int? = null,
+) : DistanceWorkout(id, startTime, duration, notes, distanceMeters, caloriesKcal) {
 
+    /** Overrides [Workout.type]: marks this workout as a run for the mappers, filters and labels. */
     override val type: ActivityType = ActivityType.RUNNING
 
+    /** Overrides [Workout.metValue]: running MET depends on speed, so it uses the speed bands. */
     override fun metValue(): Double = MetValues.running(averageSpeedKmh())
 
     /**
-     * Pace in seconds per kilometre. Returns 0 ("no pace") below
-     * [MIN_PACE_DISTANCE_KM]: a few metres of GPS drift would otherwise
-     * show as a nonsense pace like "1250:00 /km".
+     * Pace in seconds per kilometre, rounded to the nearest second. A run
+     * keeps the default 1 km split, so this is [paceSecondsPerSplit]: the
+     * same rule (and the same "no pace" below 10 m) as swims and rows.
      */
-    fun paceSecondsPerKm(): Long {
-        val km = distanceKm()
-        if (km < MIN_PACE_DISTANCE_KM) return 0L
-        return (duration.seconds.toDouble() / km).toLong()
-    }
-
-    companion object {
-        /** 10 m — below this, pace isn't meaningful. */
-        const val MIN_PACE_DISTANCE_KM: Double = 0.01
-    }
+    fun paceSecondsPerKm(): Long = paceSecondsPerSplit()
 }

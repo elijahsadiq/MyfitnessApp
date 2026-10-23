@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Header back button (phase 8d, LogSwim.dc.html): a 44dp white
+  circle with a 1dp divider border, inset inside the 48dp touch target.
+  The ripple stays inside the circle.
+-->
+<ripple xmlns:android="http://schemas.android.com/apk/res/android"
+    android:color="@color/surface_container_high">
+    <item>
+        <inset android:inset="@dimen/header_icon_button_inset">
+            <shape android:shape="oval">
+                <solid android:color="@color/surface_white" />
+                <stroke
+                    android:width="@dimen/stroke_hairline"
+                    android:color="@color/divider" />
+            </shape>
+        </inset>
+    </item>
+    <item android:id="@android:id/mask">
+        <inset android:inset="@dimen/header_icon_button_inset">
+            <shape android:shape="oval">
+                <solid android:color="@color/white" />
+            </shape>
+        </inset>
+    </item>
+</ripple>

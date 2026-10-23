@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Goal-complete pop-up (GoalComplete.dc.html, phase 8d step 7). -->
+<resources>
+    <dimen name="goal_complete_side_margin">20dp</dimen>
+    <dimen name="goal_complete_scroll_padding">24dp</dimen>
+    <dimen name="goal_complete_card_radius">28dp</dimen>
+    <dimen name="goal_complete_card_padding_top">64dp</dimen>
+    <dimen name="goal_complete_card_padding">22dp</dimen>
+    <dimen name="goal_complete_gap">14dp</dimen>
+    <!-- 92dp lime circle centred on the card's top edge (half of it above). -->
+    <dimen name="goal_complete_trophy_size">92dp</dimen>
+    <dimen name="goal_complete_trophy_overlap">46dp</dimen>
+    <dimen name="goal_complete_trophy_ring">6dp</dimen>
+    <!-- (92 − 40) / 2: leaves the trophy glyph at 40dp. -->
+    <dimen name="goal_complete_trophy_icon_padding">26dp</dimen>
+    <dimen name="goal_complete_pill_height">28dp</dimen>
+    <dimen name="goal_complete_pill_radius">14dp</dimen>
+    <dimen name="goal_complete_pill_padding">12dp</dimen>
+    <dimen name="goal_complete_tiles_padding_top">4dp</dimen>
+    <dimen name="goal_complete_tile_gap">8dp</dimen>
+    <dimen name="goal_complete_tile_radius">16dp</dimen>
+    <dimen name="goal_complete_tile_padding_v">12dp</dimen>
+    <dimen name="goal_complete_tile_padding_h">6dp</dimen>
+    <dimen name="goal_complete_tile_text_gap">2dp</dimen>
+    <dimen name="goal_complete_tile_value_height">26dp</dimen>
+    <dimen name="goal_complete_cta_height">54dp</dimen>
+    <!-- 14dp gap + the design's 6dp extra top margin. -->
+    <dimen name="goal_complete_cta_margin_top">20dp</dimen>
+    <dimen name="goal_complete_action_height">48dp</dimen>
+    <dimen name="goal_complete_action_gap">10dp</dimen>
+
+    <dimen name="text_size_goal_complete_pill">12sp</dimen>
+    <dimen name="text_size_goal_complete_title">26sp</dimen>
+    <dimen name="line_height_goal_complete_title">30sp</dimen>
+    <dimen name="text_size_goal_complete_body">15sp</dimen>
+    <dimen name="line_height_goal_complete_body">22.5sp</dimen>
+    <dimen name="text_size_goal_complete_tile_value">20sp</dimen>
+    <dimen name="text_size_goal_complete_tile_value_min">12sp</dimen>
+    <dimen name="text_size_goal_complete_tile_label">12sp</dimen>
+    <dimen name="text_size_goal_complete_action">15sp</dimen>
+</resources>

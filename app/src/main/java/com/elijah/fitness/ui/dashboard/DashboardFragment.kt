@@ -22,6 +22,7 @@ import com.elijah.fitness.ui.history.WorkoutAdapter
 import com.elijah.fitness.ui.history.WorkoutDetailFragment
 import com.elijah.fitness.util.Fonts
 import com.elijah.fitness.util.Formatters
+import com.elijah.fitness.util.MeasureText
 import com.elijah.fitness.util.MetricText
 import java.time.LocalDate
 import java.util.Locale
@@ -121,10 +122,14 @@ class DashboardFragment : BaseFragment<FragmentDashboardBinding>() {
             resources.getQuantityString(R.plurals.home_metric_sessions_unit, summary.workoutCount),
             muted, UNIT_SCALE, unitFont,
         )
-        binding.metricMinutes.text = MetricText.of(
-            summary.activeMinutes.toString(),
-            getString(R.string.home_metric_minutes_unit),
-            muted, UNIT_SCALE, unitFont,
+        // "45 min" under an hour, "3 h 8 min" above (numbers big, units small).
+        binding.metricMinutes.text = MetricText.duration(
+            totalMinutes = summary.activeMinutes,
+            hoursUnit = getString(R.string.duration_unit_hours),
+            minutesUnit = getString(R.string.home_metric_minutes_unit),
+            unitColor = muted,
+            unitScale = UNIT_SCALE,
+            unitTypeface = unitFont,
         )
         binding.metricDistance.text = MetricText.of(
             String.format(Locale.getDefault(), "%.1f", summary.totalDistanceMeters / 1000.0),
@@ -132,7 +137,7 @@ class DashboardFragment : BaseFragment<FragmentDashboardBinding>() {
             muted, UNIT_SCALE, unitFont,
         )
         binding.metricCalories.text = MetricText.of(
-            summary.estimatedCalories.toInt().toString(),
+            Formatters.formatKcalValue(summary.estimatedCalories),
             getString(R.string.home_metric_calories_unit),
             muted, UNIT_SCALE, unitFont,
         )
@@ -192,7 +197,7 @@ class DashboardFragment : BaseFragment<FragmentDashboardBinding>() {
             day.distanceMeters > 0.0 -> getString(
                 R.string.history_section_summary_with_distance,
                 resources.getQuantityString(R.plurals.history_section_workout_count, count, count),
-                Formatters.formatDistanceKm(day.distanceMeters),
+                MeasureText.distance(requireContext(), day.distanceMeters, day.distanceUnit),
             )
             else -> resources.getQuantityString(R.plurals.history_section_workout_count, count, count)
         }

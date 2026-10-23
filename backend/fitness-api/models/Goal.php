@@ -15,7 +15,8 @@
 final class Goal
 {
     public const GOAL_TYPES     = ['distance', 'count', 'duration', 'volume'];
-    public const ACTIVITY_TYPES = ['RUNNING', 'CYCLING', 'WEIGHTLIFTING'];
+    /** NULL (not in this list) means "any activity". */
+    public const ACTIVITY_TYPES = ['RUNNING', 'CYCLING', 'WEIGHTLIFTING', 'SWIMMING', 'ROWING'];
     public const DURATION_MIN   = 1;
     public const DURATION_MAX   = 365;
 
@@ -80,6 +81,10 @@ final class Goal
      * invalidate the client-side progress computed against the original
      * window). `durationDays` can grow or shrink; the controller
      * recomputes `last_day` from the new span.
+     *
+     * `$resetCompletedNotified` clears the "already celebrated" flag: the
+     * controller passes true when the target, metric, activity or span
+     * changed, so the reworked goal is celebrated when it's reached.
      */
     public static function update(
         int $id,
@@ -89,17 +94,20 @@ final class Goal
         string $goalType,
         float $targetValue,
         int $durationDays,
-        string $lastDate
+        string $lastDate,
+        bool $resetCompletedNotified = false
     ): bool {
         $stmt = Database::pdo()->prepare(
             'UPDATE goals
                 SET title = ?, activity_type = ?, goal_type = ?,
-                    target_value = ?, duration_days = ?, last_day = ?
+                    target_value = ?, duration_days = ?, last_day = ?,
+                    completed_notified = IF(?, 0, completed_notified)
               WHERE id = ? AND user_id = ?'
         );
         $stmt->execute([
             $title, $activityType, $goalType,
             $targetValue, $durationDays, $lastDate,
+            $resetCompletedNotified ? 1 : 0,
             $id, $userId,
         ]);
         return $stmt->rowCount() > 0;
@@ -160,14 +168,18 @@ final class Goal
         return $stmt->rowCount() > 0;
     }
 
-    /** Flip the "we have celebrated this goal already" flag. */
-    public static function markCompletedNotified(int $id, int $userId): bool
+    /**
+     * Flip the "we have celebrated this goal already" flag. Safe to call
+     * again. Returns nothing: MySQL's row count is 0 when the flag was
+     * already set, so it can't tell "missing" from "done" — the caller
+     * checks the goal exists with findById() first.
+     */
+    public static function markCompletedNotified(int $id, int $userId): void
     {
         $stmt = Database::pdo()->prepare(
             'UPDATE goals SET completed_notified = 1 WHERE id = ? AND user_id = ?'
         );
         $stmt->execute([$id, $userId]);
-        return $stmt->rowCount() > 0;
     }
 
     public static function deleteFor(int $id, int $userId): bool

@@ -57,7 +57,7 @@ class RemoteWorkoutRepository(
                 serverIds.clear()
                 result.data.forEach { serverIds[it.clientUuid] = it.id }
                 _workouts.value = result.data
-                    .map { it.toDomain() }
+                    .mapNotNull { it.toDomain() }
                     .sortedByDescending { it.startTime }
                 ApiResult.Success(Unit)
             }
@@ -71,11 +71,11 @@ class RemoteWorkoutRepository(
     ): ApiResult<Unit> =
         when (val result = apiCall { workoutApi.create(workout.toRequestDto(routePoints)) }) {
             is ApiResult.Success -> {
-                val added = result.data.toDomain()
                 serverIds[result.data.clientUuid] = result.data.id
                 // POST is upsert on the server side (on client_uuid); apply
                 // the same semantic locally — if the id already exists (a
                 // retry that succeeded on second try), replace it.
+                val added = result.data.toDomain() ?: workout
                 _workouts.value = (_workouts.value.filterNot { it.id == added.id } + added)
                     .sortedByDescending { it.startTime }
                 ApiResult.Success(Unit)
@@ -126,7 +126,11 @@ class RemoteWorkoutRepository(
             is ApiResult.Success -> {
                 val dto = result.data
                 serverIds[dto.clientUuid] = dto.id
-                val updated = dto.toDomain()
+                val updated = dto.toDomain() ?: return ApiResult.Error(
+                    message = "Unknown workout type",
+                    status = 422,
+                    fieldErrors = emptyMap(),
+                )
                 _workouts.value = _workouts.value
                     .map { if (it.id == updated.id) updated else it }
                     .sortedByDescending { it.startTime }
@@ -148,7 +152,11 @@ class RemoteWorkoutRepository(
             is ApiResult.Success -> {
                 val dto = result.data
                 serverIds[dto.clientUuid] = dto.id
-                val workout = dto.toDomain()
+                val workout = dto.toDomain() ?: return ApiResult.Error(
+                    message = "Unknown workout type",
+                    status = 422,
+                    fieldErrors = emptyMap(),
+                )
                 val points = dto.routePoints
                     .sortedBy { it.seq }
                     .map { it.toTrackPoint() }

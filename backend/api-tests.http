@@ -220,6 +220,9 @@ Authorization: Bearer {{token}}
 @goalId = 1
 
 ### 24. Update a goal (title + target + durationDays)
+# Missing fields keep their stored value, so "any activity" must be sent
+# as an explicit "activityType": null. A new target, metric, activity or
+# span also clears completedNotified (a reworked goal is celebrated again).
 PUT {{baseUrl}}/goals/{{goalId}}
 Content-Type: application/json
 Authorization: Bearer {{token}}
@@ -513,4 +516,162 @@ Authorization: Bearer {{token}}
 
 {
   "confirm": "DELETE"
+}
+
+### ----------------------------------------------------------------------
+### Phase 8d — Swimming, Rowing and stored calories
+### New optional workout fields: laps + poolLengthM (swims only, sent
+### together) and caloriesKcal (any type). Every workout response
+### returns all three (null when not set).
+### ----------------------------------------------------------------------
+
+### 43. Create a pool swim: 60 laps × 25 m = 1,500 m (expect 201)
+POST {{baseUrl}}/workouts
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "clientUuid": "b8d0c6a2-5f3e-4a51-9e0d-000000000001",
+  "activityType": "SWIMMING",
+  "startTime": "2026-10-19T07:10:00Z",
+  "durationSeconds": 1930,
+  "distanceMeters": 1500,
+  "laps": 60,
+  "poolLengthM": 25,
+  "caloriesKcal": 270,
+  "notes": "Morning swim"
+}
+
+### 44. Create a GPS row with a 3-point route (expect 201)
+POST {{baseUrl}}/workouts
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "clientUuid": "b8d0c6a2-5f3e-4a51-9e0d-000000000002",
+  "activityType": "ROWING",
+  "startTime": "2026-10-18T17:30:00Z",
+  "durationSeconds": 2460,
+  "distanceMeters": 6000,
+  "caloriesKcal": 345,
+  "notes": "River row",
+  "routePoints": [
+    { "seq": 0, "latitude": 51.4680, "longitude": -0.2160,
+      "elapsedMs": 0,       "accuracyM": 5.0, "recordedAt": "2026-10-18T17:30:00Z" },
+    { "seq": 1, "latitude": 51.4700, "longitude": -0.2230,
+      "elapsedMs": 1230000, "accuracyM": 6.0, "recordedAt": "2026-10-18T17:50:30Z" },
+    { "seq": 2, "latitude": 51.4725, "longitude": -0.2300,
+      "elapsedMs": 2460000, "accuracyM": 4.5, "recordedAt": "2026-10-18T18:11:00Z" }
+  ]
+}
+
+### 45. List only swims
+GET {{baseUrl}}/workouts?type=SWIMMING
+Authorization: Bearer {{token}}
+
+### 46. List only rows
+GET {{baseUrl}}/workouts?type=ROWING
+Authorization: Bearer {{token}}
+
+### 47. Create a 30-day swim distance goal (km, expect 201)
+POST {{baseUrl}}/goals
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "title": "Swim 10 km in 30 days",
+  "activityType": "SWIMMING",
+  "goalType": "distance",
+  "targetValue": 10,
+  "startDate": "2026-10-19",
+  "durationDays": 30
+}
+
+### 48. Create a 30-day rowing time goal (150 minutes, expect 201)
+POST {{baseUrl}}/goals
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "title": "Row for 2 h 30 min in 30 days",
+  "activityType": "ROWING",
+  "goalType": "duration",
+  "targetValue": 150,
+  "startDate": "2026-10-19",
+  "durationDays": 30
+}
+
+### 49. Rejected: laps on a run (expect 422 with fields.laps)
+POST {{baseUrl}}/workouts
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "clientUuid": "b8d0c6a2-5f3e-4a51-9e0d-000000000003",
+  "activityType": "RUNNING",
+  "startTime": "2026-10-19T08:00:00Z",
+  "durationSeconds": 1800,
+  "distanceMeters": 5000,
+  "laps": 10
+}
+
+### 50. Rejected: laps without poolLengthM (expect 422 with fields.poolLengthM)
+POST {{baseUrl}}/workouts
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "clientUuid": "b8d0c6a2-5f3e-4a51-9e0d-000000000004",
+  "activityType": "SWIMMING",
+  "startTime": "2026-10-19T08:00:00Z",
+  "durationSeconds": 1800,
+  "distanceMeters": 1500,
+  "laps": 60
+}
+
+### 51. Rejected: a swim cannot carry a route (expect 422 with fields.routePoints)
+POST {{baseUrl}}/workouts
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "clientUuid": "b8d0c6a2-5f3e-4a51-9e0d-000000000005",
+  "activityType": "SWIMMING",
+  "startTime": "2026-10-19T08:00:00Z",
+  "durationSeconds": 1800,
+  "distanceMeters": 1000,
+  "laps": 40,
+  "poolLengthM": 25,
+  "routePoints": [
+    { "seq": 0, "latitude": 51.5, "longitude": -0.12,
+      "elapsedMs": 0, "recordedAt": "2026-10-19T08:00:00Z" }
+  ]
+}
+
+### 52. Rejected: negative calories (expect 422 with fields.caloriesKcal)
+POST {{baseUrl}}/workouts
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "clientUuid": "b8d0c6a2-5f3e-4a51-9e0d-000000000006",
+  "activityType": "RUNNING",
+  "startTime": "2026-10-19T08:00:00Z",
+  "durationSeconds": 1800,
+  "distanceMeters": 5000,
+  "caloriesKcal": -5
+}
+
+### 53. Rejected: weight goal on rowing (expect 422 with fields.activityType)
+POST {{baseUrl}}/goals
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "title": "Row 50000 kg",
+  "activityType": "ROWING",
+  "goalType": "volume",
+  "targetValue": 50000,
+  "startDate": "2026-10-19",
+  "durationDays": 30
 }

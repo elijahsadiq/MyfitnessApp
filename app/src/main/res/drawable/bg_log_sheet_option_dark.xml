@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!-- "Track with GPS" / "Log sets and reps" dark primary option card. -->
-<shape xmlns:android="http://schemas.android.com/apk/res/android"
-    android:shape="rectangle">
-    <solid android:color="@color/surface_dark" />
-    <corners android:radius="@dimen/radius_row" />
-</shape>

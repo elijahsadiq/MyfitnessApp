@@ -1,282 +1,137 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  "Log a workout" bottom sheet (phase 8c step 4). Rebuilt from
-  Main.dc.html — one step, three activity tiles + context-sensitive
-  options below. Replaces the former two-step chain.
+  "Log a workout" bottom sheet (phase 8d, LogSheet.dc.html): swipeable
+  activity cards, prev / next + dots, the GPS / manual choice (or a note
+  for swims and workouts) and one lime button whose label follows the
+  selection.
+
+  Padding 12 / 20 / 28dp with 18dp between blocks. The carousel runs
+  edge to edge (the design's margin: 0 -20px), so the side margins sit
+  on each block instead of on the column. The scroll view only matters
+  on very small screens or huge fonts; on a 6.1" phone everything fits.
 -->
 <androidx.core.widget.NestedScrollView
     xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/logSheetScroll"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content">
+    android:layout_height="wrap_content"
+    android:overScrollMode="never">
 
     <LinearLayout
+        android:id="@+id/logSheetContent"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:clipChildren="false"
+        android:clipToPadding="false"
         android:orientation="vertical"
-        android:paddingHorizontal="@dimen/screen_margin"
-        android:paddingTop="10dp"
-        android:paddingBottom="@dimen/space_xl">
+        android:paddingTop="@dimen/log_sheet_padding_top"
+        android:paddingBottom="@dimen/log_sheet_padding_bottom">
 
-        <!-- Drag handle -->
-        <View
-            android:layout_width="40dp"
-            android:layout_height="4dp"
-            android:layout_gravity="center_horizontal"
-            android:background="@drawable/bg_goal_sheet_handle" />
+        <View style="@style/Widget.Fitness.SheetHandle" />
 
         <!-- Title + subtitle -->
-        <TextView
-            style="@style/TextAppearance.Fitness.HeadlineSm"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/space_lg"
-            android:text="@string/log_sheet_title"
-            android:textSize="22sp" />
-
-        <TextView
-            style="@style/TextAppearance.Fitness.BodyMd"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:text="@string/log_sheet_subtitle"
-            android:textColor="@color/text_secondary" />
-
-        <!-- 3-tile activity row -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/space_lg"
-            android:baselineAligned="false"
-            android:orientation="horizontal">
-
-            <include
-                android:id="@+id/logSheetActivityRun"
-                layout="@layout/view_log_sheet_activity_tile" />
-
-            <Space
-                android:layout_width="10dp"
-                android:layout_height="match_parent" />
-
-            <include
-                android:id="@+id/logSheetActivityRide"
-                layout="@layout/view_log_sheet_activity_tile" />
-
-            <Space
-                android:layout_width="10dp"
-                android:layout_height="match_parent" />
-
-            <include
-                android:id="@+id/logSheetActivityLift"
-                layout="@layout/view_log_sheet_activity_tile" />
-        </LinearLayout>
-
-        <!-- Options eyebrow -->
-        <TextView
-            style="@style/TextAppearance.Fitness.LabelSm"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/space_lg"
-            android:text="@string/log_sheet_options_label"
-            android:textColor="@color/text_secondary" />
-
-        <!-- Running + Cycling options -->
-        <LinearLayout
-            android:id="@+id/logSheetDistanceOptions"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
+            android:layout_marginHorizontal="@dimen/screen_margin"
+            android:layout_marginTop="@dimen/log_sheet_gap"
             android:orientation="vertical">
 
-            <LinearLayout
-                android:id="@+id/logSheetTrackGps"
-                android:layout_width="match_parent"
+            <TextView
+                android:id="@+id/logSheetTitle"
+                style="@style/TextAppearance.Fitness.SheetTitle"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:background="@drawable/bg_log_sheet_option_dark"
-                android:clickable="true"
-                android:focusable="true"
-                android:gravity="center_vertical"
-                android:minHeight="76dp"
-                android:orientation="horizontal"
-                android:paddingHorizontal="16dp"
-                android:paddingVertical="14dp">
+                android:text="@string/log_sheet_title" />
 
-                <FrameLayout
-                    android:layout_width="44dp"
-                    android:layout_height="44dp"
-                    android:background="@drawable/bg_log_sheet_option_icon_lime">
-
-                    <ImageView
-                        android:layout_width="22dp"
-                        android:layout_height="22dp"
-                        android:layout_gravity="center"
-                        android:contentDescription="@null"
-                        android:src="@drawable/ic_location_pin_24"
-                        app:tint="@color/text_on_lime" />
-                </FrameLayout>
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="14dp"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
-
-                    <TextView
-                        style="@style/TextAppearance.Fitness.BodyLg"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/log_sheet_track_gps"
-                        android:textColor="@color/text_on_dark"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        style="@style/TextAppearance.Fitness.LabelMd"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="2dp"
-                        android:text="@string/log_sheet_track_gps_hint"
-                        android:textAllCaps="false"
-                        android:textColor="@color/goal_main_muted" />
-                </LinearLayout>
-
-                <ImageView
-                    android:layout_width="20dp"
-                    android:layout_height="20dp"
-                    android:contentDescription="@null"
-                    android:src="@drawable/ic_arrow_forward_24"
-                    app:tint="@color/lime_accent" />
-            </LinearLayout>
-
-            <Space
-                android:layout_width="match_parent"
-                android:layout_height="10dp" />
-
-            <LinearLayout
-                android:id="@+id/logSheetEnterManual"
-                android:layout_width="match_parent"
+            <TextView
+                style="@style/TextAppearance.Fitness.SheetSubtitle"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:background="@drawable/bg_log_sheet_option_light"
-                android:clickable="true"
-                android:focusable="true"
-                android:gravity="center_vertical"
-                android:minHeight="76dp"
-                android:orientation="horizontal"
-                android:paddingHorizontal="16dp"
-                android:paddingVertical="14dp">
-
-                <FrameLayout
-                    android:layout_width="44dp"
-                    android:layout_height="44dp"
-                    android:background="@drawable/bg_icon_tile">
-
-                    <ImageView
-                        android:layout_width="22dp"
-                        android:layout_height="22dp"
-                        android:layout_gravity="center"
-                        android:contentDescription="@null"
-                        android:src="@drawable/ic_edit_24"
-                        app:tint="@color/text_primary" />
-                </FrameLayout>
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="14dp"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
-
-                    <TextView
-                        style="@style/TextAppearance.Fitness.BodyLg"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/log_sheet_manual"
-                        android:textColor="@color/text_primary"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:id="@+id/logSheetManualHint"
-                        style="@style/TextAppearance.Fitness.LabelMd"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="2dp"
-                        android:textAllCaps="false"
-                        android:textColor="@color/text_secondary"
-                        tools:text="Add a run you have already done" />
-                </LinearLayout>
-
-                <ImageView
-                    android:layout_width="20dp"
-                    android:layout_height="20dp"
-                    android:contentDescription="@null"
-                    android:src="@drawable/ic_arrow_forward_24"
-                    app:tint="@color/text_secondary" />
-            </LinearLayout>
+                android:layout_marginTop="@dimen/log_sheet_title_gap"
+                android:text="@string/log_sheet_subtitle" />
         </LinearLayout>
 
-        <!-- Workout option -->
-        <LinearLayout
-            android:id="@+id/logSheetLiftOption"
+        <!-- Activity cards, full width so the neighbours peek in. -->
+        <com.elijah.fitness.ui.components.ActivityCarouselView
+            android:id="@+id/logSheetCarousel"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
-            android:background="@drawable/bg_log_sheet_option_dark"
-            android:clickable="true"
-            android:focusable="true"
+            android:layout_marginTop="@dimen/log_sheet_gap" />
+
+        <!-- Previous · dots · next. The 48dp buttons draw a 40dp circle,
+             so the gaps above and below are 4dp short of 18dp. -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="@dimen/carousel_nav_row_margin"
+            android:layout_marginTop="@dimen/log_sheet_gap_beside_nav"
             android:gravity="center_vertical"
-            android:minHeight="76dp"
-            android:orientation="horizontal"
-            android:paddingHorizontal="16dp"
-            android:paddingVertical="14dp"
-            android:visibility="gone"
-            tools:visibility="visible">
+            android:orientation="horizontal">
 
-            <FrameLayout
-                android:layout_width="44dp"
-                android:layout_height="44dp"
-                android:background="@drawable/bg_log_sheet_option_icon_lime">
+            <ImageButton
+                android:id="@+id/logSheetPrevious"
+                style="@style/Widget.Fitness.RoundIconButton"
+                android:layout_width="@dimen/touch_target_min"
+                android:layout_height="@dimen/touch_target_min"
+                android:contentDescription="@string/log_sheet_previous_content_description"
+                android:src="@drawable/ic_chevron_left_24" />
 
-                <ImageView
-                    android:layout_width="22dp"
-                    android:layout_height="22dp"
-                    android:layout_gravity="center"
-                    android:contentDescription="@null"
-                    android:src="@drawable/ic_list_24"
-                    app:tint="@color/text_on_lime" />
-            </FrameLayout>
-
-            <LinearLayout
+            <Space
                 android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="14dp"
-                android:layout_weight="1"
-                android:orientation="vertical">
+                android:layout_height="0dp"
+                android:layout_weight="1" />
 
-                <TextView
-                    style="@style/TextAppearance.Fitness.BodyLg"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/log_sheet_lift_option"
-                    android:textColor="@color/text_on_dark"
-                    android:textStyle="bold" />
+            <com.elijah.fitness.ui.components.CarouselDotsView
+                android:id="@+id/logSheetDots"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
 
-                <TextView
-                    style="@style/TextAppearance.Fitness.LabelMd"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="2dp"
-                    android:text="@string/log_sheet_lift_hint"
-                    android:textAllCaps="false"
-                    android:textColor="@color/goal_main_muted" />
-            </LinearLayout>
+            <Space
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:layout_weight="1" />
 
-            <ImageView
-                android:layout_width="20dp"
-                android:layout_height="20dp"
-                android:contentDescription="@null"
-                android:src="@drawable/ic_arrow_forward_24"
-                app:tint="@color/lime_accent" />
+            <ImageButton
+                android:id="@+id/logSheetNext"
+                style="@style/Widget.Fitness.RoundIconButton"
+                android:layout_width="@dimen/touch_target_min"
+                android:layout_height="@dimen/touch_target_min"
+                android:contentDescription="@string/log_sheet_next_content_description"
+                android:src="@drawable/ic_chevron_right_24" />
         </LinearLayout>
+
+        <!-- Runs, rides and rows: Live with GPS / Add manually. -->
+        <com.elijah.fitness.ui.components.PillSegmentedControl
+            android:id="@+id/logSheetModeControl"
+            style="@style/Widget.Fitness.PillSegmented.LogSheet"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="@dimen/screen_margin"
+            android:layout_marginTop="@dimen/log_sheet_gap_beside_nav" />
+
+        <!-- Swims and workouts: one line instead of the choice. Same
+             minimum height as the control, so the button doesn't move. -->
+        <TextView
+            android:id="@+id/logSheetNote"
+            style="@style/TextAppearance.Fitness.SheetNote"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="@dimen/screen_margin"
+            android:layout_marginTop="@dimen/log_sheet_gap_beside_nav"
+            android:gravity="center"
+            android:minHeight="@dimen/log_sheet_note_min_height"
+            android:visibility="gone"
+            tools:text="@string/log_sheet_note_swim" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/logSheetCta"
+            style="@style/Widget.Fitness.Button.Primary.Large"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/button_cta_height"
+            android:layout_marginHorizontal="@dimen/screen_margin"
+            android:layout_marginTop="@dimen/log_sheet_gap"
+            tools:text="@string/log_sheet_cta_run_live" />
     </LinearLayout>
 </androidx.core.widget.NestedScrollView>

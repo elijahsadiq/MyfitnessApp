@@ -111,6 +111,20 @@
                         android:text="@string/activity_type_cycling" />
 
                     <com.google.android.material.chip.Chip
+                        android:id="@+id/filterSwimming"
+                        style="@style/Widget.Fitness.Chip.Filter"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/activity_type_swimming" />
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/filterRowing"
+                        style="@style/Widget.Fitness.Chip.Filter"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/activity_type_rowing" />
+
+                    <com.google.android.material.chip.Chip
                         android:id="@+id/filterWeightlifting"
                         style="@style/Widget.Fitness.Chip.Filter"
                         android:layout_width="wrap_content"

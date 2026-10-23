@@ -3,6 +3,9 @@
  * Thin PDO data mapper for `workouts` + `strength_sets`. Every read and
  * write goes through a prepared statement and is scoped by user_id so a
  * bad request can never reveal another user's data.
+ *
+ * Phase 8d adds three nullable columns: `pool_length_m` and `laps`
+ * (swims only) and `calories_kcal` (any type, stored at save time).
  */
 final class Workout
 {
@@ -123,6 +126,10 @@ final class Workout
      * Insert a workout (and its strength sets, if any) inside a transaction.
      * Returns the new workout id.
      *
+     * $poolLengthM and $laps are only set for SWIMMING (the controller
+     * enforces that); $caloriesKcal can be set for any type. All three
+     * are stored as NULL when the client did not send them.
+     *
      * @param array<int, array{exerciseName:string, reps:int, weightKg:float}> $sets
      */
     public static function create(
@@ -132,6 +139,9 @@ final class Workout
         string $startTimeIso,
         int $durationSeconds,
         ?float $distanceMeters,
+        ?int $poolLengthM,
+        ?int $laps,
+        ?int $caloriesKcal,
         ?string $notes,
         array $sets,
         array $routePoints = []
@@ -142,8 +152,9 @@ final class Workout
             $stmt = $pdo->prepare(
                 'INSERT INTO workouts
                     (user_id, client_uuid, activity_type, start_time,
-                     duration_seconds, distance_meters, notes)
-                    VALUES (?, ?, ?, ?, ?, ?, ?)'
+                     duration_seconds, distance_meters, pool_length_m,
+                     laps, calories_kcal, notes)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
             );
             $stmt->execute([
                 $userId,
@@ -152,6 +163,9 @@ final class Workout
                 self::toMysqlDatetime($startTimeIso),
                 $durationSeconds,
                 $distanceMeters,
+                $poolLengthM,
+                $laps,
+                $caloriesKcal,
                 $notes,
             ]);
             $workoutId = (int) $pdo->lastInsertId();
@@ -197,9 +211,10 @@ final class Workout
     }
 
     /**
-     * Update the `notes` column for one workout. Returns true if the row
-     * existed and belonged to [$userId]. The `updated_at` column
-     * auto-advances via the `ON UPDATE CURRENT_TIMESTAMP` DDL.
+     * Update the `notes` column for one workout. Returns true only if the
+     * value actually changed (MySQL's affected-rows count), so callers
+     * check that the row exists with findById() first. The `updated_at`
+     * column auto-advances via the `ON UPDATE CURRENT_TIMESTAMP` DDL.
      */
     public static function updateNotes(int $id, int $userId, ?string $notes): bool
     {
@@ -225,6 +240,11 @@ final class Workout
             'startTime'       => self::isoUtc((string) $row['start_time']),
             'durationSeconds' => (int) $row['duration_seconds'],
             'distanceMeters'  => $row['distance_meters'] !== null ? (float) $row['distance_meters'] : null,
+            // Phase 8d. `?? null` keeps reads working on a database that
+            // has not had migration 08 applied yet.
+            'poolLengthM'     => self::intOrNull($row['pool_length_m'] ?? null),
+            'laps'            => self::intOrNull($row['laps'] ?? null),
+            'caloriesKcal'    => self::intOrNull($row['calories_kcal'] ?? null),
             'notes'           => $row['notes'],
             'sets'            => array_map(
                 static fn (array $s): array => [
@@ -249,6 +269,11 @@ final class Workout
             'createdAt'       => self::isoUtc((string) $row['created_at']),
             'updatedAt'       => self::isoUtc((string) $row['updated_at']),
         ];
+    }
+
+    private static function intOrNull(mixed $v): ?int
+    {
+        return $v !== null ? (int) $v : null;
     }
 
     private static function toMysqlDatetime(string $iso): string

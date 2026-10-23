@@ -1,0 +1,341 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Log a swim (phase 8d, LogSwim.dc.html). One column on the warm canvas,
+  padding 20 / 20 / 28, 20dp between blocks: header, dark live summary,
+  When, Pool length, Laps, Duration, Notes, then "Save swim".
+
+  The column scrolls (it is taller than most phones); "Save swim" stays
+  pinned under it so it is always in thumb reach, and rides above the
+  keyboard (the fragment adds the nav-bar / keyboard inset). The shared
+  toolbar is hidden here: the screen draws its own header.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/logSwimRoot"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/background_warm"
+    android:orientation="vertical"
+    tools:context=".ui.log.LogSwimFragment">
+
+    <androidx.core.widget.NestedScrollView
+        android:id="@+id/logSwimScroll"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:clipToPadding="false"
+        android:fillViewport="true">
+
+        <LinearLayout
+            android:id="@+id/logSwimContent"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingStart="@dimen/screen_margin"
+            android:paddingTop="@dimen/log_header_padding_top"
+            android:paddingEnd="@dimen/screen_margin"
+            android:paddingBottom="@dimen/log_swim_scroll_end_gap">
+
+            <!-- =========== Header =========== -->
+            <!-- The 48dp button draws a 44dp circle: the row starts 2dp
+                 before the 20dp margin so the circle lines up with it. -->
+            <LinearLayout
+                android:id="@+id/logSwimHeader"
+                style="@style/Widget.Fitness.LogHeaderRow">
+
+                <ImageButton
+                    android:id="@+id/logSwimBack"
+                    style="@style/Widget.Fitness.HeaderBackButton"
+                    android:contentDescription="@string/action_back_content_description" />
+
+                <TextView
+                    android:id="@+id/logSwimTitle"
+                    style="@style/Widget.Fitness.LogHeaderTitle"
+                    android:text="@string/log_swim_title" />
+            </LinearLayout>
+
+            <!-- =========== Live summary (dark) =========== -->
+            <LinearLayout
+                android:id="@+id/logSwimSummary"
+                style="@style/Widget.Fitness.SummaryCard"
+                android:layout_marginTop="@dimen/log_header_gap_below">
+
+                <!-- Not a compound drawable: the icon sits on its own 36dp
+                     lime tile at the far end of the row. -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    tools:ignore="UseCompoundDrawables">
+
+                    <TextView
+                        style="@style/TextAppearance.Fitness.SectionLabel.OnDark"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:ellipsize="end"
+                        android:maxLines="1"
+                        android:text="@string/log_swim_average_pace" />
+
+                    <ImageView
+                        style="@style/Widget.Fitness.SummaryIconTile"
+                        android:contentDescription="@null"
+                        android:src="@drawable/ic_swim_24" />
+                </LinearLayout>
+
+                <!-- "2:09" + " /100 m" on one baseline. -->
+                <LinearLayout
+                    android:id="@+id/logSwimPaceRow"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/summary_hero_gap"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/logSwimPaceValue"
+                        style="@style/TextAppearance.Fitness.SummaryHero"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:maxLines="1"
+                        tools:text="2:09" />
+
+                    <TextView
+                        android:id="@+id/logSwimPaceUnit"
+                        style="@style/TextAppearance.Fitness.SummaryHeroUnit"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="@dimen/summary_pace_unit_gap"
+                        android:maxLines="1"
+                        android:text="@string/log_swim_pace_unit" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/summary_hero_gap"
+                    android:baselineAligned="false"
+                    android:orientation="horizontal">
+
+                    <LinearLayout
+                        android:id="@+id/logSwimDistanceTile"
+                        style="@style/Widget.Fitness.SummaryTile">
+
+                        <TextView
+                            style="@style/TextAppearance.Fitness.FieldLabel.OnDark"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:maxLines="1"
+                            android:text="@string/log_swim_distance_label" />
+
+                        <TextView
+                            android:id="@+id/logSwimDistanceValue"
+                            style="@style/TextAppearance.Fitness.SummaryTileValue"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="@dimen/summary_tile_label_gap"
+                            android:maxLines="1"
+                            tools:text="1,500 m" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/logSwimCaloriesTile"
+                        style="@style/Widget.Fitness.SummaryTile"
+                        android:layout_marginStart="@dimen/summary_tile_gap">
+
+                        <TextView
+                            style="@style/TextAppearance.Fitness.FieldLabel.OnDark"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:maxLines="1"
+                            android:text="@string/log_summary_metric_calories" />
+
+                        <TextView
+                            android:id="@+id/logSwimCaloriesValue"
+                            style="@style/TextAppearance.Fitness.SummaryTileValue"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="@dimen/summary_tile_label_gap"
+                            android:maxLines="1"
+                            tools:text="270 kcal" />
+                    </LinearLayout>
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- =========== When =========== -->
+            <TextView
+                style="@style/Widget.Fitness.SectionLabel"
+                android:layout_marginTop="@dimen/log_swim_gap"
+                android:text="@string/log_when_header" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/form_label_gap"
+                android:baselineAligned="false"
+                android:orientation="horizontal">
+
+                <LinearLayout
+                    android:id="@+id/logSwimDateCard"
+                    style="@style/Widget.Fitness.FieldCard">
+
+                    <TextView
+                        style="@style/TextAppearance.Fitness.FieldLabel"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/log_field_date" />
+
+                    <TextView
+                        android:id="@+id/logSwimDateValue"
+                        style="@style/TextAppearance.Fitness.FieldValue"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/field_card_label_gap"
+                        tools:text="Today, Mon 19 Oct" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/logSwimTimeCard"
+                    style="@style/Widget.Fitness.FieldCard"
+                    android:layout_marginStart="@dimen/field_card_gap">
+
+                    <TextView
+                        style="@style/TextAppearance.Fitness.FieldLabel"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/log_time_eyebrow" />
+
+                    <TextView
+                        android:id="@+id/logSwimTimeValue"
+                        style="@style/TextAppearance.Fitness.FieldValue"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/field_card_label_gap"
+                        tools:text="7:10 AM" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/logSwimDateError"
+                style="@style/Widget.Fitness.FormError"
+                tools:text="Date can't be in the future."
+                tools:visibility="visible" />
+
+            <!-- =========== Pool length =========== -->
+            <TextView
+                android:id="@+id/logSwimPoolLabel"
+                style="@style/TextAppearance.Fitness.SectionLabel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/log_swim_gap"
+                android:importantForAccessibility="no"
+                android:text="@string/log_swim_pool_length" />
+
+            <com.elijah.fitness.ui.components.PillSegmentedControl
+                android:id="@+id/logSwimPoolControl"
+                style="@style/Widget.Fitness.PillSegmented.PoolLength"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/form_label_gap" />
+
+            <!-- =========== Laps =========== -->
+            <LinearLayout
+                android:id="@+id/logSwimLapsCard"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/log_swim_gap"
+                android:background="@drawable/bg_field_card"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingStart="@dimen/laps_card_padding"
+                android:paddingTop="@dimen/laps_card_padding_beside_stepper"
+                android:paddingEnd="@dimen/laps_card_padding_beside_stepper"
+                android:paddingBottom="@dimen/laps_card_padding_beside_stepper">
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="@dimen/laps_card_gap"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        style="@style/Widget.Fitness.SectionLabel"
+                        android:text="@string/log_swim_laps" />
+
+                    <TextView
+                        android:id="@+id/logSwimLapsHint"
+                        style="@style/TextAppearance.Fitness.FieldHint"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/field_card_label_gap"
+                        tools:text="60 × 25 m = 1,500 m" />
+                </LinearLayout>
+
+                <com.elijah.fitness.ui.components.StepperView
+                    android:id="@+id/logSwimLapsStepper"
+                    style="@style/Widget.Fitness.Stepper"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    app:stepperDecrementDescription="@string/log_swim_lap_fewer"
+                    app:stepperIncrementDescription="@string/log_swim_lap_more" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/logSwimLapsError"
+                style="@style/Widget.Fitness.FormError"
+                tools:text="Add at least 1 lap."
+                tools:visibility="visible" />
+
+            <!-- =========== Duration =========== -->
+            <TextView
+                style="@style/Widget.Fitness.SectionLabel"
+                android:layout_marginTop="@dimen/log_swim_gap"
+                android:text="@string/log_swim_duration" />
+
+            <com.elijah.fitness.ui.components.DurationInputView
+                android:id="@+id/logSwimDuration"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/form_label_gap" />
+
+            <TextView
+                android:id="@+id/logSwimDurationError"
+                style="@style/Widget.Fitness.FormError"
+                tools:text="Duration must be greater than 0."
+                tools:visibility="visible" />
+
+            <!-- =========== Notes =========== -->
+            <TextView
+                style="@style/Widget.Fitness.SectionLabel"
+                android:layout_marginTop="@dimen/log_swim_gap"
+                android:text="@string/log_notes_label" />
+
+            <EditText
+                android:id="@+id/logSwimNotesInput"
+                style="@style/Widget.Fitness.NotesField"
+                android:layout_marginTop="@dimen/form_label_gap"
+                android:hint="@string/log_swim_notes_hint"
+                android:importantForAutofill="no" />
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+
+    <!-- =========== Save swim (pinned, thumb reach) =========== -->
+    <FrameLayout
+        android:id="@+id/logSwimSaveBar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/background_warm"
+        android:paddingStart="@dimen/screen_margin"
+        android:paddingTop="@dimen/log_swim_save_bar_padding_top"
+        android:paddingEnd="@dimen/screen_margin"
+        android:paddingBottom="@dimen/log_swim_padding_bottom">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/logSwimSaveButton"
+            style="@style/Widget.Fitness.Button.Primary.Large"
+            android:layout_width="match_parent"
+            android:text="@string/log_swim_save_button" />
+    </FrameLayout>
+</LinearLayout>

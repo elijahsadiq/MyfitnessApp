@@ -66,7 +66,8 @@ class OfflineFirstWorkoutRepository(
     private val syncLock = Mutex()
 
     override fun observeWorkouts(): Flow<List<Workout>> =
-        dao.observeVisible().map { rows -> rows.map { it.toDomain() } }
+        // mapNotNull: a row of a type this version doesn't know is skipped.
+        dao.observeVisible().map { rows -> rows.mapNotNull { it.toDomain() } }
 
     override fun observeUnsyncedIds(): Flow<Set<String>> =
         dao.observeUnsyncedIds().map { it.toSet() }
@@ -76,7 +77,9 @@ class OfflineFirstWorkoutRepository(
         return syncLock.withLock {
             when (val result = apiCall { api.list() }) {
                 is ApiResult.Success -> {
-                    dao.mergeServer(result.data.map { it.toEntity() to it.setEntities() })
+                    dao.mergeServer(
+                        result.data.mapNotNull { dto -> dto.toEntity()?.let { it to dto.setEntities() } }
+                    )
                     ApiResult.Success(Unit)
                 }
                 is ApiResult.Error -> result
@@ -128,7 +131,7 @@ class OfflineFirstWorkoutRepository(
         val row = dao.get(clientUuid)
             ?.takeIf { it.workout.syncState != SyncState.PENDING_DELETE }
             ?: return notFound()
-        val workout = row.toDomain()
+        val workout = row.toDomain() ?: return notFound()
         if (row.workout.routeCached) {
             return ApiResult.Success(WorkoutDetail(workout, localRoute(clientUuid)))
         }
@@ -215,8 +218,9 @@ class OfflineFirstWorkoutRepository(
     private suspend fun create(row: WorkoutWithSets): Outcome {
         val entity = row.workout
         val uuid = entity.clientUuid
+        // A row this version can't rebuild can't be uploaded; leave it.
+        val request = row.toDomain()?.toRequestDto(localRoute(uuid)) ?: return Outcome.Rejected
         dao.markUploadAttempted(uuid)
-        val request = row.toDomain().toRequestDto(localRoute(uuid))
         return when (val result = apiCall { api.create(request) }) {
             is ApiResult.Success -> {
                 val dto = result.data
@@ -267,7 +271,8 @@ class OfflineFirstWorkoutRepository(
             }
             // Sent, but the reply was lost. POST is idempotent on the
             // uuid, so it hands back the server's id without a copy.
-            val request = row.toDomain().toRequestDto(localRoute(uuid))
+            val request = row.toDomain()?.toRequestDto(localRoute(uuid))
+                ?: return Outcome.Rejected
             when (val result = apiCall { api.create(request) }) {
                 is ApiResult.Success -> result.data.id
                 is ApiResult.Error -> return result.toOutcome()

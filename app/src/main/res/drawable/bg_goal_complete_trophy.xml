@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Lime circle with a 6dp white ring (the stroke is drawn inside the bounds). -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="oval">
+    <solid android:color="@color/lime_accent" />
+    <stroke
+        android:width="@dimen/goal_complete_trophy_ring"
+        android:color="@color/surface_white" />
+</shape>

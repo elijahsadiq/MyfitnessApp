@@ -163,6 +163,10 @@ abstract class WorkoutDao {
      *   server, keeping any route already cached.
      * - Rows with a change still to upload are left alone so the edit
      *   isn't overwritten. They only pick up a missing [WorkoutEntity.serverId].
+     * - Phase 8d: a refresh never wipes the stored calories, laps or pool
+     *   length. When the server sends none (a backend from before
+     *   migration 08 drops them, and a re-upload can't add them later),
+     *   the phone keeps its own values.
      */
     @Transaction
     open suspend fun mergeServer(server: List<Pair<WorkoutEntity, List<StrengthSetEntity>>>) {
@@ -180,6 +184,9 @@ abstract class WorkoutDao {
                         routeCached = existing.routeCached || incoming.routeCached,
                         localVersion = existing.localVersion,
                         uploadAttempted = true,
+                        caloriesKcal = incoming.caloriesKcal ?: existing.caloriesKcal,
+                        laps = incoming.laps ?: existing.laps,
+                        poolLengthM = incoming.poolLengthM ?: existing.poolLengthM,
                     ),
                     sets,
                     route = null,

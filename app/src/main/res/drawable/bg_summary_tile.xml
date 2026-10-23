@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Stat tile inside a dark summary card: surface_dark_tile, radius 16. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="@color/surface_dark_tile" />
+    <corners android:radius="@dimen/summary_tile_radius" />
+</shape>

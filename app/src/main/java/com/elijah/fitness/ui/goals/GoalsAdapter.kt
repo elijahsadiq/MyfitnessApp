@@ -4,6 +4,7 @@ import android.content.Context
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageView
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
@@ -23,10 +24,8 @@ import com.elijah.fitness.databinding.ItemGoalsSectionHeaderBinding
 import com.elijah.fitness.ui.base.BaseViewHolder
 import com.elijah.fitness.util.Fonts
 import com.elijah.fitness.util.MetricText
+import com.elijah.fitness.util.ResourcesTextResolver
 import androidx.core.content.ContextCompat
-import java.text.NumberFormat
-import java.time.format.DateTimeFormatter
-import java.util.Locale
 
 /**
  * RecyclerView adapter for the Goals screen (Phase 8b redesign).
@@ -180,31 +179,46 @@ class MainGoalCardViewHolder(
 ) : BaseViewHolder<GoalListItem.MainGoalCard>(binding) {
     override fun bind(item: GoalListItem.MainGoalCard) {
         val ctx = binding.root.context
+        val text = ResourcesTextResolver(ctx.resources)
         val gwp = item.goal
         val goal = gwp.goal
         val type = goal.goalType()
 
         // Activity pill: icon + "Main goal · <Activity>" (or "Any activity").
-        binding.goalMainPillActivityIcon.setImageResource(
-            GoalFormatters.iconRes(goal.activityType, type)
-        )
+        binding.goalMainPillActivityIcon.setImageResource(GoalDisplay.iconRes(goal.activityType))
         binding.goalMainPillActivityLabel.text = formatMainPill(ctx, goal.activityType, goal.isMain)
 
         // Days-left pill (same wording as the active row's small pill).
         binding.goalMainPillDaysLeftLabel.text =
             GoalFormatters.formatTimeRemaining(ctx, gwp.daysLeft)
 
-        binding.goalMainTitle.text = goal.displayTitle()
+        val title = goal.displayTitle(text)
+        binding.goalMainTitle.text = GoalDisplay.titleForDisplay(title)
 
-        // Big current value + smaller "/ target unit", one auto-sizing line.
-        binding.goalMainValue.text = MetricText.of(
-            GoalFormatters.formatValue(gwp.currentValue, type),
-            "/ " + GoalFormatters.formatValue(goal.targetValue, type) + " " +
-                GoalFormatters.unitLabel(ctx, type),
-            ContextCompat.getColor(ctx, R.color.goal_main_muted),
-            unitScale = 0.42f,
-            unitTypeface = Fonts.medium(ctx),
-        )
+        // Big current value + smaller "/ target", one auto-sizing line:
+        // "6.5 / 10 km", or for time goals "1 h 10 min / 2 h 30 min"
+        // with small units.
+        val muted = ContextCompat.getColor(ctx, R.color.goal_main_muted)
+        val overTarget = GoalDisplay.overTargetText(text, type, goal.activityType, goal.targetValue)
+        binding.goalMainValue.text = if (type == GoalType.DURATION) {
+            MetricText.duration(
+                totalMinutes = GoalDisplay.currentMinutes(gwp.currentValue),
+                hoursUnit = ctx.getString(R.string.duration_unit_hours),
+                minutesUnit = ctx.getString(R.string.duration_unit_minutes),
+                unitColor = muted,
+                unitScale = 0.42f,
+                unitTypeface = Fonts.medium(ctx),
+                trailing = overTarget,
+            )
+        } else {
+            MetricText.of(
+                GoalDisplay.currentNumber(type, gwp.currentValue, goal.targetValue),
+                overTarget,
+                muted,
+                unitScale = 0.42f,
+                unitTypeface = Fonts.medium(ctx),
+            )
+        }
 
         // Progress ring + percent + "DONE" caption underneath.
         binding.goalMainProgressRing.progress = gwp.progressFraction.toFloat()
@@ -216,7 +230,7 @@ class MainGoalCardViewHolder(
         binding.goalMainCard.setOnClickListener { onGoalTap(gwp) }
         binding.goalMainCard.contentDescription = ctx.getString(
             R.string.goals_main_card_content_description,
-            goal.displayTitle(),
+            title,
             (gwp.progressFraction * 100).toInt(),
         )
     }
@@ -228,8 +242,7 @@ class MainGoalCardViewHolder(
      * Manage sheet still offers "Make main goal".
      */
     private fun formatMainPill(ctx: Context, activity: ActivityType?, isMain: Boolean): String {
-        val activityLabel = activity?.let { GoalFormatters.activityLabel(ctx, it) }
-            ?: ctx.getString(R.string.new_goal_activity_any)
+        val activityLabel = ctx.getString(GoalDisplay.activityNameRes(activity))
         return if (isMain) ctx.getString(R.string.goals_main_pill_with_activity, activityLabel)
         else activityLabel
     }
@@ -241,17 +254,16 @@ class ActiveGoalViewHolder(
 ) : BaseViewHolder<GoalListItem.Active>(binding) {
     override fun bind(item: GoalListItem.Active) {
         val ctx = binding.root.context
+        val text = ResourcesTextResolver(ctx.resources)
         val gwp = item.goal
         val goal = gwp.goal
         val type = goal.goalType()
 
-        binding.activeIcon.setImageResource(GoalFormatters.iconRes(goal.activityType, type))
-        binding.activeTitle.text = goal.displayTitle()
-        binding.activeValue.text = ctx.getString(
-            R.string.goal_value_over_target_decimal,
-            GoalFormatters.formatValue(gwp.currentValue, type),
-            GoalFormatters.formatValue(goal.targetValue, type),
-            GoalFormatters.unitLabel(ctx, type),
+        GoalFormatters.bindIcon(binding.activeIcon, goal.activityType)
+        binding.activeTitle.text = GoalDisplay.titleForDisplay(goal.displayTitle(text))
+        // "6.5 / 10 km", "3 / 12 swims", "1 h 10 min / 2 h 30 min".
+        binding.activeValue.text = GoalDisplay.progressText(
+            text, type, goal.activityType, gwp.currentValue, goal.targetValue,
         )
         binding.activeProgressBar.progress = (gwp.progressFraction * 100).toInt()
         binding.activeTimeRemaining.text = GoalFormatters.formatTimeRemaining(ctx, gwp.daysLeft)
@@ -265,21 +277,19 @@ class CompletedGoalViewHolder(
 ) : BaseViewHolder<GoalListItem.Completed>(binding) {
     override fun bind(item: GoalListItem.Completed) {
         val ctx = binding.root.context
+        val text = ResourcesTextResolver(ctx.resources)
         val gwp = item.goal
         val goal = gwp.goal
         val type = goal.goalType()
 
-        binding.completedIcon.setImageResource(GoalFormatters.iconRes(goal.activityType, type))
-        binding.completedTitle.text = goal.displayTitle()
+        GoalFormatters.bindIcon(binding.completedIcon, goal.activityType)
+        binding.completedTitle.text = GoalDisplay.titleForDisplay(goal.displayTitle(text))
         // Phase-8b: we don't persist the exact completion date yet, so the
         // row shows the goal's `lastDay` as the "Finished …" date. The
-        // actual value is the user's current measured total (which, for
-        // completed goals, is >= target).
-        binding.completedCaption.text = ctx.getString(
-            R.string.goal_completed_caption,
-            GoalFormatters.formatDate(goal.lastDay),
-            GoalFormatters.formatValue(gwp.currentValue, type),
-            GoalFormatters.unitLabel(ctx, type),
+        // amount is the user's current measured total (>= target), e.g.
+        // "Finished Fri 2 Oct · 46 km" or "… · 2 h 30 min".
+        binding.completedCaption.text = GoalDisplay.completedCaption(
+            text, type, goal.activityType, goal.lastDay, gwp.currentValue,
         )
         binding.completedCard.setOnClickListener { onGoalTap(gwp) }
     }
@@ -301,11 +311,11 @@ class QuickStartViewHolder(
     override fun bind(item: GoalListItem.QuickStart) {
         val ctx = binding.root.context
         val s = item.suggestion
-        binding.goalQuickStartIcon.setImageResource(
-            GoalFormatters.iconRes(s.activity.toApi(), s.metric)
-        )
-        binding.goalQuickStartTitle.setText(s.titleRes)
-        binding.goalQuickStartSubtitle.text = ctx.getString(s.subtitleRes, s.subtitleArg)
+        val text = ResourcesTextResolver(ctx.resources)
+        GoalFormatters.bindIcon(binding.goalQuickStartIcon, s.activity.toApi())
+        binding.goalQuickStartTitle.text = GoalDisplay.titleForDisplay(s.title(text))
+        // "About 1.4 km a day" / "About 21 min a day", as the sheet it opens says.
+        binding.goalQuickStartSubtitle.text = s.subtitle(text)
         binding.goalQuickStartCard.setOnClickListener { onTap(s) }
     }
 }
@@ -317,18 +327,16 @@ class EndedGoalViewHolder(
 ) : BaseViewHolder<GoalListItem.Ended>(binding) {
     override fun bind(item: GoalListItem.Ended) {
         val ctx = binding.root.context
+        val text = ResourcesTextResolver(ctx.resources)
         val gwp = item.goal
         val goal = gwp.goal
         val type = goal.goalType()
 
-        binding.endedIcon.setImageResource(GoalFormatters.iconRes(goal.activityType, type))
-        binding.endedTitle.text = goal.displayTitle()
-        binding.endedCaption.text = ctx.getString(
-            R.string.goal_ended_date_caption,
-            GoalFormatters.formatDate(goal.lastDay),
-            GoalFormatters.formatValue(gwp.currentValue, type),
-            GoalFormatters.formatValue(goal.targetValue, type),
-            GoalFormatters.unitLabel(ctx, type),
+        GoalFormatters.bindIcon(binding.endedIcon, goal.activityType)
+        binding.endedTitle.text = GoalDisplay.titleForDisplay(goal.displayTitle(text))
+        // "Ended Mon 28 Sep · 16 of 20 km" / "… · 1 h 10 min of 2 h 30 min".
+        binding.endedCaption.text = GoalDisplay.endedCaption(
+            text, type, goal.activityType, goal.lastDay, gwp.currentValue, goal.targetValue,
         )
         binding.endedCard.setOnClickListener { onGoalTap(gwp) }
         binding.endedTryAgain.setOnClickListener { onTryAgainTap(gwp) }
@@ -342,46 +350,15 @@ class EndedGoalViewHolder(
 
 private object GoalFormatters {
 
-    private val DATE_FORMAT: DateTimeFormatter =
-        DateTimeFormatter.ofPattern("EEE d MMM", Locale.getDefault())
-
-    /** Whole units ("10,000 kg", "45 min") except distance ("12.5 km"). */
-    fun formatValue(value: Double, type: GoalType): String = when (type) {
-        GoalType.COUNT, GoalType.DURATION, GoalType.VOLUME ->
-            NumberFormat.getIntegerInstance(Locale.getDefault()).format(value.toLong())
-        GoalType.DISTANCE ->
-            String.format(Locale.getDefault(), "%.1f", value)
+    /**
+     * The goal's activity icon — the same stroke glyph as its card in
+     * the New goal carousel ([GoalDisplay.iconRes]) — read by TalkBack as
+     * the activity ("Swimming", "Any activity").
+     */
+    fun bindIcon(view: ImageView, activity: ActivityType?) {
+        view.setImageResource(GoalDisplay.iconRes(activity))
+        view.contentDescription = view.context.getString(GoalDisplay.activityNameRes(activity))
     }
-
-    fun unitLabel(ctx: Context, type: GoalType): String = when (type) {
-        GoalType.DISTANCE -> ctx.getString(R.string.goal_unit_km)
-        GoalType.COUNT -> ctx.getString(R.string.goal_unit_workouts)
-        GoalType.DURATION -> ctx.getString(R.string.goal_unit_min)
-        GoalType.VOLUME -> ctx.getString(R.string.goal_unit_kg)
-    }
-
-    fun activityLabel(ctx: Context, activity: ActivityType): String = when (activity) {
-        ActivityType.RUNNING -> ctx.getString(R.string.activity_type_running)
-        ActivityType.CYCLING -> ctx.getString(R.string.activity_type_cycling)
-        ActivityType.WEIGHTLIFTING -> ctx.getString(R.string.activity_type_weightlifting)
-    }
-
-    fun iconRes(activityType: ActivityType?, goalType: GoalType): Int {
-        return when (activityType) {
-            ActivityType.RUNNING -> R.drawable.ic_run_24
-            ActivityType.CYCLING -> R.drawable.ic_bike_24
-            ActivityType.WEIGHTLIFTING -> R.drawable.ic_dumbbell_24
-            null -> when (goalType) {
-                GoalType.DISTANCE -> R.drawable.ic_run_24
-                GoalType.VOLUME -> R.drawable.ic_dumbbell_24
-                GoalType.DURATION -> R.drawable.ic_history_24
-                GoalType.COUNT -> R.drawable.ic_flag_24
-            }
-        }
-    }
-
-    /** "Fri 2 Oct" — short-weekday + day + short-month, locale-aware. */
-    fun formatDate(date: java.time.LocalDate): String = date.format(DATE_FORMAT)
 
     /**
      * `daysLeft` counts today: a 13-day goal created today shows "13 days
@@ -396,4 +373,3 @@ private object GoalFormatters {
         )
     }
 }
-

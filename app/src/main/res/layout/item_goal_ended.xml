@@ -22,7 +22,7 @@
     android:gravity="center_vertical"
     android:orientation="horizontal"
     android:paddingHorizontal="@dimen/card_padding"
-    android:paddingVertical="14dp">
+    android:paddingVertical="@dimen/goal_ended_row_padding_vertical">
 
     <FrameLayout
         android:layout_width="@dimen/icon_tile_size"
@@ -31,12 +31,12 @@
 
         <ImageView
             android:id="@+id/endedIcon"
-            android:layout_width="22dp"
-            android:layout_height="22dp"
+            android:layout_width="@dimen/goal_row_icon"
+            android:layout_height="@dimen/goal_row_icon"
             android:layout_gravity="center"
             android:contentDescription="@string/goals_row_icon_content_description"
             app:tint="@color/goal_ended_icon_tint"
-            tools:src="@drawable/ic_run_24" />
+            tools:src="@drawable/ic_run_outline_24" />
     </FrameLayout>
 
     <LinearLayout
@@ -62,24 +62,27 @@
             style="@style/TextAppearance.Fitness.LabelMd"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="2dp"
+            android:layout_marginTop="@dimen/goal_row_caption_gap"
             android:textAllCaps="false"
             android:textColor="@color/text_secondary"
             tools:text="Ended Mon 28 Sep · 16 of 20 km" />
     </LinearLayout>
 
+    <!-- A 48dp touch target that draws a 36dp pill (bg_goal_try_again).
+         The negative vertical margins let it reach into the row's
+         padding, so the row is no taller than with the old 36dp button. -->
     <TextView
         android:id="@+id/endedTryAgain"
         style="@style/TextAppearance.Fitness.LabelMd"
         android:layout_width="wrap_content"
-        android:layout_height="36dp"
+        android:layout_height="@dimen/touch_target_min"
+        android:layout_marginVertical="@dimen/goal_try_again_touch_overlap"
         android:layout_marginStart="@dimen/space_sm"
         android:background="@drawable/bg_goal_try_again"
         android:clickable="true"
         android:focusable="true"
-        android:foreground="?attr/selectableItemBackground"
         android:gravity="center_vertical"
-        android:paddingHorizontal="14dp"
+        android:paddingHorizontal="@dimen/goal_try_again_padding_horizontal"
         android:text="@string/goals_try_again"
         android:textAllCaps="false"
         android:textColor="@color/text_primary"

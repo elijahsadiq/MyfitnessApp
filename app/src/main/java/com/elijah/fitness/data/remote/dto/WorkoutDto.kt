@@ -6,12 +6,22 @@ import kotlinx.serialization.Serializable
 data class WorkoutDto(
     val id: Long,
     val clientUuid: String,
-    /** One of `RUNNING`, `CYCLING`, `WEIGHTLIFTING`. */
+    /**
+     * One of `RUNNING`, `CYCLING`, `SWIMMING`, `ROWING`, `WEIGHTLIFTING`.
+     * Kept as a raw string so a type this app version doesn't know yet
+     * is skipped by the mapper instead of failing the whole list.
+     */
     val activityType: String,
     /** ISO-8601 UTC. */
     val startTime: String,
     val durationSeconds: Long,
     val distanceMeters: Double? = null,
+    /** Swims only (phase 8d): pool length in metres, e.g. 25 or 50. */
+    val poolLengthM: Int? = null,
+    /** Swims only (phase 8d): laps swum; `distanceMeters = laps × poolLengthM`. */
+    val laps: Int? = null,
+    /** Calories stored at save time (phase 8d). `null` on older workouts. */
+    val caloriesKcal: Int? = null,
     val notes: String? = null,
     /** Only populated for `WEIGHTLIFTING`. */
     val sets: List<StrengthSetDto> = emptyList(),
@@ -50,8 +60,14 @@ data class WorkoutRequestDto(
     val startTime: String,
     val durationSeconds: Long,
     val distanceMeters: Double? = null,
+    /** Swims only; the server rejects it on any other type. */
+    val poolLengthM: Int? = null,
+    /** Swims only; the server rejects it on any other type. */
+    val laps: Int? = null,
+    val caloriesKcal: Int? = null,
     val notes: String? = null,
     val sets: List<StrengthSetRequestDto> = emptyList(),
+    /** Runs, rides and rows only. */
     val routePoints: List<RoutePointRequestDto> = emptyList(),
 )
 

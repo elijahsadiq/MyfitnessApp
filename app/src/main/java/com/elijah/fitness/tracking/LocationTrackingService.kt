@@ -252,6 +252,7 @@ class LocationTrackingService : Service() {
             when {
                 status == TrackingState.Status.Paused -> R.string.tracking_notification_title_paused
                 activity == ActivityType.CYCLING -> R.string.tracking_notification_title_cycling
+                activity == ActivityType.ROWING -> R.string.tracking_notification_title_rowing
                 else -> R.string.tracking_notification_title_running
             }
         )

@@ -75,17 +75,22 @@
             app:destination="@id/newGoalFragment" />
     </fragment>
 
-    <fragment
+    <!-- Phase 8d: New goal / Edit goal is a one-hand bottom sheet
+         (NewGoal.dc.html). Same id and argument as the old full screen,
+         so every entry point (FAB, empty-state CTA, Quick Start, "Try
+         again", Manage → Edit) keeps working. Pre-fill extras travel in
+         the same bundle (NewGoalBottomSheet.argsFor). -->
+    <dialog
         android:id="@+id/newGoalFragment"
-        android:name="com.elijah.fitness.ui.goals.NewGoalFragment"
+        android:name="com.elijah.fitness.ui.goals.NewGoalBottomSheet"
         android:label="@string/new_goal_title_create"
-        tools:layout="@layout/fragment_new_goal">
+        tools:layout="@layout/bottom_sheet_new_goal">
         <argument
             android:name="goal_id"
             app:argType="string"
             android:defaultValue="@null"
             app:nullable="true" />
-    </fragment>
+    </dialog>
 
     <!--
       Profile is no longer in the bottom nav — it opens from the Home
@@ -119,7 +124,30 @@
             app:destination="@id/liveTrackingFragment"
             app:popUpTo="@id/chooseActivityBottomSheet"
             app:popUpToInclusive="true" />
+        <!-- Phase 8d: the Swimming card's "Add a swim". -->
+        <action
+            android:id="@+id/action_choose_to_log_swim"
+            app:destination="@id/logSwimFragment"
+            app:popUpTo="@id/chooseActivityBottomSheet"
+            app:popUpToInclusive="true" />
     </dialog>
+
+    <!-- Phase 8d: Log a swim (LogSwim.dc.html). Draws its own header, so
+         it isn't one of MainActivity's toolbar destinations (nor are the
+         run / ride / row and workout forms below, which share it). -->
+    <fragment
+        android:id="@+id/logSwimFragment"
+        android:name="com.elijah.fitness.ui.log.LogSwimFragment"
+        android:label="@string/log_swim_title"
+        tools:layout="@layout/fragment_log_swim">
+        <!-- Like a saved run: the new swim's detail screen replaces the
+             form, so Back doesn't return to an already-saved form. -->
+        <action
+            android:id="@+id/action_log_swim_to_detail"
+            app:destination="@id/workoutDetailFragment"
+            app:popUpTo="@id/logSwimFragment"
+            app:popUpToInclusive="true" />
+    </fragment>
 
     <fragment
         android:id="@+id/liveTrackingFragment"

@@ -1,60 +1,53 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout
+<!--
+  History / Home day-list row for a strength workout (activities-v3
+  History.dc.html): same card as the distance row, with the total weight
+  lifted on the right ("6,240 kg").
+-->
+<com.google.android.material.card.MaterialCardView
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:minHeight="72dp"
-    android:paddingHorizontal="16dp"
-    android:paddingVertical="12dp"
-    android:background="?attr/selectableItemBackground">
+    style="@style/Widget.Fitness.HistoryRow">
 
-    <ImageView
-        android:id="@+id/strengthIcon"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
-        android:padding="8dp"
-        android:contentDescription="@string/history_activity_icon_content_description"
-        android:src="@drawable/ic_dumbbell_24"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:tint="@color/text_primary" />
-
-    <TextView
-        android:id="@+id/strengthTitle"
-        style="?attr/textAppearanceTitleSmall"
-        android:layout_width="0dp"
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginStart="12dp"
-        android:maxLines="1"
-        android:ellipsize="end"
-        app:layout_constraintEnd_toStartOf="@id/totalVolume"
-        app:layout_constraintStart_toEndOf="@id/strengthIcon"
-        app:layout_constraintTop_toTopOf="@id/strengthIcon"
-        tools:text="Weightlifting · Wed 10 Sep" />
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:padding="@dimen/history_row_padding">
 
-    <TextView
-        android:id="@+id/strengthSummary"
-        style="?attr/textAppearanceBodySmall"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="2dp"
-        android:textColor="?attr/colorOnSurfaceVariant"
-        app:layout_constraintEnd_toStartOf="@id/totalVolume"
-        app:layout_constraintStart_toStartOf="@id/strengthTitle"
-        app:layout_constraintTop_toBottomOf="@id/strengthTitle"
-        tools:text="4 exercises · 12 sets" />
+        <ImageView
+            android:id="@+id/strengthIcon"
+            android:layout_width="@dimen/history_row_icon_tile"
+            android:layout_height="@dimen/history_row_icon_tile"
+            android:background="@drawable/bg_history_row_icon_tile"
+            android:importantForAccessibility="no"
+            android:padding="@dimen/history_row_icon_padding"
+            android:src="@drawable/ic_dumbbell_24"
+            app:tint="@color/text_on_lime" />
 
-    <TextView
-        android:id="@+id/totalVolume"
-        style="?attr/textAppearanceTitleSmall"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:textColor="@color/text_primary"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        tools:text="1620 kg" />
-</androidx.constraintlayout.widget.ConstraintLayout>
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/history_row_text_gap"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/strengthTitle"
+                style="@style/Widget.Fitness.HistoryRowTitle"
+                tools:text="Evening workout" />
+
+            <TextView
+                android:id="@+id/strengthSummary"
+                style="@style/Widget.Fitness.HistoryRowSubtitle"
+                tools:text="Thu 15 Oct · 45 min · 270 kcal" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/totalVolume"
+            style="@style/Widget.Fitness.HistoryRowValue"
+            tools:text="6,240 kg" />
+    </LinearLayout>
+</com.google.android.material.card.MaterialCardView>

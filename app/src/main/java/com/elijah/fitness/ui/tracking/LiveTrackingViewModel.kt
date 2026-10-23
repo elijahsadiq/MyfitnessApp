@@ -6,9 +6,11 @@ import androidx.lifecycle.viewModelScope
 import com.elijah.fitness.AppContainer
 import com.elijah.fitness.data.model.ActivityType
 import com.elijah.fitness.data.model.CyclingWorkout
+import com.elijah.fitness.data.model.RowingWorkout
 import com.elijah.fitness.data.model.RunningWorkout
 import com.elijah.fitness.data.model.Workout
 import com.elijah.fitness.data.remote.ApiResult
+import com.elijah.fitness.util.CalorieEstimator
 import com.elijah.fitness.tracking.TrackingSession
 import com.elijah.fitness.tracking.TrackingState
 import kotlinx.coroutines.channels.Channel
@@ -90,6 +92,8 @@ class LiveTrackingViewModel(
             when (result) {
                 is ApiResult.Success -> {
                     session.reset()
+                    // The Log a workout sheet opens on this activity next time.
+                    container.rememberLoggedActivity(workout.type)
                     _events.send(Event.Saved(workout.id))
                 }
                 is ApiResult.Error,
@@ -103,7 +107,22 @@ class LiveTrackingViewModel(
         viewModelScope.launch { _events.send(Event.Discarded) }
     }
 
+    /**
+     * The finished session as a workout, with its calories stored
+     * (phase 8d): built once to ask the class for its calories, then
+     * again with the value. No stored value while the profile hasn't
+     * loaded yet — screens work it out later.
+     */
     private fun buildWorkout(state: TrackingState): Workout {
+        val probe = buildWorkout(state, caloriesKcal = null)
+        val kcal = CalorieEstimator.storedWorkoutKcal(
+            probe,
+            container.userSettings.weightForSavingKgOrNull(),
+        )
+        return buildWorkout(state, caloriesKcal = kcal)
+    }
+
+    private fun buildWorkout(state: TrackingState, caloriesKcal: Int?): Workout {
         val id = state.sessionId ?: UUID.randomUUID().toString()
         val duration = Duration.ofMillis(state.elapsedMs.coerceAtLeast(1_000L))
         val distanceMeters = state.distanceMeters.coerceAtLeast(1.0)
@@ -114,15 +133,26 @@ class LiveTrackingViewModel(
                 startTime = startedAt,
                 duration = duration,
                 distanceMeters = distanceMeters,
+                caloriesKcal = caloriesKcal,
             )
-            // Weightlifting is never routed through live tracking (the
-            // log sheet only offers GPS for runs and rides); falling back
-            // to a run keeps the `when` total.
-            else -> RunningWorkout(
+            ActivityType.ROWING -> RowingWorkout(
                 id = id,
                 startTime = startedAt,
                 duration = duration,
                 distanceMeters = distanceMeters,
+                caloriesKcal = caloriesKcal,
+            )
+            // Swims and lifts are never tracked with GPS (the log sheet
+            // only offers it for runs, rides and rows); a run keeps the
+            // `when` total instead of crashing.
+            ActivityType.RUNNING,
+            ActivityType.SWIMMING,
+            ActivityType.WEIGHTLIFTING -> RunningWorkout(
+                id = id,
+                startTime = startedAt,
+                duration = duration,
+                distanceMeters = distanceMeters,
+                caloriesKcal = caloriesKcal,
             )
         }
     }

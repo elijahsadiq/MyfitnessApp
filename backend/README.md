@@ -24,7 +24,8 @@ backend/
 │       ├── 04_migration_route_points_phase8a.sql
 │       ├── 05_migration_profile_phase8.sql
 │       ├── 06_migration_goals_phase8b.sql
-│       └── 07_migration_avatar_blob_phase9.sql
+│       ├── 07_migration_avatar_blob_phase9.sql
+│       └── 08_migration_swim_row_phase8d.sql
 ├── fitness-api/
 │   ├── index.php           Front controller
 │   ├── core/               Router, Response, Auth, Validator, Database
@@ -79,7 +80,11 @@ docker exec -i fitness-mysql mysql -uroot -prootpassword fitness_app \
     < sql/migrations/06_migration_goals_phase8b.sql
 docker exec -i fitness-mysql mysql -uroot -prootpassword fitness_app \
     < sql/migrations/07_migration_avatar_blob_phase9.sql
+docker exec -i fitness-mysql mysql -uroot -prootpassword fitness_app \
+    < sql/migrations/08_migration_swim_row_phase8d.sql
 ```
+
+Migrations 07 and 08 are idempotent (safe to run twice).
 
 After pulling a change to `Dockerfile`, rebuild the API container with
 `docker compose up -d --build php` (the database is untouched).
@@ -180,9 +185,14 @@ tester created.
 Aiven runs MySQL in ANSI mode by default (`"x"` is a column name, `||`
 joins strings), so the API pins MySQL 8's default `sql_mode` on every
 connection (`core/Database.php`). Load only `01_schema.sql` and
-`02_seed.sql` (plus migration 07 into a database created before it):
-migrations 03–06 use double-quoted strings and fail in ANSI mode — a
-fresh install never needs them.
+`02_seed.sql` (plus migrations 07 and 08 into a database created before
+them; both use single-quoted strings only): migrations 03–06 use
+double-quoted strings and fail in ANSI mode — a fresh install never
+needs them.
+
+Apply a new migration to Aiven **before** pushing the PHP that uses it:
+Render redeploys on every push that touches `backend/`, and the new code
+writes the new columns.
 
 ---
 
@@ -219,18 +229,21 @@ User (phase 2 + phase 8)
   DELETE /me                 (body { "confirm": "DELETE" })
   GET    /avatars/{name}.jpg (public — the stored photo; name is random)
 
-Workouts (phase 2 + phase 8a)
+Workouts (phase 2 + phase 8a + phase 8c + phase 8d)
   GET    /workouts           (filters: ?type, ?from, ?to)
   POST   /workouts           (body may carry optional routePoints[])
   GET    /workouts/{id}      (returns the stored route if any)
+  PATCH  /workouts/{id}      (body { "notes": "..." }; only notes are editable)
   DELETE /workouts/{id}
 
-Goals (phase 7)
+Goals (phase 7 + phase 8b)
   GET    /goals
   POST   /goals
   PUT    /goals/{id}
   DELETE /goals/{id}
   POST   /goals/{id}/notified
+  POST   /goals/{id}/main
+  POST   /goals/{id}/extend  (body { "days": 7 })
 ```
 
 Every endpoint except `/auth/*`, `/health` and `/avatars/*` requires an
@@ -238,6 +251,42 @@ Every endpoint except `/auth/*`, `/health` and `/avatars/*` requires an
 `/auth/login` only (`/auth/register` creates the account and returns
 `{ user }`; the user then logs in) and are stored only as a SHA-256
 hash on the server.
+
+### Workout fields
+
+JSON keys are camelCase. Every workout response (list, detail, create,
+PATCH) has the same shape; the list leaves `routePoints` empty.
+
+| Field | Type | Notes |
+|---|---|---|
+| `clientUuid` | string | Device-generated; re-POSTing the same UUID returns the first row (200) |
+| `activityType` | string | `RUNNING`, `CYCLING`, `WEIGHTLIFTING`, `SWIMMING`, `ROWING` |
+| `startTime` | ISO-8601 UTC | |
+| `durationSeconds` | int | 1 to 86 400 |
+| `distanceMeters` | number or null | Required (> 0) for every type except `WEIGHTLIFTING` |
+| `poolLengthM` | int or null | Phase 8d. `SWIMMING` only, 10 to 100 |
+| `laps` | int or null | Phase 8d. `SWIMMING` only, 1 to 400 |
+| `caloriesKcal` | int or null | Phase 8d. Any type, 0 to 20 000. The app works it out at save time from the profile weight; older rows are `null` |
+| `notes` | string or null | Up to 2 000 characters |
+| `sets` | array | Required for `WEIGHTLIFTING` only |
+| `routePoints` | array | `RUNNING`, `CYCLING` and `ROWING` only (422 for the others) |
+
+`laps` and `poolLengthM` are optional on a swim but must be sent
+together; the app sends `distanceMeters = laps × poolLengthM`. Sending
+either one on another activity type is a 422. A JSON `null` counts as
+"not sent".
+
+### Goal activity rules
+
+`activityType` is one of the five workout types, or `null` for "any
+activity".
+
+| `goalType` | Allowed `activityType` |
+|---|---|
+| `distance` (km) | `RUNNING`, `CYCLING`, `SWIMMING`, `ROWING` |
+| `duration` (minutes) | any type, or `null` |
+| `count` (sessions) | any type, or `null` |
+| `volume` (kg lifted) | `WEIGHTLIFTING` only |
 
 ---
 

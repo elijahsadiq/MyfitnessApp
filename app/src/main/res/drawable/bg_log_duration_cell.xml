@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!-- Pale rounded fill behind each HH:MM:SS field on the manual log form. -->
-<shape xmlns:android="http://schemas.android.com/apk/res/android"
-    android:shape="rectangle">
-    <solid android:color="@color/background_warm" />
-    <corners android:radius="16dp" />
-</shape>

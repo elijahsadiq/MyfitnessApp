@@ -11,9 +11,9 @@
     <string name="auth_onboarding_get_started">Get started</string>
     <string name="auth_onboarding_have_account">I already have an account</string>
     <string name="auth_onboarding_page1_title">Train smarter.\nTrack every step.</string>
-    <string name="auth_onboarding_page1_body">Log runs, rides and lifts, and watch your progress grow.</string>
+    <string name="auth_onboarding_page1_body">Log runs, rides, swims, rows and workouts, and watch your progress grow.</string>
     <string name="auth_onboarding_page2_title">Every route,\nmapped.</string>
-    <string name="auth_onboarding_page2_body">GPS tracks your runs and rides, so distance, pace and calories are captured for you.</string>
+    <string name="auth_onboarding_page2_body">GPS tracks your runs, rides and rows, so distance, pace and calories are captured for you.</string>
     <string name="auth_onboarding_page3_title">Set goals.\nSee progress.</string>
     <string name="auth_onboarding_page3_body">Track personal records and weekly trends, and watch every session add up.</string>
 
@@ -34,6 +34,7 @@
     <string name="tracking_notification_channel_description">Shown while a GPS workout is in progress.</string>
     <string name="tracking_notification_title_running">Run in progress</string>
     <string name="tracking_notification_title_cycling">Ride in progress</string>
+    <string name="tracking_notification_title_rowing">Row in progress</string>
     <string name="tracking_notification_body">%1$s · %2$s</string>
     <string name="tracking_notification_title_paused">Workout paused</string>
     <string name="tracking_notification_distance">%1$.2f km</string>
@@ -121,10 +122,14 @@
     <string name="goals_active_title">Active goals</string>
     <string name="goals_completed_title">Completed</string>
     <string name="goals_ended_title">Ended</string>
-    <!-- Completed row caption: "Finished Fri 2 Oct · 46 km". -->
-    <string name="goal_completed_caption">Finished %1$s · %2$s %3$s</string>
+    <!-- Completed row caption: "Finished Fri 2 Oct · 46 km" / "… · 2 h 30 min".
+         %2$s is the amount with its unit (GoalDisplay.currentText). The
+         non-breaking spaces (and GoalDisplay's) let a narrow row wrap only
+         after the "·", never leaving "kg" or "Oct" alone. -->
+    <string name="goal_completed_caption">Finished\u00A0%1$s\u00A0· %2$s</string>
     <!-- Ended row caption: "Ended Mon 28 Sep · 16 of 20 km". -->
-    <string name="goal_ended_date_caption">Ended %1$s · %2$s of %3$s %4$s</string>
+    <string name="goal_ended_date_caption">Ended\u00A0%1$s\u00A0· %2$s\u00A0of\u00A0%3$s\u00A0%4$s</string>
+    <string name="goal_ended_date_caption_duration">Ended\u00A0%1$s\u00A0· %2$s\u00A0of\u00A0%3$s</string>
     <string name="goals_row_icon_content_description">Goal type icon</string>
     <!-- Main-goal card: "Main goal · Running" / "Main goal · Any activity" -->
     <string name="goals_main_pill_with_activity">Main goal · %1$s</string>
@@ -133,11 +138,17 @@
     <string name="goals_try_again">Try again</string>
 
     <!-- Goal unit labels + value formatters -->
+    <!-- Time goals have no unit word: DurationFormatter writes "2 h 30 min". -->
     <string name="goal_unit_km">km</string>
-    <string name="goal_unit_workouts">workouts</string>
-    <string name="goal_unit_min">min</string>
     <string name="goal_unit_kg">kg</string>
-    <string name="goal_value_over_target_decimal">%1$s / %2$s %3$s</string>
+    <!-- "10 km", "12 swims", "20,000 kg": a number and its unit, kept on one line. -->
+    <string name="goal_amount_with_unit">%1$s\u00A0%2$s</string>
+    <!-- Main goal card, small after the big number: "/ 50 km", "/ 2 h 30 min". -->
+    <string name="goal_main_card_over_target">/ %1$s</string>
+    <!-- "6.5 / 10 km", "3 / 12 swims": the unit stays with its number. -->
+    <string name="goal_value_over_target_decimal">%1$s / %2$s\u00A0%3$s</string>
+    <!-- Time goals: "1 h 10 min / 2 h 30 min". -->
+    <string name="goal_value_over_target_duration">%1$s / %2$s</string>
     <string name="goal_last_day">Last day</string>
     <string name="goal_ended_pill">Ended</string>
 
@@ -155,30 +166,33 @@
 
     <!-- Quick start section (phase 8b step 8) -->
     <string name="goals_quick_start_title">Quick start</string>
-    <string name="goals_quick_start_run_title">Run 20 km in 14 days</string>
-    <string name="goals_quick_start_ride_title">Ride 100 km in 30 days</string>
-    <string name="goals_quick_start_lift_title">Train 150 min in 7 days</string>
-    <string name="goals_quick_start_subtitle_distance">About %1$s km a day</string>
-    <string name="goals_quick_start_subtitle_time">About %1$s min a day</string>
+    <!-- A row's subtitle is the New goal sheet's pace hint (new_goal_hint_per_day). -->
     <string name="goals_quick_start_cta_content_description">Create this goal</string>
 
     <!-- Manage goal bottom sheet (phase 8b step 7) -->
     <string name="manage_goal_close_content_description">Close</string>
-    <!-- Subtitle: "Cycling · Distance · started Thu 24 Sep" -->
-    <string name="manage_goal_subtitle">%1$s · %2$s · started %3$s</string>
-    <string name="manage_goal_subtitle_any">Any activity · %1$s · started %2$s</string>
-    <string name="manage_goal_progress_of">of %1$s %2$s</string>
+    <!-- Subtitle: "Cycling · Distance · started Thu 24 Sep" / "Any activity · Time · …".
+         Non-breaking spaces keep each "·" with the part before it and
+         "started" with its date, so a narrow screen wraps between parts. -->
+    <string name="manage_goal_subtitle">%1$s\u00A0· %2$s\u00A0· started\u00A0%3$s</string>
+    <!-- "of 10 km", "of 12 swims", "of 2 h 30 min" (GoalDisplay.targetText). -->
+    <string name="manage_goal_progress_of">of %1$s</string>
     <string name="manage_goal_stat_avg_per_day">Avg per day</string>
     <string name="manage_goal_stat_needed_per_day">Needed per day</string>
     <string name="manage_goal_stat_runs_logged">Runs logged</string>
     <string name="manage_goal_stat_rides_logged">Rides logged</string>
+    <string name="manage_goal_stat_swims_logged">Swims logged</string>
+    <string name="manage_goal_stat_rows_logged">Rows logged</string>
     <string name="manage_goal_stat_workouts_logged">Workouts logged</string>
     <string name="manage_goal_stat_sessions_logged">Sessions logged</string>
-    <string name="manage_goal_stat_value_distance">%1$.1f km</string>
-    <string name="manage_goal_stat_value_time">%1$d min</string>
-    <string name="manage_goal_stat_value_volume">%1$s kg</string>
-    <string name="manage_goal_stat_value_count">%1$d</string>
+    <!-- "4.8 km", "2 km": up to one decimal (Formatters.formatTenths). -->
+    <string name="manage_goal_stat_value_distance">%1$s\u00A0km</string>
+    <string name="manage_goal_stat_value_volume">%1$s\u00A0kg</string>
+    <!-- Sessions a day, up to one decimal: "0.4", "2". -->
+    <string name="manage_goal_stat_value_count">%1$s</string>
     <string name="manage_goal_stat_value_blank">—</string>
+    <!-- A small positive rate that would round to 0 ("<0.1" a day, "<0.1 km"); %1$s is "0.1" in the locale's format. -->
+    <string name="manage_goal_stat_value_below">&lt;%1$s</string>
     <!-- Action list rows. -->
     <string name="manage_goal_action_edit">Edit goal</string>
     <string name="manage_goal_action_make_main">Make main goal</string>
@@ -195,6 +209,8 @@
     <!-- Activity words for the body sentence. -->
     <string name="goals_delete_activity_word_runs">runs</string>
     <string name="goals_delete_activity_word_rides">rides</string>
+    <string name="goals_delete_activity_word_swims">swims</string>
+    <string name="goals_delete_activity_word_rows">rows</string>
     <string name="goals_delete_activity_word_workouts">workouts</string>
     <string name="goals_delete_activity_word_sessions">workouts</string>
 
@@ -206,33 +222,48 @@
     <!-- Completion Snackbar (phase 7 step 7). TODO(future phase): once
          a notification channel exists, fire an achievement notification
          instead of an in-app Snackbar. -->
-    <string name="goals_completed_snackbar">Goal complete: %1$s 🎉</string>
-    <!-- New Goal / Edit Goal full-screen fragment (phase 8b step 6) -->
+    <!-- New goal / Edit goal bottom sheet (phase 8d, NewGoal.dc.html) -->
     <string name="new_goal_title_create">New goal</string>
     <string name="new_goal_title_edit">Edit goal</string>
+    <string name="new_goal_swipe_hint">Swipe down to cancel</string>
     <string name="new_goal_submit_create">Create goal</string>
     <string name="new_goal_submit_edit">Save changes</string>
+    <!-- The submit button while the goal is being saved (the sheet can't be closed then). -->
+    <string name="new_goal_submit_saving">Saving…</string>
     <string name="new_goal_saved_snackbar">Goal saved</string>
+    <!-- Edit was opened for a goal that couldn't be found (deleted elsewhere, or offline after a restore). -->
+    <string name="new_goal_edit_unavailable_snackbar">Couldn\'t open that goal</string>
 
-    <string name="new_goal_section_activity">Choose an activity</string>
-    <string name="new_goal_activity_running">Running</string>
-    <string name="new_goal_activity_cycling">Cycling</string>
-    <string name="new_goal_activity_weightlifting">Weightlifting</string>
+    <!-- Live summary card: the goal sentence (goal_title_*) and three tiles. -->
+    <!-- TalkBack's name for the card (the design's aria-label), read before its live text. -->
+    <string name="new_goal_summary_label">Goal summary</string>
+    <string name="new_goal_pace_per_day">Per day</string>
+    <string name="new_goal_pace_per_week">Per week</string>
+    <string name="new_goal_summary_ends">Ends</string>
+    <string name="new_goal_summary_burn">Est. burn</string>
+    <!-- "1,260 kcal"; %1$s is the number, already formatted. -->
+    <string name="new_goal_kcal_value">%1$s kcal</string>
+    <!-- Under the tiles while the profile has no weight (70 kg is used). -->
+    <string name="new_goal_weight_hint">Add your weight in Profile for a better estimate.</string>
+
+    <!-- Activity cards. The Any card shows "Any"; TalkBack says "Any activity". -->
+    <string name="new_goal_carousel_description">Activity, swipe to change</string>
     <string name="new_goal_activity_any">Any activity</string>
+    <string name="new_goal_card_any">Any</string>
+    <string name="new_goal_card_running">Distance, time or runs</string>
+    <string name="new_goal_card_cycling">Distance, time or rides</string>
+    <string name="new_goal_card_swimming">Distance, time or swims</string>
+    <string name="new_goal_card_rowing">Distance, time or rows</string>
+    <string name="new_goal_card_workout">Time, sessions or weight</string>
+    <string name="new_goal_card_any_description">Every activity counts</string>
 
-    <string name="new_goal_section_metric">What do you want to track?</string>
-    <string name="new_goal_metric_hint_run">Track how far, how long or how often you run.</string>
-    <string name="new_goal_metric_hint_ride">Track how far, how long or how often you ride.</string>
-    <string name="new_goal_metric_hint_lift">Workouts are tracked by time, sessions or total weight lifted.</string>
-    <string name="new_goal_metric_hint_any">Counts every workout, whatever the activity.</string>
+    <!-- "Measure by" segments. -->
+    <string name="new_goal_measure_by">Measure by</string>
     <string name="new_goal_metric_distance">Distance</string>
     <string name="new_goal_metric_time">Time</string>
     <string name="new_goal_metric_sessions">Sessions</string>
     <string name="new_goal_metric_weight">Weight</string>
-    <string name="new_goal_metric_unit_distance">km</string>
-    <string name="new_goal_metric_unit_time">min</string>
-    <string name="new_goal_metric_unit_weight">kg</string>
-    <!-- Session label for the metric row varies by activity. -->
+    <!-- What one session of an activity is called: "12 runs", "1 swim". -->
     <plurals name="new_goal_metric_unit_sessions_run">
         <item quantity="one">run</item>
         <item quantity="other">runs</item>
@@ -241,54 +272,45 @@
         <item quantity="one">ride</item>
         <item quantity="other">rides</item>
     </plurals>
+    <plurals name="new_goal_metric_unit_sessions_swim">
+        <item quantity="one">swim</item>
+        <item quantity="other">swims</item>
+    </plurals>
+    <plurals name="new_goal_metric_unit_sessions_row">
+        <item quantity="one">row</item>
+        <item quantity="other">rows</item>
+    </plurals>
     <plurals name="new_goal_metric_unit_sessions_lift">
         <item quantity="one">workout</item>
         <item quantity="other">workouts</item>
     </plurals>
+    <!-- A count goal for any activity counts workouts of every kind. -->
     <plurals name="new_goal_metric_unit_sessions_any">
-        <item quantity="one">session</item>
-        <item quantity="other">sessions</item>
+        <item quantity="one">workout</item>
+        <item quantity="other">workouts</item>
     </plurals>
 
-    <string name="new_goal_section_target">Set your target</string>
+    <!-- Adjust card: target row (label shown in capitals) and days row. -->
+    <string name="new_goal_target_label_distance">Distance</string>
+    <string name="new_goal_target_label_time">Total time</string>
+    <string name="new_goal_target_label_sessions">Sessions</string>
+    <string name="new_goal_target_label_weight">Weight lifted</string>
     <string name="new_goal_decrease_target_content_description">Decrease target</string>
     <string name="new_goal_increase_target_content_description">Increase target</string>
-
-    <string name="new_goal_section_days">How many days?</string>
-    <string name="new_goal_decrease_days_content_description">Fewer days</string>
-    <string name="new_goal_increase_days_content_description">More days</string>
-    <plurals name="new_goal_days_unit">
-        <item quantity="one">day</item>
-        <item quantity="other">days</item>
-    </plurals>
-    <string name="new_goal_date_range">Starts today · ends %1$s</string>
-
-    <string name="new_goal_section_summary">Your goal</string>
-    <string name="new_goal_pace_per_day">Per day</string>
-    <string name="new_goal_pace_per_week">Per week</string>
-    <string name="new_goal_deadline_label">Deadline</string>
-
-    <!-- Pace tile values. "/ day" and "/ week" paces. -->
-    <string name="new_goal_pace_value_distance">%1$s km</string>
-    <string name="new_goal_pace_value_time">%1$d min</string>
-    <string name="new_goal_pace_value_volume">%1$s kg</string>
-    <string name="new_goal_pace_value_sessions_run">%1$s runs</string>
-    <string name="new_goal_pace_value_sessions_ride">%1$s rides</string>
-    <string name="new_goal_pace_value_sessions_lift">%1$s workouts</string>
-    <string name="new_goal_pace_value_sessions_any">%1$s sessions</string>
-
-    <!-- Target-input dialog -->
-    <string name="new_goal_target_dialog_title">Set target</string>
-    <string name="new_goal_days_dialog_title">Set days</string>
-    <string name="new_goal_dialog_ok">OK</string>
-    <string name="new_goal_dialog_cancel">Cancel</string>
-
-    <!-- Validation errors -->
-    <string name="new_goal_error_target_out_of_range_distance">Distance target must be between 1 and 1000 km.</string>
-    <string name="new_goal_error_target_out_of_range_count">Workout target must be between 1 and 100.</string>
-    <string name="new_goal_error_target_out_of_range_duration">Duration target must be between 15 and 10000 min.</string>
-    <string name="new_goal_error_target_out_of_range_volume">Volume target must be between 1000 and 500000 kg.</string>
-    <string name="new_goal_error_days_out_of_range">Days must be between 1 and 365.</string>
+    <string name="new_goal_days_label">Days</string>
+    <string name="new_goal_days_hint_today">Starts today</string>
+    <!-- Editing a goal that started earlier: "Started 12 Oct". -->
+    <string name="new_goal_days_hint_started">Started %1$s</string>
+    <string name="new_goal_decrease_days_content_description">One day fewer</string>
+    <string name="new_goal_increase_days_content_description">One day more</string>
+    <!-- Amounts. %1$s is the number, already formatted: "50 km", "20,000 kg",
+         "12 runs" (%2$s = the session word from new_goal_metric_unit_sessions_*). -->
+    <string name="new_goal_value_km">%1$s km</string>
+    <string name="new_goal_value_kg">%1$s kg</string>
+    <string name="new_goal_value_count">%1$s %2$s</string>
+    <!-- Target hints: "About 1.7 km a day", "About 2.8 a week". -->
+    <string name="new_goal_hint_per_day">About %1$s a day</string>
+    <string name="new_goal_hint_per_week">About %1$s a week</string>
 
     <!-- Bottom navigation labels -->
     <string name="nav_home">Home</string>
@@ -318,18 +340,21 @@
     <string name="progress_stat_best_pace">Best pace</string>
     <string name="progress_stat_longest_run">Longest run</string>
     <string name="progress_stat_longest_ride">Longest ride</string>
+    <string name="progress_stat_longest_swim">Longest swim</string>
+    <string name="progress_stat_longest_row">Longest row</string>
     <string name="progress_stat_average_speed">Average speed</string>
     <string name="progress_stat_max_speed">Fastest</string>
     <string name="progress_stat_total_sets">Total sets</string>
     <string name="progress_stat_total_volume">Total volume</string>
     <string name="progress_stat_most_frequent">Most frequent</string>
     <string name="progress_stat_value_distance">%1$.1f km</string>
-    <string name="progress_stat_value_duration_minutes">%1$d min</string>
     <string name="progress_stat_value_volume">%1$,.0f kg</string>
 
     <string name="progress_pr_fastest_5k">Fastest 5 km</string>
     <string name="progress_pr_longest_run">Longest run</string>
     <string name="progress_pr_longest_ride">Longest ride</string>
+    <string name="progress_pr_longest_swim">Longest swim</string>
+    <string name="progress_pr_longest_row">Longest row</string>
     <string name="progress_pr_one_rep_max">%1$s 1RM</string>
     <string name="progress_pr_one_rep_max_value">%1$.1f kg</string>
     <string name="progress_pr_none">Keep logging workouts to unlock personal records.</string>
@@ -338,7 +363,10 @@
     <!-- Activity type labels -->
     <string name="activity_type_running">Running</string>
     <string name="activity_type_cycling">Cycling</string>
-    <string name="activity_type_weightlifting">Weightlifting</string>
+    <string name="activity_type_swimming">Swimming</string>
+    <string name="activity_type_rowing">Rowing</string>
+    <!-- Phase 8d: WEIGHTLIFTING is shown as "Workout" (the wire value is unchanged). -->
+    <string name="activity_type_weightlifting">Workout</string>
 
     <!-- Home (Step 9 restyle of Dashboard) -->
     <string name="home_headline">Your week</string>
@@ -409,12 +437,26 @@
     <string name="detail_time_afternoon_ride">Afternoon ride</string>
     <string name="detail_time_evening_ride">Evening ride</string>
     <string name="detail_time_night_ride">Night ride</string>
-    <string name="detail_time_strength">Weightlifting</string>
+    <string name="detail_time_morning_swim">Morning swim</string>
+    <string name="detail_time_afternoon_swim">Afternoon swim</string>
+    <string name="detail_time_evening_swim">Evening swim</string>
+    <string name="detail_time_night_swim">Night swim</string>
+    <string name="detail_time_morning_row">Morning row</string>
+    <string name="detail_time_afternoon_row">Afternoon row</string>
+    <string name="detail_time_evening_row">Evening row</string>
+    <string name="detail_time_night_row">Night row</string>
+    <string name="detail_time_morning_workout">Morning workout</string>
+    <string name="detail_time_afternoon_workout">Afternoon workout</string>
+    <string name="detail_time_evening_workout">Evening workout</string>
+    <string name="detail_time_night_workout">Night workout</string>
     <string name="detail_subtitle_today">Today, %1$s · %2$s</string>
     <string name="detail_subtitle_yesterday">Yesterday, %1$s · %2$s</string>
     <string name="detail_subtitle_default">%1$s · %2$s</string>
+    <!-- Pool swims: "Today, Tue 20 Oct · 07:10 · 60 × 25 m". -->
+    <string name="detail_subtitle_with_pool">%1$s · %2$s</string>
     <string name="detail_map_pill_run">Running · GPS</string>
     <string name="detail_map_pill_ride">Cycling · GPS</string>
+    <string name="detail_map_pill_row">Rowing · GPS</string>
     <string name="detail_map_expand_content_description">View full-screen map</string>
     <string name="detail_stat_distance">Distance</string>
     <string name="detail_stat_duration">Duration</string>
@@ -424,6 +466,9 @@
     <string name="detail_stat_sets">Sets</string>
     <string name="detail_stat_volume">Volume</string>
     <string name="detail_stat_pace_unit">/km</string>
+    <string name="detail_stat_pace_unit_100m">/100 m</string>
+    <string name="detail_stat_pace_unit_500m">/500 m</string>
+    <string name="detail_stat_distance_unit_m">m</string>
     <string name="detail_stat_speed_unit">km/h</string>
     <string name="detail_stat_calories_unit">kcal</string>
     <string name="detail_stat_volume_unit">kg</string>
@@ -440,7 +485,9 @@
     <string name="detail_delete_confirm_body">The workout and its route will be removed. This can\'t be undone.</string>
     <string name="detail_delete_confirm_positive">Delete</string>
     <string name="detail_share_subject">My workout</string>
-    <string name="detail_share_body_distance">%1$s: %2$.2f km in %3$s (%4$s %5$s)</string>
+    <!-- "Morning run: 5.20 km in 32 min (6:09 /km)", "Morning swim: 1,500 m in
+         32 min (2:09 /100 m)". %2$s is the distance with its unit, %3$s the duration. -->
+    <string name="detail_share_body_distance">%1$s: %2$s in %3$s (%4$s %5$s)</string>
     <string name="detail_share_body_strength">%1$s: %2$d sets in %3$s</string>
     <string name="detail_notes_updated_snackbar">Notes updated</string>
     <string name="detail_delete_failed_snackbar">Couldn\'t delete this workout.</string>
@@ -456,6 +503,7 @@
     <string name="tracking_stat_calories">Calories</string>
     <string name="tracking_unit_km">km</string>
     <string name="tracking_unit_pace_slash_km">/km</string>
+    <string name="tracking_unit_pace_slash_500m">/500 m</string>
     <string name="tracking_unit_kmh">km/h</string>
     <string name="tracking_unit_kcal">kcal</string>
     <string name="tracking_control_finish">Finish</string>
@@ -483,33 +531,92 @@
     <string name="history_momentum_unit">km</string>
     <string name="history_momentum_trend_format">%1$s%2$d%%</string>
     <string name="history_filter_all">All</string>
-    <string name="history_filter_all_with_count">All · %1$d</string>
     <string name="history_section_this_week">This week</string>
     <string name="history_section_earlier">Earlier</string>
     <!-- "3 workouts · 12.40 km"; %1$s comes from plurals history_section_workout_count. -->
     <string name="history_section_summary_with_distance">%1$s · %2$s</string>
-    <string name="history_row_type_and_date">%1$s · %2$s</string>
-    <string name="history_row_distance_and_duration">%1$s · %2$s</string>
-    <string name="history_row_total_volume">%1$,.0f kg</string>
-    <string name="history_row_strength_summary">%1$s · %2$s</string>
     <string name="history_empty_title">No workouts yet</string>
     <string name="history_empty_body">Tap + to log your first workout.</string>
     <string name="history_empty_icon_content_description">History icon</string>
     <string name="history_fab_content_description">Log a workout</string>
-    <string name="history_activity_icon_content_description">Activity icon</string>
+    <!-- Phase 8d step 8: History rows ("Today · 32 min · 270 kcal") and per-filter empty states. -->
+    <string name="history_row_subtitle">%1$s · %2$s · %3$s</string>
+    <string name="history_row_kcal">%1$s kcal</string>
+    <string name="history_row_km">%1$s km</string>
+    <string name="history_row_kg">%1$s kg</string>
+    <string name="history_row_today">Today</string>
+    <string name="history_row_yesterday">Yesterday</string>
+    <string name="history_empty_title_running">No runs yet</string>
+    <string name="history_empty_title_cycling">No rides yet</string>
+    <string name="history_empty_title_swimming">No swims yet</string>
+    <string name="history_empty_title_rowing">No rows yet</string>
+    <string name="history_empty_body_filtered">Tap + to log one.</string>
 
-    <!-- Log a workout bottom sheet (phase 8c step 4) -->
+    <!-- Log a workout bottom sheet (phase 8d, LogSheet.dc.html) -->
     <string name="log_sheet_title">Log a workout</string>
-    <string name="log_sheet_subtitle">What did you do?</string>
-    <string name="log_sheet_options_label">How do you want to log it?</string>
-    <string name="log_sheet_track_gps">Track with GPS</string>
-    <string name="log_sheet_track_gps_hint">Live map, distance and pace</string>
-    <string name="log_sheet_manual">Enter manually</string>
-    <string name="log_sheet_manual_hint_run">Add a run you have already done</string>
-    <string name="log_sheet_manual_hint_ride">Add a ride you have already done</string>
-    <string name="log_sheet_lift_option">Log sets and reps</string>
-    <string name="log_sheet_lift_hint">Exercises, sets, reps and weight</string>
+    <string name="log_sheet_subtitle">Swipe to choose an activity.</string>
+    <!-- One line under each activity card name. -->
+    <string name="log_sheet_card_running">Outdoor runs with a live map</string>
+    <string name="log_sheet_card_cycling">Rides with live speed and route</string>
+    <string name="log_sheet_card_swimming">Pool laps or open water</string>
+    <string name="log_sheet_card_rowing">On the water or a rowing machine</string>
+    <string name="log_sheet_card_workout">Sets, reps and weight</string>
+    <string name="log_sheet_previous_content_description">Previous activity</string>
+    <string name="log_sheet_next_content_description">Next activity</string>
+    <!-- Segmented control for runs, rides and rows. -->
+    <string name="log_sheet_mode_group">How to log</string>
+    <string name="log_sheet_mode_live">Live with GPS</string>
+    <string name="log_sheet_mode_manual">Add manually</string>
+    <!-- Shown instead of the segmented control. -->
+    <string name="log_sheet_note_swim">GPS does not work under water, so swims are added after the session.</string>
+    <string name="log_sheet_note_workout">Add exercises, sets and reps as you go.</string>
+    <!-- The lime button's label follows the activity and the mode. -->
+    <string name="log_sheet_cta_run_live">Start run with GPS</string>
+    <string name="log_sheet_cta_run_manual">Add a run manually</string>
+    <string name="log_sheet_cta_ride_live">Start ride with GPS</string>
+    <string name="log_sheet_cta_ride_manual">Add a ride manually</string>
+    <string name="log_sheet_cta_row_live">Start row with GPS</string>
+    <string name="log_sheet_cta_row_manual">Add a row manually</string>
+    <string name="log_sheet_cta_swim">Add a swim</string>
+    <string name="log_sheet_cta_workout">Log a workout</string>
     <string name="log_sheet_permission_denied_snackbar">Location is off. You can still enter your workout manually.</string>
+
+    <!-- Activity carousel (phase 8d, shared by the log and goal sheets). -->
+    <!-- TalkBack, on every swipe: "Activity, Swimming, 3 of 5". -->
+    <string name="activity_carousel_announcement">Activity, %1$s, %2$d of %3$d</string>
+    <!-- TalkBack label of one card: "Swimming, 3 of 5". -->
+    <string name="activity_card_content_description">%1$s, %2$d of %3$d</string>
+    <string name="activity_card_state_selected">Selected</string>
+    <string name="action_back_content_description">Back</string>
+
+    <!-- Log a swim (phase 8d, LogSwim.dc.html) -->
+    <string name="log_swim_title">Log a swim</string>
+    <string name="log_swim_average_pace">Average pace</string>
+    <!-- After the big pace number: "2:09 /100 m". -->
+    <string name="log_swim_pace_unit">/100 m</string>
+    <string name="log_swim_distance_label">Distance</string>
+    <!-- "270 kcal"; %1$s is the number, already formatted. -->
+    <string name="log_swim_kcal_value">%1$s kcal</string>
+    <!-- Date card: "Today, Mon 19 Oct". %1$s is the date. -->
+    <string name="log_swim_date_today">Today, %1$s</string>
+    <string name="log_swim_date_yesterday">Yesterday, %1$s</string>
+    <string name="log_swim_pool_length">Pool length</string>
+    <!-- One pool-length option: "25 m". -->
+    <string name="log_swim_pool_option">%1$d m</string>
+    <string name="log_swim_laps">Laps</string>
+    <!-- Under "Laps": "60 × 25 m = 1,500 m". %3$s is the distance, already
+         formatted. Non-breaking spaces keep each side of "=" on one line. -->
+    <string name="log_swim_laps_hint">%1$d\u00A0×\u00A0%2$d\u00A0m = %3$s\u00A0m</string>
+    <string name="log_swim_lap_fewer">One lap fewer</string>
+    <string name="log_swim_lap_more">One lap more</string>
+    <string name="log_swim_duration">Duration</string>
+    <string name="log_swim_notes_hint">How did it feel? Drills, strokes, kit…</string>
+    <string name="log_swim_save_button">Save swim</string>
+    <string name="log_swim_error_laps">Add at least 1 lap.</string>
+
+    <!-- Stepper buttons (− value +). TalkBack reads each stepper's own labels. -->
+    <string name="stepper_minus_symbol" translatable="false">−</string>
+    <string name="stepper_plus_symbol" translatable="false">+</string>
 
     <!-- Nav-graph label of the "Log a workout" sheet. -->
     <string name="choose_activity_title">Log a workout</string>
@@ -525,6 +632,7 @@
     <string name="log_error_date_in_future">Date can\'t be in the future.</string>
     <string name="log_error_duration_zero">Duration must be greater than 0.</string>
     <string name="log_error_duration_out_of_range">Minutes and seconds must be between 0 and 59.</string>
+    <string name="log_error_duration_too_long">Duration can\'t be more than 24 h.</string>
     <string name="log_error_distance_positive">Distance must be greater than 0.</string>
     <string name="log_error_distance_too_far">Distance can\'t exceed 300 km.</string>
     <string name="log_error_sets_required">Add at least one set.</string>
@@ -532,13 +640,16 @@
     <!-- Phase 8c step 5 — manual log form -->
     <string name="log_run_title">Log a run</string>
     <string name="log_ride_title">Log a ride</string>
+    <string name="log_row_title">Log a row</string>
     <string name="log_summary_eyebrow_running">Running</string>
     <string name="log_summary_eyebrow_cycling">Cycling</string>
+    <string name="log_summary_eyebrow_rowing">Rowing</string>
     <string name="log_summary_metric_pace">Pace</string>
     <string name="log_summary_metric_speed">Speed</string>
     <string name="log_summary_metric_calories">Calories</string>
     <string name="log_summary_metric_dash">—</string>
     <string name="log_summary_unit_pace">/km</string>
+    <string name="log_summary_unit_pace_500m">/500 m</string>
     <string name="log_summary_unit_speed">km/h</string>
     <string name="log_summary_unit_kcal">kcal</string>
     <string name="log_summary_incomplete">Add a time and distance to see your pace.</string>
@@ -548,9 +659,10 @@
     <string name="log_time_eyebrow">Start time</string>
     <string name="log_how_long_header">How long?</string>
     <string name="log_how_far_header">How far?</string>
-    <string name="log_duration_hours_label">hours</string>
-    <string name="log_duration_minutes_label">min</string>
-    <string name="log_duration_seconds_label">sec</string>
+    <!-- TalkBack names of the duration cells (they show "h", "min", "s"). -->
+    <string name="log_duration_hours_label">Hours</string>
+    <string name="log_duration_minutes_label">Minutes</string>
+    <string name="log_duration_seconds_label">Seconds</string>
     <string name="log_distance_hint">0.00</string>
     <string name="log_duration_hint">0</string>
     <string name="log_distance_unit">km</string>
@@ -559,6 +671,7 @@
     <string name="log_notes_hint">How did it feel?</string>
     <string name="log_save_run_button">Save run</string>
     <string name="log_save_ride_button">Save ride</string>
+    <string name="log_save_row_button">Save row</string>
 
     <!-- Log strength -->
     <string name="log_strength_sets_title">Sets</string>
@@ -577,7 +690,7 @@
 
     <!-- Log form titles -->
     <string name="log_distance_title_running">Log a run</string>
-    <string name="log_strength_title">Log weightlifting</string>
+    <string name="log_strength_title">Log a workout</string>
 
     <!-- Profile -->
     <string name="profile_logout_button">Log out</string>
@@ -647,4 +760,75 @@
     <string name="profile_notifications_settings">Settings</string>
     <string name="profile_logout_unsynced_title">Log out?</string>
     <string name="profile_logout_unsynced_confirm">Log out</string>
+
+    <!-- Phase 8d: durations. "45 min", "2 h", "2 h 30 min" — never "150 min". -->
+    <string name="duration_minutes">%1$d min</string>
+    <string name="duration_hours">%1$d h</string>
+    <string name="duration_hours_minutes">%1$d h %2$d min</string>
+    <!-- Under a minute: "45 s" rather than "0 min". -->
+    <string name="duration_seconds">%1$d s</string>
+    <string name="duration_unit_hours">h</string>
+    <string name="duration_unit_minutes">min</string>
+    <string name="duration_unit_seconds">s</string>
+
+    <!-- Phase 8d: swim and row measures (util/MeasureText). %1$s is the
+         number, already formatted: "1,500", "2:09". -->
+    <string name="measure_metres">%1$s m</string>
+    <string name="measure_pace_per_100m">%1$s /100 m</string>
+    <string name="measure_pace_per_500m">%1$s /500 m</string>
+    <!-- A pool swim: laps × pool length, "60 × 25 m". Non-breaking spaces
+         so a narrow line never breaks inside it. -->
+    <string name="swim_laps_of_pool">%1$d\u00A0×\u00A0%2$d\u00A0m</string>
+
+    <!-- Phase 8d: goal titles ("Run 50 km in 30 days"). %1$s = the amount,
+         %2$s = the days from plurals goal_title_days. -->
+    <string name="goal_title_distance_run">Run %1$s km in %2$s</string>
+    <string name="goal_title_distance_ride">Ride %1$s km in %2$s</string>
+    <string name="goal_title_distance_swim">Swim %1$s km in %2$s</string>
+    <string name="goal_title_distance_row">Row %1$s km in %2$s</string>
+    <!-- Time goals: %1$s is a duration such as "2 h 30 min". -->
+    <string name="goal_title_time_run">Run for %1$s in %2$s</string>
+    <string name="goal_title_time_ride">Ride for %1$s in %2$s</string>
+    <string name="goal_title_time_swim">Swim for %1$s in %2$s</string>
+    <string name="goal_title_time_row">Row for %1$s in %2$s</string>
+    <string name="goal_title_time_lift">Work out for %1$s in %2$s</string>
+    <string name="goal_title_time_any">Be active for %1$s in %2$s</string>
+    <string name="goal_title_volume">Lift %1$s kg in %2$s</string>
+    <string name="goal_title_generic">%1$s in %2$s</string>
+
+    <!-- Phase 8d: Home insights. -->
+    <string name="insight_pr_longest_run">New personal record: longest run — %1$s km.</string>
+    <string name="insight_pr_exercise">New personal record on %1$s.</string>
+    <!-- %1$s = an ordinal day of the month from insight_ordinal_*: "the 23rd". -->
+    <string name="insight_goal_projection">At this rate you\'ll reach your goal by the %1$s.</string>
+    <string name="insight_ordinal_st">%1$dst</string>
+    <string name="insight_ordinal_nd">%1$dnd</string>
+    <string name="insight_ordinal_rd">%1$drd</string>
+    <string name="insight_ordinal_th">%1$dth</string>
+    <string name="insight_volume_further_run">You ran %1$d%% further than last week.</string>
+    <string name="insight_volume_less_run">You ran %1$d%% less than last week.</string>
+    <string name="insight_volume_further_ride">You cycled %1$d%% further than last week.</string>
+    <string name="insight_volume_less_ride">You cycled %1$d%% less than last week.</string>
+    <string name="insight_volume_further_swim">You swam %1$d%% further than last week.</string>
+    <string name="insight_volume_less_swim">You swam %1$d%% less than last week.</string>
+    <string name="insight_volume_further_row">You rowed %1$d%% further than last week.</string>
+    <string name="insight_volume_less_row">You rowed %1$d%% less than last week.</string>
+
+    <!-- Goal-complete pop-up (GoalComplete.dc.html, phase 8d step 7) -->
+    <string name="goal_complete_pill">Goal complete</string>
+    <string name="goal_complete_title">Congrats, you achieved your goal!</string>
+    <string name="goal_complete_trophy_cd">Trophy</string>
+    <string name="goal_complete_body_last_day">%1$s, finished on the last day.</string>
+    <string name="goal_complete_km_run">km run</string>
+    <string name="goal_complete_km_ridden">km ridden</string>
+    <string name="goal_complete_km_swum">km swum</string>
+    <string name="goal_complete_km_rowed">km rowed</string>
+    <string name="goal_complete_time_active">active</string>
+    <string name="goal_complete_kg_lifted">kg lifted</string>
+    <string name="goal_complete_kcal_burned">kcal burned</string>
+    <string name="goal_complete_set_new_goal">Set a new goal</string>
+    <string name="goal_complete_share">Share</string>
+    <string name="goal_complete_done">Done</string>
+    <string name="goal_complete_share_text">I just completed my goal: %1$s.</string>
+    <string name="goal_complete_share_chooser">Share your goal</string>
 </resources>

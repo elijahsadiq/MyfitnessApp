@@ -2,7 +2,7 @@ package com.elijah.fitness.ui.goals
 
 import com.elijah.fitness.data.model.Goal
 import com.elijah.fitness.data.remote.mapper.goalType
-import kotlin.math.roundToInt
+import com.elijah.fitness.util.TextResolver
 
 /**
  * The headline shown for a goal ("Run 50 km in 30 days"), rebuilt from
@@ -15,9 +15,11 @@ import kotlin.math.roundToInt
  * rows, the main card, the Manage sheet, the delete dialog and the
  * snackbars — in step with the real goal.
  */
-fun Goal.displayTitle(): String = autoTitle(
+fun Goal.displayTitle(text: TextResolver): String = autoTitle(
+    text = text,
     activity = NewGoalViewModel.ActivityOption.fromApi(activityType),
     metric = goalType(),
-    target = targetValue.roundToInt().coerceAtLeast(1),
+    // The stored Double, so a 10.5 km swim goal reads "Swim 10.5 km …".
+    target = targetValue,
     days = durationDays,
 )

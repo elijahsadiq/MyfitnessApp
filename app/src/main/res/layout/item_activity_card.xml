@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  One page of ActivityCarouselView (phase 8d, LogSheet.dc.html /
+  NewGoal.dc.html). ViewPager2 needs every page to be match_parent, so
+  the page is a transparent frame and the card sits centred inside it;
+  the frame is card width + the gap between cards.
+
+  The sizes below are the log-sheet defaults for the layout preview.
+  ActivityCardViewHolder applies the real ActivityCardSpec (sizes,
+  radii, text sizes) and paints both states from code.
+-->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:clipChildren="false"
+    android:clipToPadding="false"
+    tools:ignore="UselessParent">
+
+    <LinearLayout
+        android:id="@+id/activityCard"
+        android:layout_width="@dimen/activity_card_log_width"
+        android:layout_height="@dimen/activity_card_log_height"
+        android:layout_gravity="center"
+        android:clickable="true"
+        android:focusable="true"
+        android:orientation="vertical"
+        android:padding="@dimen/activity_card_log_padding">
+
+        <FrameLayout
+            android:id="@+id/activityCardIconTile"
+            android:layout_width="@dimen/activity_card_log_icon_tile"
+            android:layout_height="@dimen/activity_card_log_icon_tile"
+            android:importantForAccessibility="no">
+
+            <ImageView
+                android:id="@+id/activityCardIcon"
+                android:layout_width="@dimen/activity_card_log_icon"
+                android:layout_height="@dimen/activity_card_log_icon"
+                android:layout_gravity="center"
+                android:contentDescription="@null"
+                android:importantForAccessibility="no"
+                tools:src="@drawable/ic_run_outline_24"
+                tools:tint="@color/text_on_lime" />
+        </FrameLayout>
+
+        <!-- The name sits at the bottom of the card (CSS margin-top: auto). -->
+        <Space
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
+
+        <TextView
+            android:id="@+id/activityCardName"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/activity_card_log_content_gap"
+            android:ellipsize="end"
+            android:importantForAccessibility="no"
+            android:includeFontPadding="false"
+            android:letterSpacing="-0.02"
+            android:maxLines="1"
+            android:textColor="@color/text_on_lime"
+            android:textSize="@dimen/activity_card_log_name_text"
+            tools:text="Running" />
+
+        <TextView
+            android:id="@+id/activityCardDescription"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/activity_card_log_content_gap"
+            android:ellipsize="end"
+            android:importantForAccessibility="no"
+            android:includeFontPadding="false"
+            android:maxLines="3"
+            android:textColor="@color/text_secondary"
+            android:textSize="@dimen/activity_card_log_description_text"
+            tools:text="Outdoor runs with a live map" />
+    </LinearLayout>
+</FrameLayout>

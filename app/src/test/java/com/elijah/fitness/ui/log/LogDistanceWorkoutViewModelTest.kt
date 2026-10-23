@@ -3,9 +3,11 @@ package com.elijah.fitness.ui.log
 import com.elijah.fitness.R
 import com.elijah.fitness.data.model.ActivityType
 import com.elijah.fitness.data.model.CyclingWorkout
+import com.elijah.fitness.data.model.RowingWorkout
 import com.elijah.fitness.data.model.RunningWorkout
 import com.elijah.fitness.data.model.Workout
 import com.elijah.fitness.data.repository.WorkoutRepository
+import com.elijah.fitness.util.CalorieEstimator
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -78,6 +80,41 @@ class LogDistanceWorkoutViewModelTest {
     }
 
     @Test
+    fun `save stores calories from the real profile weight`() = runTest {
+        val repo = InMemoryRepo()
+        val vm = LogDistanceWorkoutViewModel(
+            ActivityType.RUNNING, repo, clock, zone, weightForSavingKg = { 90.0 },
+        )
+        vm.setDate(LocalDate.of(2026, 9, 11))
+        vm.setTime(LocalTime.of(9, 30))
+        vm.save(hours = 0, minutes = 30, seconds = 0, distanceKm = 5.0, notes = "")
+        dispatcher.scheduler.advanceUntilIdle()
+
+        vm.events.first()
+        val w = repo.observeWorkouts().first { it.isNotEmpty() }.first()
+        assertEquals(CalorieEstimator.workoutKcal(w, 90.0), w.caloriesKcal)
+    }
+
+    @Test
+    fun `save stores no calories while the profile weight is unknown`() = runTest {
+        // Offline cold start: only the 70 kg fallback is known. Nothing is
+        // stored, so screens work the calories out once the weight loads.
+        val repo = InMemoryRepo()
+        val vm = LogDistanceWorkoutViewModel(
+            ActivityType.ROWING, repo, clock, zone, weightForSavingKg = { null },
+        )
+        vm.setDate(LocalDate.of(2026, 9, 11))
+        vm.setTime(LocalTime.of(9, 30))
+        vm.save(hours = 0, minutes = 30, seconds = 0, distanceKm = 6.0, notes = "")
+        dispatcher.scheduler.advanceUntilIdle()
+
+        vm.events.first()
+        val w = repo.observeWorkouts().first { it.isNotEmpty() }.first()
+        assertTrue(w is RowingWorkout)
+        assertEquals(null, w.caloriesKcal)
+    }
+
+    @Test
     fun `future date is rejected`() = runTest {
         val repo = InMemoryRepo()
         val vm = LogDistanceWorkoutViewModel(ActivityType.RUNNING, repo, clock, zone)
@@ -106,6 +143,47 @@ class LogDistanceWorkoutViewModelTest {
         assertTrue(event.errors.any {
             it.field == LogDistanceWorkoutViewModel.Field.DURATION
         })
+    }
+
+    @Test
+    fun `a saved row is remembered for the log sheet, a failed one is not`() = runTest {
+        val repo = InMemoryRepo()
+        val remembered = mutableListOf<ActivityType>()
+        val vm = LogDistanceWorkoutViewModel(
+            ActivityType.ROWING, repo, clock, zone,
+            rememberActivity = { remembered += it },
+        )
+        vm.setDate(LocalDate.of(2026, 9, 11))
+        vm.setTime(LocalTime.of(9, 0))
+
+        repo.nextAddResult = com.elijah.fitness.data.remote.ApiResult.NetworkError
+        vm.save(hours = 0, minutes = 25, seconds = 0, distanceKm = 6.0, notes = "")
+        dispatcher.scheduler.advanceUntilIdle()
+        assertTrue(vm.events.first() is LogDistanceWorkoutViewModel.Event.SaveFailed)
+        assertEquals(emptyList<ActivityType>(), remembered)
+
+        repo.nextAddResult = com.elijah.fitness.data.remote.ApiResult.Success(Unit)
+        vm.save(hours = 0, minutes = 25, seconds = 0, distanceKm = 6.0, notes = "")
+        dispatcher.scheduler.advanceUntilIdle()
+        assertTrue(vm.events.first() is LogDistanceWorkoutViewModel.Event.Saved)
+        assertEquals(listOf(ActivityType.ROWING), remembered)
+    }
+
+    @Test
+    fun `a duration over 24 h is rejected before it reaches the server`() = runTest {
+        val repo = InMemoryRepo()
+        val vm = LogDistanceWorkoutViewModel(ActivityType.RUNNING, repo, clock, zone)
+        vm.setDate(LocalDate.of(2026, 9, 10))
+        vm.setTime(LocalTime.of(6, 0))
+        vm.save(hours = 32, minutes = 0, seconds = 0, distanceKm = 5.0, notes = "")
+        dispatcher.scheduler.advanceUntilIdle()
+
+        val event = vm.events.first() as LogDistanceWorkoutViewModel.Event.ValidationFailed
+        assertTrue(event.errors.any {
+            it.field == LogDistanceWorkoutViewModel.Field.DURATION &&
+                it.messageRes == R.string.log_error_duration_too_long
+        })
+        assertEquals(0, repo.observeWorkouts().first().size)
     }
 
     @Test
@@ -140,16 +218,41 @@ class LogDistanceWorkoutViewModelTest {
         })
     }
 
+    @Test
+    fun `a repository crash becomes a save error with Retry, not a crash`() = runTest {
+        val repo = InMemoryRepo().apply { throwOnAdd = true }
+        val remembered = mutableListOf<ActivityType>()
+        val vm = LogDistanceWorkoutViewModel(
+            ActivityType.RUNNING, repo, clock, zone,
+            rememberActivity = { remembered += it },
+        )
+        vm.setDate(LocalDate.of(2026, 9, 11))
+        vm.setTime(LocalTime.of(9, 0))
+        vm.save(hours = 0, minutes = 30, seconds = 0, distanceKm = 5.0, notes = "")
+        dispatcher.scheduler.advanceUntilIdle()
+
+        val failed = vm.events.first() as LogDistanceWorkoutViewModel.Event.SaveFailed
+        assertEquals(R.string.log_error_save_generic, failed.messageRes)
+        // Save works again (Retry) and nothing was remembered or stored.
+        assertEquals(false, vm.isSaving.value)
+        assertEquals(emptyList<ActivityType>(), remembered)
+        assertEquals(0, repo.observeWorkouts().first().size)
+    }
+
     private class InMemoryRepo : WorkoutRepository {
         private val state = MutableStateFlow<List<Workout>>(emptyList())
         var nextAddResult: com.elijah.fitness.data.remote.ApiResult<Unit> =
             com.elijah.fitness.data.remote.ApiResult.Success(Unit)
+
+        /** Simulates a Room / disk failure inside the repository. */
+        var throwOnAdd = false
 
         override fun observeWorkouts(): Flow<List<Workout>> = state
         override suspend fun refresh(): com.elijah.fitness.data.remote.ApiResult<Unit> =
             com.elijah.fitness.data.remote.ApiResult.Success(Unit)
 
         override suspend fun addWorkout(workout: Workout, routePoints: List<com.elijah.fitness.tracking.TrackPoint>): com.elijah.fitness.data.remote.ApiResult<Unit> {
+            if (throwOnAdd) error("disk full")
             val result = nextAddResult
             if (result is com.elijah.fitness.data.remote.ApiResult.Success) {
                 state.value = state.value + workout

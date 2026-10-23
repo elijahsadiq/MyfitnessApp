@@ -1,13 +1,13 @@
 package com.elijah.fitness.ui.log
 
 import android.os.Bundle
-import android.text.format.DateFormat
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.view.inputmethod.EditorInfo
 import androidx.core.content.ContextCompat
 import androidx.core.os.bundleOf
+import androidx.core.view.ViewCompat
 import androidx.core.view.isVisible
 import androidx.core.widget.doAfterTextChanged
 import androidx.fragment.app.viewModels
@@ -15,18 +15,15 @@ import androidx.navigation.fragment.findNavController
 import com.elijah.fitness.FitnessApp
 import com.elijah.fitness.R
 import com.elijah.fitness.data.model.ActivityType
+import com.elijah.fitness.data.remote.mapper.activityTypeOrNull
 import com.elijah.fitness.databinding.FragmentLogDistanceWorkoutBinding
 import com.elijah.fitness.ui.base.BaseFragment
 import com.elijah.fitness.ui.base.SnackKind
+import com.elijah.fitness.ui.base.navigateSafe
 import com.elijah.fitness.ui.history.WorkoutDetailFragment
 import com.elijah.fitness.util.Fonts
+import com.elijah.fitness.util.Formatters
 import com.elijah.fitness.util.MetricText
-import com.google.android.material.datepicker.CalendarConstraints
-import com.google.android.material.datepicker.DateValidatorPointBackward
-import com.google.android.material.datepicker.MaterialDatePicker
-import com.google.android.material.timepicker.MaterialTimePicker
-import com.google.android.material.timepicker.TimeFormat
-import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.ZoneId
@@ -34,21 +31,43 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 /**
- * Manual logging screen for running + cycling (phase 8c step 5).
+ * Manual logging screen for running, cycling and rowing (phase 8c step 5;
+ * rowing added in phase 8d with its pace per 500 m).
  * Rebuilt from `LogRun.dc.html`: dark live-summary card at the top,
- * Date + Time cards, three big HH:MM:SS fields, one big km field,
- * optional notes, pinned Save button.
+ * Date + Time cards ([LogDateTimePickers], shared with every log form),
+ * the shared h / min / s duration cells
+ * ([com.elijah.fitness.ui.components.DurationInputView], phase 8d), one
+ * big km field, optional notes, pinned Save button.
  *
- * Validation (duration > 0, distance 0..300 km, date/time not future,
- * minutes/seconds in 0..59) is enforced in the ViewModel. Save success
- * navigates straight to the workout-detail screen for the new workout.
+ * The header is the Log a swim one (phase 8d): a round back button and
+ * "Log a run" / "Log a ride" / "Log a row"; the shared toolbar is hidden.
+ *
+ * Validation is enforced in the ViewModel: distance above 0 and at most
+ * 300 km, plus the rules every log form shares ([LogFormRules]: start
+ * not in the future, minutes and seconds 0–59, duration above zero and
+ * at most 24 h). Save success navigates straight to the workout-detail
+ * screen for the new workout; a failed save keeps the form and offers
+ * Retry.
  */
 class LogDistanceWorkoutFragment : BaseFragment<FragmentLogDistanceWorkoutBinding>() {
 
+    /**
+     * What this screen logs: runs, rides and rows only. A missing or
+     * unknown argument, or a type with its own screen (swims, lifts),
+     * becomes Running, so the screen's wording and the workout it saves
+     * always agree — never a crash or a mislabelled save.
+     */
     private val activityType: ActivityType by lazy {
-        arguments?.getString(ChooseActivityBottomSheet.ARG_ACTIVITY_TYPE)
-            ?.let(ActivityType::valueOf)
-            ?: ActivityType.RUNNING
+        when (val requested = activityTypeOrNull(
+            arguments?.getString(ChooseActivityBottomSheet.ARG_ACTIVITY_TYPE)
+        )) {
+            ActivityType.RUNNING,
+            ActivityType.CYCLING,
+            ActivityType.ROWING -> requested
+            ActivityType.SWIMMING,
+            ActivityType.WEIGHTLIFTING,
+            null -> ActivityType.RUNNING
+        }
     }
 
     private val viewModel: LogDistanceWorkoutViewModel by viewModels {
@@ -70,11 +89,16 @@ class LogDistanceWorkoutFragment : BaseFragment<FragmentLogDistanceWorkoutBindin
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        // A date / time picker that was open when the screen was rebuilt still answers.
+        LogDateTimePickers.reattach(this, ::onDatePicked, ::onTimePicked)
 
-        // Edge-to-edge: push the pinned Save button above the gesture bar
-        // and above the keyboard when a field is focused.
+        // The screen draws its own header (like Log a swim), so the status
+        // bar is cleared here; the pinned Save button sits above the
+        // gesture bar, or the keyboard when a field is focused.
+        applyInsets(binding.root, top = true, sides = true)
         applyBottomNavInset(binding.logSaveContainer)
 
+        bindHeader()
         bindActivityChrome()
         bindDateTimeFields()
         bindDurationFields()
@@ -101,23 +125,40 @@ class LogDistanceWorkoutFragment : BaseFragment<FragmentLogDistanceWorkoutBindin
 
     // ---------- bindings ----------
 
+    private fun bindHeader() {
+        ViewCompat.setAccessibilityHeading(binding.logTitle, true)
+        binding.logBack.setOnClickListener { findNavController().navigateUp() }
+    }
+
     private fun bindActivityChrome() {
         when (activityType) {
+            ActivityType.ROWING -> {
+                binding.logSummaryActivityIcon.setImageResource(R.drawable.ic_row_24)
+                binding.logSummaryActivityLabel.setText(R.string.log_summary_eyebrow_rowing)
+                binding.logSummaryPrimaryLabel.setText(R.string.log_summary_metric_pace)
+                binding.logSummarySecondaryLabel.setText(R.string.log_summary_metric_speed)
+                binding.saveButton.setText(R.string.log_save_row_button)
+                binding.logTitle.setText(R.string.log_row_title)
+            }
             ActivityType.CYCLING -> {
                 binding.logSummaryActivityIcon.setImageResource(R.drawable.ic_bike_24)
                 binding.logSummaryActivityLabel.setText(R.string.log_summary_eyebrow_cycling)
                 binding.logSummaryPrimaryLabel.setText(R.string.log_summary_metric_speed)
                 binding.logSummarySecondaryLabel.setText(R.string.log_summary_metric_pace)
                 binding.saveButton.setText(R.string.log_save_ride_button)
-                requireActivity().setTitle(R.string.log_ride_title)
+                binding.logTitle.setText(R.string.log_ride_title)
             }
-            else -> {
+            // Swims and lifts never get here: [activityType] turns them
+            // into Running.
+            ActivityType.RUNNING,
+            ActivityType.SWIMMING,
+            ActivityType.WEIGHTLIFTING -> {
                 binding.logSummaryActivityIcon.setImageResource(R.drawable.ic_run_24)
                 binding.logSummaryActivityLabel.setText(R.string.log_summary_eyebrow_running)
                 binding.logSummaryPrimaryLabel.setText(R.string.log_summary_metric_pace)
                 binding.logSummarySecondaryLabel.setText(R.string.log_summary_metric_speed)
                 binding.saveButton.setText(R.string.log_save_run_button)
-                requireActivity().setTitle(R.string.log_run_title)
+                binding.logTitle.setText(R.string.log_run_title)
             }
         }
     }
@@ -128,13 +169,11 @@ class LogDistanceWorkoutFragment : BaseFragment<FragmentLogDistanceWorkoutBindin
     }
 
     private fun bindDurationFields() {
-        val update: (Any?) -> Unit = {
+        binding.durationInput.doOnDurationChanged {
+            val b = bindingOrNull ?: return@doOnDurationChanged
             updateLiveSummary()
-            binding.logDurationError.isVisible = false
+            b.logDurationError.isVisible = false
         }
-        binding.hoursInput.doAfterTextChanged(update)
-        binding.minutesInput.doAfterTextChanged(update)
-        binding.secondsInput.doAfterTextChanged(update)
     }
 
     private fun bindDistanceField() {
@@ -164,25 +203,19 @@ class LogDistanceWorkoutFragment : BaseFragment<FragmentLogDistanceWorkoutBindin
             else -> date.format(WEEKDAY_FORMATTER)
         }
         binding.logDateEyebrow.text = eyebrow
-        binding.logDateValue.text = date.format(DATE_FORMATTER)
+        binding.logDateValue.text = date.format(LogDateTimePickers.dateFormatter())
     }
 
     private fun renderTime(time: LocalTime) {
         // "14:31" or "2:31 PM", following the phone's 24-hour setting.
-        binding.logTimeValue.text = time.format(timeFormatter())
+        binding.logTimeValue.text = time.format(LogDateTimePickers.timeFormatter(requireContext()))
     }
 
-    private fun timeFormatter(): DateTimeFormatter = DateTimeFormatter.ofPattern(
-        if (DateFormat.is24HourFormat(requireContext())) "HH:mm" else "h:mm a",
-        Locale.getDefault(),
-    )
-
     private fun updateLiveSummary() {
-        val hours = readInt(binding.hoursInput)
-        val minutes = readInt(binding.minutesInput)
-        val seconds = readInt(binding.secondsInput)
         val km = readDistance()
-        val durationSeconds = hours * 3_600L + minutes * 60L + seconds.toLong()
+        val durationSeconds = binding.durationInput.let {
+            LogFormRules.durationSeconds(it.hours, it.minutes, it.seconds)
+        }
 
         val weightKg = (requireContext().applicationContext as FitnessApp)
             .container.userSettings.bodyWeightKg.value
@@ -208,16 +241,30 @@ class LogDistanceWorkoutFragment : BaseFragment<FragmentLogDistanceWorkoutBindin
             unitTypeface = unitFont,
         )
         binding.logSummaryCaloriesValue.text = MetricText.of(
-            summary?.calories?.toString() ?: dash,
+            summary?.let { Formatters.formatKcalValue(it.calories) } ?: dash,
             getString(R.string.log_summary_unit_kcal), muted,
             unitTypeface = unitFont,
         )
-        if (activityType == ActivityType.CYCLING) {
-            binding.logSummaryPrimaryValue.text = speed
-            binding.logSummarySecondaryValue.text = pace
-        } else {
-            binding.logSummaryPrimaryValue.text = pace
-            binding.logSummarySecondaryValue.text = speed
+        when (activityType) {
+            ActivityType.CYCLING -> {
+                binding.logSummaryPrimaryValue.text = speed
+                binding.logSummarySecondaryValue.text = pace
+            }
+            // Rowers read pace per 500 m, the standard split.
+            ActivityType.ROWING -> {
+                binding.logSummaryPrimaryValue.text = MetricText.of(
+                    summary?.let { formatPace(it.splitPaceSeconds) } ?: dash,
+                    getString(R.string.log_summary_unit_pace_500m), muted,
+                    unitTypeface = unitFont,
+                )
+                binding.logSummarySecondaryValue.text = speed
+            }
+            ActivityType.RUNNING,
+            ActivityType.SWIMMING,
+            ActivityType.WEIGHTLIFTING -> {
+                binding.logSummaryPrimaryValue.text = pace
+                binding.logSummarySecondaryValue.text = speed
+            }
         }
     }
 
@@ -230,48 +277,24 @@ class LogDistanceWorkoutFragment : BaseFragment<FragmentLogDistanceWorkoutBindin
     // ---------- pickers ----------
 
     private fun showDatePicker() {
-        val constraints = CalendarConstraints.Builder()
-            .setValidator(DateValidatorPointBackward.now())
-            .build()
-        val selectionMillis = viewModel.date.value
-            .atStartOfDay(ZoneId.of("UTC"))
-            .toInstant()
-            .toEpochMilli()
-        val picker = MaterialDatePicker.Builder.datePicker()
-            .setTitleText(R.string.log_date_picker_title)
-            .setSelection(selectionMillis)
-            .setCalendarConstraints(constraints)
-            .build()
-        picker.addOnPositiveButtonClickListener { millis ->
-            val picked = Instant.ofEpochMilli(millis).atZone(ZoneId.of("UTC")).toLocalDate()
-            viewModel.setDate(picked)
-            binding.logDateError.isVisible = false
-        }
-        picker.show(parentFragmentManager, "date-picker")
+        LogDateTimePickers.showDatePicker(this, viewModel.date.value, ::onDatePicked)
     }
 
     private fun showTimePicker() {
-        val current = viewModel.time.value
-        val picker = MaterialTimePicker.Builder()
-            .setTimeFormat(
-                if (DateFormat.is24HourFormat(requireContext())) TimeFormat.CLOCK_24H
-                else TimeFormat.CLOCK_12H
-            )
-            .setHour(current.hour)
-            .setMinute(current.minute)
-            .setTitleText(R.string.log_time_picker_title)
-            .build()
-        picker.addOnPositiveButtonClickListener {
-            viewModel.setTime(LocalTime.of(picker.hour, picker.minute))
-            binding.logDateError.isVisible = false
-        }
-        picker.show(parentFragmentManager, "time-picker")
+        LogDateTimePickers.showTimePicker(this, viewModel.time.value, ::onTimePicked)
+    }
+
+    private fun onDatePicked(date: LocalDate) {
+        viewModel.setDate(date)
+        bindingOrNull?.logDateError?.isVisible = false
+    }
+
+    private fun onTimePicked(time: LocalTime) {
+        viewModel.setTime(time)
+        bindingOrNull?.logDateError?.isVisible = false
     }
 
     // ---------- save ----------
-
-    private fun readInt(input: android.widget.EditText): Int =
-        input.text?.toString()?.trim()?.toIntOrNull() ?: 0
 
     /**
      * Parse the distance field, accepting either `.` or `,` as the
@@ -285,9 +308,9 @@ class LogDistanceWorkoutFragment : BaseFragment<FragmentLogDistanceWorkoutBindin
 
     private fun attemptSave() {
         viewModel.save(
-            hours = readInt(binding.hoursInput),
-            minutes = readInt(binding.minutesInput),
-            seconds = readInt(binding.secondsInput),
+            hours = binding.durationInput.hours,
+            minutes = binding.durationInput.minutes,
+            seconds = binding.durationInput.seconds,
             distanceKm = readDistance(),
             notes = binding.notesInput.text?.toString().orEmpty(),
         )
@@ -318,7 +341,7 @@ class LogDistanceWorkoutFragment : BaseFragment<FragmentLogDistanceWorkoutBindin
     }
 
     private fun onSaved(clientUuid: String) {
-        findNavController().navigate(
+        findNavController().navigateSafe(
             R.id.action_log_distance_to_detail,
             bundleOf(WorkoutDetailFragment.ARG_CLIENT_UUID to clientUuid),
         )
@@ -331,8 +354,6 @@ class LogDistanceWorkoutFragment : BaseFragment<FragmentLogDistanceWorkoutBindin
     }
 
     private companion object {
-        val DATE_FORMATTER: DateTimeFormatter =
-            DateTimeFormatter.ofPattern("EEE d MMM", Locale.getDefault())
         val WEEKDAY_FORMATTER: DateTimeFormatter =
             DateTimeFormatter.ofPattern("EEEE", Locale.getDefault())
     }

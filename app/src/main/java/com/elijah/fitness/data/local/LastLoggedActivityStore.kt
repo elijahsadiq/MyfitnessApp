@@ -15,9 +15,9 @@ private val Context.lastActivityDataStore: DataStore<Preferences> by
 
 /**
  * Remembers the most recent activity the user logged. The "Log a
- * workout" sheet preselects the matching tile on open (phase 8c
- * step 4). Interface-first so unit tests can substitute an in-memory
- * fake.
+ * workout" sheet opens on the matching activity card (phase 8c step 4,
+ * swipeable cards since phase 8d). Interface-first so unit tests can
+ * substitute an in-memory fake.
  */
 interface LastLoggedActivityStore {
     /** Emits the stored activity, or `null` if nothing has been logged yet. */

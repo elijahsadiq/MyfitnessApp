@@ -26,8 +26,11 @@ import java.util.concurrent.TimeUnit
 object NetworkModule {
 
     // Kept lenient on unknown / null fields so a backend that grows a new
-    // response field doesn't crash the client mid-release.
-    private val json: Json = Json {
+    // response field doesn't crash the client mid-release. Null request
+    // fields are left out (explicitNulls = false); a body that must send
+    // an explicit null uses a JsonElement field (UpdateGoalRequestDto).
+    // Internal so tests can check the exact JSON a request produces.
+    internal val json: Json = Json {
         ignoreUnknownKeys = true
         explicitNulls = false
         coerceInputValues = true

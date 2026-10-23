@@ -15,6 +15,7 @@ import androidx.core.view.updatePadding
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import androidx.navigation.FloatingWindow
 import androidx.navigation.NavController
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.AppBarConfiguration
@@ -26,6 +27,9 @@ import com.elijah.fitness.databinding.ActivityMainBinding
 import com.elijah.fitness.tracking.TrackingState
 import com.elijah.fitness.ui.base.SnackKind
 import com.elijah.fitness.ui.base.withKind
+import com.elijah.fitness.ui.celebration.GoalCelebrationHost
+import com.elijah.fitness.ui.celebration.GoalCompleteDialogFragment
+import com.elijah.fitness.ui.goals.NewGoalBottomSheet
 import com.elijah.fitness.ui.launcher.LauncherActivity
 import com.elijah.fitness.ui.tracking.LiveTrackingFragment
 import com.google.android.material.snackbar.Snackbar
@@ -38,20 +42,26 @@ import kotlinx.coroutines.launch
  *
  * ### Chrome per destination
  * Top-level destinations (Home / History / Progress / Goals) draw their
- * own large-title headers and show the bottom nav. Profile and the log
- * forms show the shared toolbar with the Up arrow. Full-screen surfaces
- * (workout detail, new goal, live tracking, full map) draw their own
- * header and hide both.
+ * own large-title headers and show the bottom nav. Profile shows the
+ * shared toolbar with the Up arrow. Full-screen surfaces (the log forms,
+ * workout detail, live tracking, full map) draw their own header and
+ * hide both. Bottom-sheet destinations (Log a workout, New goal) leave
+ * the chrome of the page underneath as it is.
  *
  * ### Central 401 handling
  * Subscribes to [AuthEventBus] and, on an `Unauthorized` event, signs
  * the user out locally and restarts the task through [LauncherActivity].
  *
+ * ### Goal-complete pop-up (phase 8d, Step 7)
+ * Tells `GoalCelebrationManager` while it is on screen, and shows its
+ * pending pop-ups one at a time ([showNextCelebration]): the next one
+ * opens after the current one is closed; a rotation keeps the open one.
+ *
  * ### Tracking notification
  * The ongoing GPS notification opens this activity with
  * [EXTRA_OPEN_TRACKING]; it jumps straight to the live tracking screen.
  */
-class MainActivity : AppCompatActivity(), SnackbarHost {
+class MainActivity : AppCompatActivity(), SnackbarHost, GoalCelebrationHost {
 
     private lateinit var binding: ActivityMainBinding
     private lateinit var navController: NavController
@@ -86,6 +96,10 @@ class MainActivity : AppCompatActivity(), SnackbarHost {
         val insetsController = WindowInsetsControllerCompat(window, binding.root)
 
         navController.addOnDestinationChangedListener { _, destination, _ ->
+            // A bottom sheet / dialog destination floats over the page
+            // below it: keep that page's chrome, so it doesn't re-lay out
+            // behind the dimmed scrim (and its FAB / snackbars stay put).
+            if (destination is FloatingWindow) return@addOnDestinationChangedListener
             binding.bottomNavigation.isVisible = destination.id in TOP_LEVEL_DESTINATIONS
             binding.appBarLayout.isVisible = destination.id in TOOLBAR_DESTINATIONS
             // Dark surfaces drawn up under the status bar need light icons;
@@ -95,9 +109,20 @@ class MainActivity : AppCompatActivity(), SnackbarHost {
         }
 
         observeAuthEvents()
+        observeCelebrations()
         (application as FitnessApp).container.onSignedInStart()
 
         if (savedInstanceState == null) handleTrackingIntent(intent)
+    }
+
+    override fun onStart() {
+        super.onStart()
+        (application as FitnessApp).container.goalCelebrationManager.onUiStarted()
+    }
+
+    override fun onStop() {
+        (application as FitnessApp).container.goalCelebrationManager.onUiStopped()
+        super.onStop()
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -142,6 +167,68 @@ class MainActivity : AppCompatActivity(), SnackbarHost {
         }
     }
 
+    /** Show the next queued goal-complete pop-up whenever the queue changes. */
+    private fun observeCelebrations() {
+        val manager = (application as FitnessApp).container.goalCelebrationManager
+        lifecycleScope.launch {
+            lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                manager.pending.collect { queue ->
+                    if (queue.isNotEmpty()) binding.root.post { showNextCelebration() }
+                }
+            }
+        }
+    }
+
+    /**
+     * Shows the head of the queue unless a pop-up is already open (one at
+     * a time; a rotation restores the open one by itself, so it is never
+     * shown twice).
+     */
+    private fun showNextCelebration() {
+        if (isFinishing || isDestroyed) return
+        if (!lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) return
+        val fm = supportFragmentManager
+        if (fm.isStateSaved) return
+        try {
+            // Let a just-dismissed pop-up finish leaving first.
+            fm.executePendingTransactions()
+        } catch (_: IllegalStateException) {
+            return
+        }
+        if (fm.findFragmentByTag(GoalCompleteDialogFragment.TAG) != null) return
+        val next = (application as FitnessApp).container
+            .goalCelebrationManager.pending.value.firstOrNull() ?: return
+        try {
+            GoalCompleteDialogFragment.newInstance(next).show(fm, GoalCompleteDialogFragment.TAG)
+        } catch (_: IllegalStateException) {
+            // State saved in between; the queue is still there next start.
+        }
+    }
+
+    override fun onCelebrationClosed() {
+        if (isFinishing || isDestroyed) return
+        binding.root.post { showNextCelebration() }
+    }
+
+    /**
+     * "Set a new goal" on the pop-up: open the New goal sheet over
+     * whatever screen is showing, closing another sheet first.
+     */
+    override fun openNewGoalFromCelebration() {
+        if (isFinishing || isDestroyed) return
+        try {
+            if (navController.currentDestination?.id == R.id.newGoalFragment) return
+            while (navController.currentDestination is FloatingWindow) {
+                if (!navController.popBackStack()) break
+            }
+            navController.navigate(R.id.newGoalFragment, NewGoalBottomSheet.argsFor(goalId = null))
+        } catch (_: IllegalArgumentException) {
+            // Not reachable from here; nothing to open.
+        } catch (_: IllegalStateException) {
+            // Navigation not ready (activity finishing); ignore.
+        }
+    }
+
     private fun handleUnauthorized() {
         val container = (application as FitnessApp).container
         lifecycleScope.launch {
@@ -170,12 +257,13 @@ class MainActivity : AppCompatActivity(), SnackbarHost {
             R.id.goalsFragment,
         )
 
-        /** Destinations that show the shared toolbar + Up arrow. */
+        /**
+         * Destinations that show the shared toolbar + Up arrow. The log
+         * forms (run / ride / row, swim, workout) draw their own header
+         * (phase 8d), so only Profile is left.
+         */
         private val TOOLBAR_DESTINATIONS = setOf(
-            R.id.logDistanceWorkoutFragment,
-            R.id.logStrengthWorkoutFragment,
             R.id.profileFragment,
-            R.id.newGoalFragment,
         )
 
         /**

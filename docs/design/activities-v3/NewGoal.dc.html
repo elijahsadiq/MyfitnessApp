@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>New goal, one-hand</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#111410}a:hover{color:#3A3F36}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #3A3E36; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; color: #111410; position: relative; overflow: hidden">
+
+<section role="dialog" aria-modal="true" aria-labelledby="ng-title" style="position: absolute; left: 0; right: 0; top: 40px; bottom: 0; box-sizing: border-box; padding: 10px 20px 28px; border-radius: 28px 28px 0 0; background: #F5F6F2; display: flex; flex-direction: column; gap: 16px; overflow: hidden">
+<span aria-hidden="true" style="align-self: center; width: 40px; height: 4px; border-radius: 999px; background: #D3D6CD"></span>
+<div style="display: flex; align-items: baseline; justify-content: space-between">
+<h1 id="ng-title" style="margin: 0; font-size: 22px; font-weight: 800; letter-spacing: -0.02em">New goal</h1>
+<span style="font-size: 13px; color: #6B7066">Swipe down to cancel</span>
+</div>
+
+<section aria-label="Goal summary" aria-live="polite" style="padding: 18px; border-radius: 26px; background: #1C1F1A; color: #FFFFFF; display: flex; flex-direction: column; gap: 14px">
+<span style="font-size: 21px; line-height: 1.25; font-weight: 800; letter-spacing: -0.01em">{{sentence}}</span>
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px">
+<div style="padding: 10px 12px; border-radius: 16px; background: #2A2E27; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 11px; color: #B4B9AE">{{perLabel}}</span><span style="font-size: 15px; font-weight: 800">{{perValue}}</span></div>
+<div style="padding: 10px 12px; border-radius: 16px; background: #2A2E27; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 11px; color: #B4B9AE">Ends</span><span style="font-size: 15px; font-weight: 800">{{endShort}}</span></div>
+<div style="padding: 10px 12px; border-radius: 16px; background: #2A2E27; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 11px; color: #B4B9AE">Est. burn</span><span style="font-size: 15px; font-weight: 800; color: #D4F26A">{{kcal}} kcal</span></div>
+</div>
+</section>
+
+<div style="flex: 1; min-height: 0; display: flex; flex-direction: column; justify-content: center; gap: 12px">
+<div role="group" aria-roledescription="carousel" aria-label="Activity, swipe to change" style="margin: 0 -20px; overflow: hidden">
+<div style="display: flex; gap: 12px; transform: translateX({{tx}}px); transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1)">
+
+<button type="button" aria-label="Running" aria-current="{{c0On}}" onClick="{{go0}}" style="flex: none; width: 200px; height: 186px; box-sizing: border-box; padding: 16px; border-radius: 24px; font: inherit; text-align: left; cursor: pointer; display: flex; flex-direction: column; gap: 6px; transition: transform 0.35s, opacity 0.35s, background 0.35s; {{c0}}">
+<span style="width: 52px; height: 52px; border-radius: 16px; display: flex; align-items: center; justify-content: center; {{i0}}"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="14" cy="4.5" r="2"></circle><path d="M8.5 20.5l2.5-5 3 2.5v4"></path><path d="M11 15.5l1.5-6"></path><path d="M12.5 9.5l-3.5 1-2 3"></path><path d="M12.5 9.5l2.5 3 3.5 1"></path></svg></span>
+<span style="margin-top: auto; font-size: 22px; font-weight: 800; letter-spacing: -0.02em">Running</span>
+<span style="font-size: 13px; line-height: 1.35; {{t0}}">Distance, time or runs</span>
+</button>
+
+<button type="button" aria-label="Cycling" aria-current="{{c1On}}" onClick="{{go1}}" style="flex: none; width: 200px; height: 186px; box-sizing: border-box; padding: 16px; border-radius: 24px; font: inherit; text-align: left; cursor: pointer; display: flex; flex-direction: column; gap: 6px; transition: transform 0.35s, opacity 0.35s, background 0.35s; {{c1}}">
+<span style="width: 52px; height: 52px; border-radius: 16px; display: flex; align-items: center; justify-content: center; {{i1}}"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5.5" cy="17.5" r="3.5"></circle><circle cx="18.5" cy="17.5" r="3.5"></circle><circle cx="15" cy="5" r="1"></circle><path d="M12 17.5V14l-3-3 4-3 2 3h2"></path></svg></span>
+<span style="margin-top: auto; font-size: 22px; font-weight: 800; letter-spacing: -0.02em">Cycling</span>
+<span style="font-size: 13px; line-height: 1.35; {{t1}}">Distance, time or rides</span>
+</button>
+
+<button type="button" aria-label="Swimming" aria-current="{{c2On}}" onClick="{{go2}}" style="flex: none; width: 200px; height: 186px; box-sizing: border-box; padding: 16px; border-radius: 24px; font: inherit; text-align: left; cursor: pointer; display: flex; flex-direction: column; gap: 6px; transition: transform 0.35s, opacity 0.35s, background 0.35s; {{c2}}">
+<span style="width: 52px; height: 52px; border-radius: 16px; display: flex; align-items: center; justify-content: center; {{i2}}"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="17" cy="6" r="2"></circle><path d="M4 12.5l4.5-3.5 3 3 4.5-2"></path><path d="M2 17c1.7 0 2.3-1 4-1s2.3 1 4 1 2.3-1 4-1 2.3 1 4 1 2.3-1 4-1"></path><path d="M2 21c1.7 0 2.3-1 4-1s2.3 1 4 1 2.3-1 4-1 2.3 1 4 1 2.3-1 4-1"></path></svg></span>
+<span style="margin-top: auto; font-size: 22px; font-weight: 800; letter-spacing: -0.02em">Swimming</span>
+<span style="font-size: 13px; line-height: 1.35; {{t2}}">Distance, time or swims</span>
+</button>
+
+<button type="button" aria-label="Rowing" aria-current="{{c3On}}" onClick="{{go3}}" style="flex: none; width: 200px; height: 186px; box-sizing: border-box; padding: 16px; border-radius: 24px; font: inherit; text-align: left; cursor: pointer; display: flex; flex-direction: column; gap: 6px; transition: transform 0.35s, opacity 0.35s, background 0.35s; {{c3}}">
+<span style="width: 52px; height: 52px; border-radius: 16px; display: flex; align-items: center; justify-content: center; {{i3}}"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10" cy="5" r="2"></circle><path d="M10 7.5l1.5 4.5h4"></path><path d="M3 15h18l-2.5 4h-13z"></path><path d="M5 8.5l13.5 13"></path></svg></span>
+<span style="margin-top: auto; font-size: 22px; font-weight: 800; letter-spacing: -0.02em">Rowing</span>
+<span style="font-size: 13px; line-height: 1.35; {{t3}}">Distance, time or rows</span>
+</button>
+
+<button type="button" aria-label="Workout" aria-current="{{c4On}}" onClick="{{go4}}" style="flex: none; width: 200px; height: 186px; box-sizing: border-box; padding: 16px; border-radius: 24px; font: inherit; text-align: left; cursor: pointer; display: flex; flex-direction: column; gap: 6px; transition: transform 0.35s, opacity 0.35s, background 0.35s; {{c4}}">
+<span style="width: 52px; height: 52px; border-radius: 16px; display: flex; align-items: center; justify-content: center; {{i4}}"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.4 14.4 9.6 9.6"></path><path d="M18.657 21.485a2 2 0 1 1-2.829-2.828l-1.767 1.768a2 2 0 1 1-2.829-2.829l6.364-6.364a2 2 0 1 1 2.829 2.829l-1.768 1.767a2 2 0 1 1 2.828 2.829z"></path><path d="m21.5 21.5-1.4-1.4"></path><path d="M3.9 3.9 2.5 2.5"></path><path d="M6.404 12.768a2 2 0 1 1-2.829-2.829l1.768-1.767a2 2 0 1 1-2.828-2.829l2.828-2.828a2 2 0 1 1 2.829 2.828l1.767-1.768a2 2 0 1 1 2.829 2.829z"></path></svg></span>
+<span style="margin-top: auto; font-size: 22px; font-weight: 800; letter-spacing: -0.02em">Workout</span>
+<span style="font-size: 13px; line-height: 1.35; {{t4}}">Time, sessions or weight</span>
+</button>
+
+<button type="button" aria-label="Any activity" aria-current="{{c5On}}" onClick="{{go5}}" style="flex: none; width: 200px; height: 186px; box-sizing: border-box; padding: 16px; border-radius: 24px; font: inherit; text-align: left; cursor: pointer; display: flex; flex-direction: column; gap: 6px; transition: transform 0.35s, opacity 0.35s, background 0.35s; {{c5}}">
+<span style="width: 52px; height: 52px; border-radius: 16px; display: flex; align-items: center; justify-content: center; {{i5}}"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg></span>
+<span style="margin-top: auto; font-size: 22px; font-weight: 800; letter-spacing: -0.02em">Any</span>
+<span style="font-size: 13px; line-height: 1.35; {{t5}}">Every activity counts</span>
+</button>
+
+</div>
+</div>
+<div aria-hidden="true" style="display: flex; align-items: center; justify-content: center; gap: 6px">
+<span style="height: 8px; border-radius: 999px; transition: width 0.3s; {{d0}}"></span>
+<span style="height: 8px; border-radius: 999px; transition: width 0.3s; {{d1}}"></span>
+<span style="height: 8px; border-radius: 999px; transition: width 0.3s; {{d2}}"></span>
+<span style="height: 8px; border-radius: 999px; transition: width 0.3s; {{d3}}"></span>
+<span style="height: 8px; border-radius: 999px; transition: width 0.3s; {{d4}}"></span>
+<span style="height: 8px; border-radius: 999px; transition: width 0.3s; {{d5}}"></span>
+</div>
+</div>
+
+<div role="radiogroup" aria-label="Measure by" style="display: flex; gap: 4px; padding: 4px; border-radius: 999px; background: #FFFFFF; border: 1px solid #E4E6E0">
+<button type="button" role="radio" aria-checked="{{s1On}}" onClick="{{pickS1}}" style="flex: 1 1 0; min-width: 0; height: 44px; border-radius: 999px; border: 0; font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; {{s1Style}}">{{s1Label}}</button>
+<button type="button" role="radio" aria-checked="{{s2On}}" onClick="{{pickS2}}" style="flex: 1 1 0; min-width: 0; height: 44px; border-radius: 999px; border: 0; font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; {{s2Style}}">{{s2Label}}</button>
+<sc-if value="{{has3}}" hint-placeholder-val="{{ true }}">
+<button type="button" role="radio" aria-checked="{{s3On}}" onClick="{{pickS3}}" style="flex: 1 1 0; min-width: 0; height: 44px; border-radius: 999px; border: 0; font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; {{s3Style}}">{{s3Label}}</button>
+</sc-if>
+</div>
+
+<div style="border-radius: 20px; background: #FFFFFF; border: 1px solid #E4E6E0">
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 12px 12px 12px 16px">
+<div style="min-width: 0; display: flex; flex-direction: column; gap: 2px">
+<span style="font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #6B7066">{{targetLabel}}</span>
+<span style="font-size: 12px; color: #6B7066">{{hint}}</span>
+</div>
+<div style="display: flex; align-items: center; gap: 6px">
+<button type="button" aria-label="Decrease target" onClick="{{minus}}" style="width: 44px; height: 44px; flex: none; border-radius: 999px; border: 1px solid #E4E6E0; background: #F5F6F2; font: inherit; font-size: 20px; font-weight: 700; color: #111410; cursor: pointer">−</button>
+<span aria-live="polite" style="min-width: 92px; text-align: center; font-size: 18px; font-weight: 800; white-space: nowrap">{{valueText}}</span>
+<button type="button" aria-label="Increase target" onClick="{{plus}}" style="width: 44px; height: 44px; flex: none; border-radius: 999px; border: 0; background: #D4F26A; font: inherit; font-size: 20px; font-weight: 700; color: #111410; cursor: pointer">+</button>
+</div>
+</div>
+<div style="height: 1px; margin: 0 16px; background: #ECEEE7"></div>
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 12px 12px 12px 16px">
+<div style="min-width: 0; display: flex; flex-direction: column; gap: 2px">
+<span style="font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #6B7066">Days</span>
+<span style="font-size: 12px; color: #6B7066">Starts today</span>
+</div>
+<div style="display: flex; align-items: center; gap: 6px">
+<button type="button" aria-label="One day fewer" onClick="{{dminus}}" style="width: 44px; height: 44px; flex: none; border-radius: 999px; border: 1px solid #E4E6E0; background: #F5F6F2; font: inherit; font-size: 20px; font-weight: 700; color: #111410; cursor: pointer">−</button>
+<span aria-live="polite" style="min-width: 92px; text-align: center; font-size: 18px; font-weight: 800; white-space: nowrap">{{days}} {{daysWord}}</span>
+<button type="button" aria-label="One day more" onClick="{{dplus}}" style="width: 44px; height: 44px; flex: none; border-radius: 999px; border: 0; background: #D4F26A; font: inherit; font-size: 20px; font-weight: 700; color: #111410; cursor: pointer">+</button>
+</div>
+</div>
+</div>
+
+<button type="button" style="height: 56px; flex: none; border-radius: 999px; border: 0; background: #D4F26A; font: inherit; font-size: 16px; font-weight: 800; color: #111410; cursor: pointer">Create goal</button>
+</section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() {
+var self = this;
+var A = {
+run:  { verb: 'Run', met: 9.8, speed: 10, sessH: 0.5, step: 5, def: 50, words: ['run', 'runs'], metrics: ['dist', 'time', 'sess'] },
+ride: { verb: 'Ride', met: 7.5, speed: 20, sessH: 1, step: 10, def: 100, words: ['ride', 'rides'], metrics: ['dist', 'time', 'sess'] },
+swim: { verb: 'Swim', met: 7.0, speed: 2.5, sessH: 0.75, step: 0.5, def: 10, words: ['swim', 'swims'], metrics: ['dist', 'time', 'sess'] },
+row:  { verb: 'Row', met: 7.0, speed: 8, sessH: 0.5, step: 5, def: 30, words: ['row', 'rows'], metrics: ['dist', 'time', 'sess'] },
+lift: { verb: 'Work out', met: 5.0, speed: 0, sessH: 1, step: 0, def: 0, words: ['workout', 'workouts'], metrics: ['time', 'sess', 'weight'] },
+any:  { verb: 'Be active', met: 6.0, speed: 0, sessH: 0.75, step: 0, def: 0, words: ['workout', 'workouts'], metrics: ['time', 'sess'] }
+};
+var KEYS = ['run', 'ride', 'swim', 'row', 'lift', 'any'];
+var s = Object.assign({ a: 'swim', m: 'time', v: null, d: 30 }, this.state || {});
+var act = A[s.a];
+var m = act.metrics.indexOf(s.m) >= 0 ? s.m : act.metrics[0];
+var defs = { dist: act.def, time: 150, sess: 12, weight: 20000 };
+var steps = { dist: act.step, time: 15, sess: 1, weight: 1000 };
+var v = s.v == null ? defs[m] : s.v;
+var d = s.d;
+
+function num(x) { return Number.isInteger(x) ? x.toLocaleString('en-GB') : x.toFixed(1); }
+function one(x) { var r = Math.round(x * 10) / 10; return Number.isInteger(r) ? String(r) : r.toFixed(1); }
+function hm(min) {
+min = Math.round(min);
+var h = Math.floor(min / 60), mm = min % 60;
+if (h === 0) return mm + ' min';
+if (mm === 0) return h + ' h';
+return h + ' h ' + mm + ' min';
+}
+var inDays = ' in ' + d + (d === 1 ? ' day' : ' days');
+var perDay = v / d;
+var valueText, targetLabel, hint, sentence, hours;
+if (m === 'dist') {
+valueText = num(v) + ' km'; targetLabel = 'Distance';
+hint = 'About ' + one(perDay) + ' km a day';
+sentence = act.verb + ' ' + num(v) + ' km' + inDays; hours = v / act.speed;
+} else if (m === 'time') {
+valueText = hm(v); targetLabel = 'Total time';
+hint = 'About ' + hm(Math.max(1, perDay)) + ' a day';
+sentence = act.verb + ' for ' + hm(v) + inDays; hours = v / 60;
+} else if (m === 'sess') {
+var w = v === 1 ? act.words[0] : act.words[1];
+valueText = num(v) + ' ' + w; targetLabel = 'Sessions';
+hint = d >= 7 ? 'About ' + one(v * 7 / d) + ' a week' : 'About ' + one(perDay) + ' a day';
+sentence = 'Complete ' + num(v) + ' ' + w + inDays; hours = v * act.sessH;
+} else {
+valueText = num(v) + ' kg'; targetLabel = 'Weight lifted';
+hint = 'About ' + Math.round(perDay).toLocaleString('en-GB') + ' kg a day';
+sentence = 'Lift ' + num(v) + ' kg' + inDays; hours = v / 5000;
+}
+var weekly = d >= 7;
+var per = weekly ? v * 7 / d : perDay;
+var perValue;
+if (m === 'dist') perValue = one(per) + ' km';
+else if (m === 'time') perValue = hm(Math.max(1, per));
+else if (m === 'sess') perValue = one(per) + ' ' + (Math.round(per * 10) === 10 ? act.words[0] : act.words[1]);
+else perValue = Math.round(per).toLocaleString('en-GB') + ' kg';
+var kcal = Math.round(act.met * 72 * hours / 10) * 10;
+var end = new Date(2026, 9, 19 + d - 1);
+var mo = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][end.getMonth()];
+
+var segOn = 'background: #121411; color: #FFFFFF';
+var segOff = 'background: transparent; color: #111410';
+var cardOn = 'background: #1C1F1A; color: #FFFFFF; border: 1px solid #1C1F1A; transform: scale(1); opacity: 1';
+var cardOff = 'background: #FFFFFF; color: #111410; border: 1px solid #E4E6E0; transform: scale(0.9); opacity: 0.7';
+var ML = { dist: 'Distance', time: 'Time', sess: 'Sessions', weight: 'Weight' };
+var idx = KEYS.indexOf(s.a);
+
+var out = {
+tx: 95 - idx * 212,
+sentence: sentence, perLabel: weekly ? 'Per week' : 'Per day', perValue: perValue,
+endShort: end.getDate() + ' ' + mo, kcal: kcal.toLocaleString('en-GB'),
+targetLabel: targetLabel, hint: hint, valueText: valueText,
+days: d, daysWord: d === 1 ? 'day' : 'days',
+minus: function () { self.setState({ m: m, v: Math.max(steps[m], v - steps[m]) }); },
+plus: function () { self.setState({ m: m, v: v + steps[m] }); },
+dminus: function () { self.setState({ d: Math.max(1, d - 1) }); },
+dplus: function () { self.setState({ d: Math.min(365, d + 1) }); },
+has3: act.metrics.length > 2
+};
+KEYS.forEach(function (k, n) {
+var sel = n === idx;
+out['c' + n] = sel ? cardOn : cardOff;
+out['c' + n + 'On'] = sel ? 'true' : 'false';
+out['i' + n] = sel ? 'background: #D4F26A; color: #111410' : 'background: #F1F3EC; color: #111410';
+out['t' + n] = sel ? 'color: #B4B9AE' : 'color: #6B7066';
+out['d' + n] = sel ? 'width: 22px; background: #111410' : 'width: 8px; background: #D3D6CD';
+out['go' + n] = function () {
+var keep = A[k].metrics.indexOf(m) >= 0 ? m : A[k].metrics[0];
+self.setState({ a: k, m: keep, v: null });
+};
+});
+[0, 1, 2].forEach(function (i) {
+var key = act.metrics[i] || 'time';
+var on = key === m && i < act.metrics.length;
+out['s' + (i + 1) + 'Label'] = ML[key];
+out['s' + (i + 1) + 'On'] = on ? 'true' : 'false';
+out['s' + (i + 1) + 'Style'] = on ? segOn : segOff;
+out['pickS' + (i + 1)] = function () { self.setState({ m: key, v: null }); };
+});
+return out;
+}
+}
+</script>
+</body>
+</html>

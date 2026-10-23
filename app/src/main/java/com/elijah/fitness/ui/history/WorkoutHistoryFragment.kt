@@ -16,6 +16,7 @@ import com.elijah.fitness.databinding.FragmentWorkoutHistoryBinding
 import com.elijah.fitness.ui.base.BaseFragment
 import com.elijah.fitness.ui.base.SnackKind
 import com.elijah.fitness.ui.base.navigateSafe
+import kotlinx.coroutines.flow.combine
 
 /**
  * Workout history screen (Step 9 restyle).
@@ -84,24 +85,23 @@ class WorkoutHistoryFragment : BaseFragment<FragmentWorkoutHistoryBinding>() {
             val filter = when (checkedIds.firstOrNull()) {
                 binding.chipRunning.id -> HistoryViewModel.Filter.RUNNING
                 binding.chipCycling.id -> HistoryViewModel.Filter.CYCLING
+                binding.chipSwimming.id -> HistoryViewModel.Filter.SWIMMING
+                binding.chipRowing.id -> HistoryViewModel.Filter.ROWING
                 binding.chipWeightlifting.id -> HistoryViewModel.Filter.WEIGHTLIFTING
                 else -> HistoryViewModel.Filter.ALL
             }
             viewModel.setFilter(filter)
         }
 
-        collectOnStart(viewModel.sectioned) { items ->
+        // The filter is collected with the list so switching between two
+        // empty filters still updates the "No swims yet" wording.
+        collectOnStart(viewModel.sectioned.combine(viewModel.filter) { items, filter -> items to filter }) {
+                (items, filter) ->
             adapter.submitList(items)
             val isEmpty = items.isEmpty()
             binding.emptyState.isVisible = isEmpty
             binding.workoutList.isVisible = !isEmpty
-        }
-        collectOnStart(viewModel.totalCount) { count ->
-            binding.chipAll.text = if (count > 0) {
-                getString(R.string.history_filter_all_with_count, count)
-            } else {
-                getString(R.string.history_filter_all)
-            }
+            if (isEmpty) renderEmptyState(filter)
         }
         collectOnStart(viewModel.momentum) { renderMomentum(it) }
         collectOnStart(viewModel.isLoading) { loading ->
@@ -138,6 +138,23 @@ class WorkoutHistoryFragment : BaseFragment<FragmentWorkoutHistoryBinding>() {
     private companion object {
         /** Ignore tiny scroll jitters (px) before hiding / showing the FAB. */
         const val FAB_SCROLL_SLOP = 8
+    }
+
+    /** "No workouts yet" for All; "No swims yet" etc. for one activity. */
+    private fun renderEmptyState(filter: HistoryViewModel.Filter) {
+        val titleRes = when (filter) {
+            HistoryViewModel.Filter.ALL -> R.string.history_empty_title
+            HistoryViewModel.Filter.RUNNING -> R.string.history_empty_title_running
+            HistoryViewModel.Filter.CYCLING -> R.string.history_empty_title_cycling
+            HistoryViewModel.Filter.SWIMMING -> R.string.history_empty_title_swimming
+            HistoryViewModel.Filter.ROWING -> R.string.history_empty_title_rowing
+            HistoryViewModel.Filter.WEIGHTLIFTING -> R.string.history_empty_title
+        }
+        binding.emptyTitle.setText(titleRes)
+        binding.emptyBody.setText(
+            if (filter == HistoryViewModel.Filter.ALL) R.string.history_empty_body
+            else R.string.history_empty_body_filtered
+        )
     }
 
     private fun renderMomentum(m: HistoryViewModel.Momentum) {

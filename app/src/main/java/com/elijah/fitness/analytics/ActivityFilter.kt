@@ -8,13 +8,15 @@ import com.elijah.fitness.data.model.ActivityType
  * value in the UI state.
  */
 enum class ActivityFilter {
-    ALL, RUNNING, CYCLING, WEIGHTLIFTING;
+    ALL, RUNNING, CYCLING, SWIMMING, ROWING, WEIGHTLIFTING;
 
     /** Null when the filter is ALL — matches [ActivityType]-less lookups. */
     fun asActivityType(): ActivityType? = when (this) {
         ALL -> null
         RUNNING -> ActivityType.RUNNING
         CYCLING -> ActivityType.CYCLING
+        SWIMMING -> ActivityType.SWIMMING
+        ROWING -> ActivityType.ROWING
         WEIGHTLIFTING -> ActivityType.WEIGHTLIFTING
     }
 }

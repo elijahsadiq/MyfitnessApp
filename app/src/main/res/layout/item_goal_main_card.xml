@@ -49,7 +49,7 @@
                     android:layout_width="15dp"
                     android:layout_height="15dp"
                     android:contentDescription="@null"
-                    android:src="@drawable/ic_run_24"
+                    android:src="@drawable/ic_run_outline_24"
                     app:tint="@color/lime_accent" />
 
                 <TextView

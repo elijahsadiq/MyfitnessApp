@@ -51,7 +51,9 @@ object WeeklySummaryCalculator {
         val totalDistanceMeters = inWeek
             .filterIsInstance<DistanceWorkout>()
             .sumOf { it.distanceMeters }
-        val estimatedCalories = inWeek.sumOf { it.caloriesBurned(bodyWeightKg) }
+        // Stored calories where a workout has them (phase 8d), otherwise
+        // worked out now from the profile weight.
+        val estimatedCalories = inWeek.sumOf { it.energyKcal(bodyWeightKg) }
 
         val bmi = BodyMetrics.bmi(weightKg = bodyWeightKg, heightCm = heightCm)
         val bmiCategory = BodyMetrics.bmiCategory(bmi)

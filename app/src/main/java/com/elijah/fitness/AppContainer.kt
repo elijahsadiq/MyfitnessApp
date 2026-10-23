@@ -5,7 +5,10 @@ import com.elijah.fitness.data.local.DataStoreLastLoggedActivityStore
 import com.elijah.fitness.data.local.DataStoreOnboardingStore
 import com.elijah.fitness.data.local.LastLoggedActivityStore
 import com.elijah.fitness.data.local.OnboardingStore
+import com.elijah.fitness.data.local.DataStoreProfileWeightStore
+import com.elijah.fitness.data.local.ProfileWeightStore
 import com.elijah.fitness.data.local.db.FitnessDatabase
+import com.elijah.fitness.data.model.ActivityType
 import com.elijah.fitness.data.remote.AuthEventBus
 import com.elijah.fitness.data.remote.DataStoreTokenStore
 import com.elijah.fitness.data.remote.NetworkModule
@@ -19,6 +22,7 @@ import com.elijah.fitness.data.repository.AuthRepository
 import com.elijah.fitness.data.repository.FakeWorkoutRepository
 import com.elijah.fitness.data.repository.GoalRepository
 import com.elijah.fitness.data.repository.OfflineFirstWorkoutRepository
+import com.elijah.fitness.data.repository.ProfileWeightPersistence
 import com.elijah.fitness.data.repository.RemoteAuthRepository
 import com.elijah.fitness.data.repository.RemoteGoalRepository
 import com.elijah.fitness.data.repository.RemoteWorkoutRepository
@@ -33,12 +37,17 @@ import com.elijah.fitness.insights.InsightEngine
 import com.elijah.fitness.notifications.AppNotifications
 import com.elijah.fitness.notifications.DailyReminderScheduler
 import com.elijah.fitness.notifications.DataStoreReminderSettingsStore
-import com.elijah.fitness.notifications.GoalAchievementNotifier
+import com.elijah.fitness.notifications.GoalCelebrationManager
+import com.elijah.fitness.data.local.CelebrationSeedStore
+import com.elijah.fitness.data.local.DataStoreCelebrationSeedStore
 import com.elijah.fitness.notifications.ReminderSettingsStore
 import com.elijah.fitness.tracking.LocationTracker
 import com.elijah.fitness.tracking.LocationTrackingService
 import com.elijah.fitness.tracking.TrackingSession
 import com.elijah.fitness.ui.goals.displayTitle
+import com.elijah.fitness.util.ResourcesTextResolver
+import com.elijah.fitness.util.TextResolver
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -75,6 +84,26 @@ class AppContainer(applicationContext: Context) {
     val lastLoggedActivityStore: LastLoggedActivityStore =
         DataStoreLastLoggedActivityStore(applicationContext)
 
+    /**
+     * Phase 8d: a workout of [type] was just saved, so the Log a workout
+     * sheet opens on that activity next time. Called by every save path
+     * (manual run / ride / row, GPS, swim, workout) only after the save
+     * worked — backing out of a form changes nothing. Runs on [appScope]
+     * so the write finishes even though the screen closes straight away;
+     * a failed write only loses the preselection.
+     */
+    fun rememberLoggedActivity(type: ActivityType) {
+        appScope.launch {
+            try {
+                lastLoggedActivityStore.setLastActivity(type)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                // Only a preselection for next time; nothing to tell the user.
+            }
+        }
+    }
+
     // App-wide auth signal bus (Step 5): a 401 from any endpoint fires an
     // Unauthorized event, MainActivity observes it and bounces back to auth.
     val authEventBus: AuthEventBus = AuthEventBus()
@@ -88,6 +117,26 @@ class AppContainer(applicationContext: Context) {
 
     // Domain surface.
     val userSettings: UserSettings = UserSettings()
+
+    /**
+     * Phase 8d: the profile weight is also kept on the device, so calories
+     * are stored with workouts saved offline right after a cold start
+     * (before `/me` can answer). Restored here, at app start.
+     */
+    private val profileWeightStore: ProfileWeightStore =
+        DataStoreProfileWeightStore(applicationContext)
+    private val profileWeightPersistence =
+        ProfileWeightPersistence(userSettings, profileWeightStore, appScope)
+
+    init {
+        profileWeightPersistence.start()
+    }
+
+    /**
+     * strings.xml / plurals.xml for code with no Context: ViewModels,
+     * the insight engine and the goal-title builder (phase 8d).
+     */
+    val text: TextResolver = ResourcesTextResolver(applicationContext.resources)
 
     // Phase 10 — offline store and background sync.
     val database: FitnessDatabase = FitnessDatabase.build(applicationContext)
@@ -173,7 +222,7 @@ class AppContainer(applicationContext: Context) {
      * Phase-8 personalised-insights engine. Pure Kotlin — the Home VM
      * calls `rank(workouts, goalsWithProgress)` on each flow emission.
      */
-    val insightEngine: InsightEngine = InsightEngine()
+    val insightEngine: InsightEngine = InsightEngine(text)
 
     // -----------------------------------------------------------------
     // Phase 10 — notifications (local, posted by the phone).
@@ -182,27 +231,43 @@ class AppContainer(applicationContext: Context) {
         DataStoreReminderSettingsStore(applicationContext)
     val dailyReminderScheduler: DailyReminderScheduler = DailyReminderScheduler(applicationContext)
 
-    /** "Goal achieved" notifications; started by MainActivity once signed in. */
-    val goalAchievementNotifier: GoalAchievementNotifier = GoalAchievementNotifier(
+    /** First-run flag for the goal-complete pop-up (kept on sign-out: it describes the install). */
+    private val celebrationSeedStore: CelebrationSeedStore =
+        DataStoreCelebrationSeedStore(applicationContext)
+
+    /**
+     * Phase 8d, Step 7: the one owner of "a goal was just reached". On
+     * screen, MainActivity shows the goal-complete pop-up from its
+     * `pending` queue; in the background it posts the "Goal achieved"
+     * notification (when goal alerts are on). Started by MainActivity
+     * once signed in ([onSignedInStart]).
+     */
+    val goalCelebrationManager: GoalCelebrationManager = GoalCelebrationManager(
         calculator = goalProgressCalculator,
         goalRepository = goalRepository,
+        workoutRepository = workoutRepository,
+        seedStore = celebrationSeedStore,
         alertsEnabled = reminderSettingsStore.settings.map { it.goalAlerts },
         scope = appScope,
-        post = { id, title -> AppNotifications.showGoalAchieved(applicationContext, id, title) },
-        titleOf = { it.goal.displayTitle() },
+        weightKg = { userSettings.bodyWeightKg.value },
+        titleOf = { it.displayTitle(text) },
+        postNotification = { id, title ->
+            AppNotifications.showGoalAchieved(applicationContext, id, title)
+        },
     )
 
     /**
      * Forget everything about the signed-in user on this device: stop a
      * GPS session, drop pending deletes, clear the cached workouts and
-     * goals, reset body metrics and remove the token. Used when the
+     * goals, reset body metrics (and the saved profile weight) and remove
+     * the token. Used when the
      * server already rejected the session (401) or the account was
      * deleted — nothing is sent to the server.
      */
     suspend fun signOutLocally(context: Context) {
         context.stopService(LocationTrackingService.serviceIntent(context))
         trackingSession.reset()
-        goalAchievementNotifier.stop()
+        goalCelebrationManager.stop()
         dailyReminderScheduler.cancel()
         reminderSettingsStore.reset()
         workoutDeleteCoordinator.cancelAll()
@@ -212,6 +277,7 @@ class AppContainer(applicationContext: Context) {
         lastLoggedActivityStore.clear()
         AppNotifications.cancelAll(context)
         userSettings.reset()
+        profileWeightPersistence.clear()
         tokenStore.clear()
     }
 
@@ -241,7 +307,7 @@ class AppContainer(applicationContext: Context) {
      * (re-booking keeps it at the chosen time after a time-zone change).
      */
     fun onSignedInStart() {
-        goalAchievementNotifier.start()
+        goalCelebrationManager.start()
         appScope.launch {
             goalRepository.refresh()
             val settings = reminderSettingsStore.settings.first()

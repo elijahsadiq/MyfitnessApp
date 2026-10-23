@@ -1,0 +1,287 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  New goal / Edit goal bottom sheet (phase 8d, NewGoal.dc.html), built for
+  one hand: everything adjusts with thumb-sized controls and the lime
+  button sits at the very bottom. No close button: swipe down to cancel.
+
+  Top to bottom, 16dp apart: handle, header ("New goal" · "Swipe down to
+  cancel"), dark live summary, the activity cards (centred in the free
+  space) with their dots, "Measure by", the Adjust card (target + days
+  steppers), then "Create goal". The sheet is as tall as the screen less
+  40dp under the status bar (NewGoalBottomSheet sizes it).
+
+  On a 6.1" phone nothing scrolls. On a short phone the middle part
+  scrolls while the header and the button stay put, so "Create goal" is
+  always reachable (nothing here turns clipChildren off, so scrolled
+  content never draws under the button). The cards run edge to edge (the
+  design's margin: 0 -20px) and peek inside the carousel's own bounds, so
+  the side margins sit on each block instead of the column.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/newGoalContent"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:paddingTop="@dimen/new_goal_sheet_padding_top"
+    android:paddingBottom="@dimen/new_goal_sheet_padding_bottom">
+
+    <View style="@style/Widget.Fitness.SheetHandle" />
+
+    <!-- =========== Header (baseline aligned, space between) =========== -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="@dimen/screen_margin"
+        android:layout_marginTop="@dimen/new_goal_sheet_gap"
+        android:baselineAligned="true"
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/newGoalTitle"
+            style="@style/TextAppearance.Fitness.PageTitle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:text="@string/new_goal_title_create" />
+
+        <TextView
+            android:id="@+id/newGoalSwipeHint"
+            style="@style/TextAppearance.Fitness.FieldHint"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/space_md"
+            android:maxLines="1"
+            android:text="@string/new_goal_swipe_hint" />
+    </LinearLayout>
+
+    <androidx.core.widget.NestedScrollView
+        android:id="@+id/newGoalScroll"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_marginTop="@dimen/new_goal_sheet_gap"
+        android:layout_weight="1"
+        android:fillViewport="true"
+        android:overScrollMode="never">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <!-- =========== Live summary (dark) =========== -->
+            <LinearLayout
+                android:id="@+id/newGoalSummary"
+                style="@style/Widget.Fitness.SummaryCard.Goal"
+                android:layout_marginHorizontal="@dimen/screen_margin"
+                android:accessibilityLiveRegion="polite">
+
+                <TextView
+                    android:id="@+id/newGoalSentence"
+                    style="@style/TextAppearance.Fitness.GoalSentence"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    tools:text="Run 50 km in 30 days" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/goal_summary_gap"
+                    android:baselineAligned="false"
+                    android:orientation="horizontal">
+
+                    <LinearLayout style="@style/Widget.Fitness.GoalSummaryTile">
+
+                        <TextView
+                            android:id="@+id/newGoalPerLabel"
+                            style="@style/TextAppearance.Fitness.GoalTileLabel"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:maxLines="1"
+                            tools:text="@string/new_goal_pace_per_week" />
+
+                        <TextView
+                            android:id="@+id/newGoalPerValue"
+                            style="@style/Widget.Fitness.GoalTileValue"
+                            tools:text="11.7 km" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        style="@style/Widget.Fitness.GoalSummaryTile"
+                        android:layout_marginStart="@dimen/goal_summary_tile_gap">
+
+                        <TextView
+                            style="@style/TextAppearance.Fitness.GoalTileLabel"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:maxLines="1"
+                            android:text="@string/new_goal_summary_ends" />
+
+                        <TextView
+                            android:id="@+id/newGoalEndsValue"
+                            style="@style/Widget.Fitness.GoalTileValue"
+                            tools:text="17 Nov" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        style="@style/Widget.Fitness.GoalSummaryTile"
+                        android:layout_marginStart="@dimen/goal_summary_tile_gap">
+
+                        <TextView
+                            style="@style/TextAppearance.Fitness.GoalTileLabel"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:maxLines="1"
+                            android:text="@string/new_goal_summary_burn" />
+
+                        <TextView
+                            android:id="@+id/newGoalKcalValue"
+                            style="@style/Widget.Fitness.GoalTileValue.Lime"
+                            tools:text="3,530 kcal" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <!-- Only while the profile has no weight (70 kg is used). The
+                     design's summary column puts 14px between all its parts. -->
+                <TextView
+                    android:id="@+id/newGoalWeightHint"
+                    style="@style/TextAppearance.Fitness.FieldLabel.OnDark"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/goal_summary_gap"
+                    android:text="@string/new_goal_weight_hint"
+                    android:visibility="gone"
+                    tools:visibility="visible" />
+            </LinearLayout>
+
+            <!-- =========== Activity cards + dots, centred in the free space =========== -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_marginTop="@dimen/new_goal_sheet_gap"
+                android:layout_weight="1"
+                android:gravity="center_vertical"
+                android:orientation="vertical">
+
+                <com.elijah.fitness.ui.components.ActivityCarouselView
+                    android:id="@+id/newGoalCarousel"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:contentDescription="@string/new_goal_carousel_description" />
+
+                <com.elijah.fitness.ui.components.CarouselDotsView
+                    android:id="@+id/newGoalDots"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_horizontal"
+                    android:layout_marginTop="@dimen/carousel_dots_gap" />
+            </LinearLayout>
+
+            <!-- =========== Measure by =========== -->
+            <com.elijah.fitness.ui.components.PillSegmentedControl
+                android:id="@+id/newGoalMeasureBy"
+                style="@style/Widget.Fitness.PillSegmented.MeasureBy"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="@dimen/screen_margin"
+                android:layout_marginTop="@dimen/new_goal_sheet_gap" />
+
+            <!-- =========== Adjust: target + days =========== -->
+            <LinearLayout
+                android:id="@+id/newGoalAdjustCard"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="@dimen/screen_margin"
+                android:layout_marginTop="@dimen/new_goal_sheet_gap"
+                android:background="@drawable/bg_field_card"
+                android:orientation="vertical"
+                android:padding="@dimen/stroke_hairline">
+
+                <LinearLayout style="@style/Widget.Fitness.AdjustRow">
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="@dimen/adjust_row_gap"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:id="@+id/newGoalTargetLabel"
+                            style="@style/TextAppearance.Fitness.AdjustLabel"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            tools:text="@string/new_goal_target_label_distance" />
+
+                        <TextView
+                            android:id="@+id/newGoalTargetHint"
+                            style="@style/TextAppearance.Fitness.FieldLabel"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="@dimen/adjust_label_gap"
+                            tools:text="About 1.7 km a day" />
+                    </LinearLayout>
+
+                    <com.elijah.fitness.ui.components.StepperView
+                        android:id="@+id/newGoalTargetStepper"
+                        style="@style/Widget.Fitness.Stepper.Goal"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        app:stepperDecrementDescription="@string/new_goal_decrease_target_content_description"
+                        app:stepperIncrementDescription="@string/new_goal_increase_target_content_description" />
+                </LinearLayout>
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="@dimen/stroke_hairline"
+                    android:layout_marginHorizontal="@dimen/adjust_divider_inset"
+                    android:background="@color/divider_soft" />
+
+                <LinearLayout style="@style/Widget.Fitness.AdjustRow">
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="@dimen/adjust_row_gap"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            style="@style/TextAppearance.Fitness.AdjustLabel"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/new_goal_days_label" />
+
+                        <TextView
+                            android:id="@+id/newGoalDaysHint"
+                            style="@style/TextAppearance.Fitness.FieldLabel"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="@dimen/adjust_label_gap"
+                            tools:text="@string/new_goal_days_hint_today" />
+                    </LinearLayout>
+
+                    <com.elijah.fitness.ui.components.StepperView
+                        android:id="@+id/newGoalDaysStepper"
+                        style="@style/Widget.Fitness.Stepper.Goal"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        app:stepperDecrementDescription="@string/new_goal_decrease_days_content_description"
+                        app:stepperIncrementDescription="@string/new_goal_increase_days_content_description" />
+                </LinearLayout>
+            </LinearLayout>
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+
+    <!-- =========== Create goal (thumb reach) =========== -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/newGoalSubmit"
+        style="@style/Widget.Fitness.Button.Primary.Large"
+        android:layout_width="match_parent"
+        android:layout_marginHorizontal="@dimen/screen_margin"
+        android:layout_marginTop="@dimen/new_goal_sheet_gap"
+        android:text="@string/new_goal_submit_create" />
+</LinearLayout>

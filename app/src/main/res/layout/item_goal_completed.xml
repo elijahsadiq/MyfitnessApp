@@ -39,7 +39,7 @@
                 android:layout_gravity="center"
                 android:contentDescription="@string/goals_row_icon_content_description"
                 app:tint="@color/text_primary"
-                tools:src="@drawable/ic_bike_24" />
+                tools:src="@drawable/ic_bike_outline_24" />
         </FrameLayout>
 
         <LinearLayout

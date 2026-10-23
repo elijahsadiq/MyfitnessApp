@@ -3,7 +3,7 @@
   TextAppearances derived from the Kinetic Glow type scale.
   See docs/design/kinetic_glow_fitness/DESIGN.md ("Typography").
 -->
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
 
     <!-- Big telemetry number (44sp ExtraBold), e.g. dashboard hero metrics. -->
     <style name="TextAppearance.Fitness.DisplayMetric" parent="TextAppearance.Material3.DisplayMedium">
@@ -86,5 +86,200 @@
         <item name="android:textSize">16sp</item>
         <item name="android:letterSpacing">0.0</item>
         <item name="android:textAllCaps">false</item>
+    </style>
+    <!-- ============ Phase 8d — activities-v3 ============ -->
+
+    <!--
+      Base of the activities-v3 text styles: BodyMd without the 0.018em
+      letter spacing Material 3's BodyMedium adds (the designs use none)
+      and without font padding, so a line is as tall as the designs'
+      "normal" CSS line height (1.26em for Plus Jakarta Sans). BodyMd
+      itself is unchanged: older screens depend on it.
+    -->
+    <style name="TextAppearance.Fitness.Flat" parent="TextAppearance.Fitness.BodyMd">
+        <item name="android:letterSpacing">0</item>
+        <item name="android:includeFontPadding">false</item>
+    </style>
+
+    <!-- Bottom-sheet title ("Log a workout"): 24sp ExtraBold, -0.02em. -->
+    <style name="TextAppearance.Fitness.SheetTitle" parent="TextAppearance.Material3.HeadlineSmall">
+        <item name="android:fontFamily">@font/plus_jakarta_sans_extrabold</item>
+        <item name="fontFamily">@font/plus_jakarta_sans_extrabold</item>
+        <item name="android:textSize">@dimen/text_size_sheet_title</item>
+        <item name="android:letterSpacing">-0.02</item>
+        <item name="android:includeFontPadding">false</item>
+        <item name="android:textColor">@color/text_on_lime</item>
+    </style>
+
+    <!-- Title of a full-screen form with its own back button ("Log a swim"):
+         22sp ExtraBold, -0.02em. -->
+    <style name="TextAppearance.Fitness.PageTitle" parent="TextAppearance.Material3.HeadlineSmall">
+        <item name="android:fontFamily">@font/plus_jakarta_sans_extrabold</item>
+        <item name="fontFamily">@font/plus_jakarta_sans_extrabold</item>
+        <item name="android:textSize">@dimen/text_size_page_title</item>
+        <item name="android:letterSpacing">-0.02</item>
+        <item name="android:includeFontPadding">false</item>
+        <item name="android:textColor">@color/text_on_lime</item>
+    </style>
+
+    <!-- Manage goal sheet title ("Swim 10 km in 30 days"): 18sp Bold,
+         Manage.dc.html's h2. -->
+    <style name="TextAppearance.Fitness.SheetHeaderTitle" parent="TextAppearance.Fitness.Flat">
+        <item name="android:fontFamily">@font/plus_jakarta_sans_bold</item>
+        <item name="fontFamily">@font/plus_jakarta_sans_bold</item>
+        <item name="android:textSize">@dimen/text_size_sheet_header_title</item>
+        <item name="android:textColor">@color/text_on_lime</item>
+    </style>
+
+    <!-- Line under a sheet title ("Swipe to choose an activity."). -->
+    <style name="TextAppearance.Fitness.SheetSubtitle" parent="TextAppearance.Fitness.Flat">
+        <item name="android:textColor">@color/text_secondary</item>
+    </style>
+
+    <!-- Centred one-line note on the log sheet (13sp, 1.45 line height). -->
+    <style name="TextAppearance.Fitness.SheetNote" parent="TextAppearance.Fitness.Flat">
+        <item name="android:textSize">@dimen/text_size_sheet_note</item>
+        <item name="android:textColor">@color/text_secondary</item>
+        <item name="lineHeight">@dimen/line_height_sheet_note</item>
+        <item name="android:lineHeight" tools:targetApi="28">@dimen/line_height_sheet_note</item>
+    </style>
+
+    <!-- Label of the 56dp lime call-to-action: 16sp ExtraBold. -->
+    <style name="TextAppearance.Fitness.ButtonLarge" parent="TextAppearance.Fitness.Button">
+        <item name="android:fontFamily">@font/plus_jakarta_sans_extrabold</item>
+        <item name="fontFamily">@font/plus_jakarta_sans_extrabold</item>
+    </style>
+
+    <!--
+      activities-v3 form text (LogSwim.dc.html), all on
+      TextAppearance.Fitness.Flat: no letter spacing unless the design
+      sets one, and no font padding so line heights match the design's
+      "normal" CSS line height.
+    -->
+
+    <!-- Section label above form cards ("WHEN", "LAPS"): 12sp Bold caps, 0.08em. -->
+    <style name="TextAppearance.Fitness.SectionLabel" parent="TextAppearance.Fitness.Flat">
+        <item name="android:fontFamily">@font/plus_jakarta_sans_bold</item>
+        <item name="fontFamily">@font/plus_jakarta_sans_bold</item>
+        <item name="android:textSize">@dimen/text_size_section_label</item>
+        <item name="android:letterSpacing">0.08</item>
+        <item name="android:textAllCaps">true</item>
+        <item name="android:textColor">@color/text_secondary</item>
+    </style>
+
+    <!-- The same label on a dark card ("AVERAGE PACE"). -->
+    <style name="TextAppearance.Fitness.SectionLabel.OnDark">
+        <item name="android:textColor">@color/text_muted_on_dark</item>
+    </style>
+
+    <!-- Small label inside a card ("Date", "Start time"): 12sp Regular. -->
+    <style name="TextAppearance.Fitness.FieldLabel" parent="TextAppearance.Fitness.Flat">
+        <item name="android:textSize">@dimen/text_size_field_label</item>
+        <item name="android:textColor">@color/text_secondary</item>
+    </style>
+
+    <!-- The same label on a dark stat tile ("Distance", "Calories"). -->
+    <style name="TextAppearance.Fitness.FieldLabel.OnDark">
+        <item name="android:textColor">@color/text_muted_on_dark</item>
+    </style>
+
+    <!-- Value inside a card ("Today, Mon 19 Oct", "7:10 AM"): 16sp Bold. -->
+    <style name="TextAppearance.Fitness.FieldValue" parent="TextAppearance.Fitness.Flat">
+        <item name="android:fontFamily">@font/plus_jakarta_sans_bold</item>
+        <item name="fontFamily">@font/plus_jakarta_sans_bold</item>
+        <item name="android:textSize">@dimen/text_size_field_value</item>
+        <item name="android:textColor">@color/text_on_lime</item>
+    </style>
+
+    <!-- Hint line under a card label ("60 × 25 m = 1,500 m"): 13sp Regular. -->
+    <style name="TextAppearance.Fitness.FieldHint" parent="TextAppearance.Fitness.Flat">
+        <item name="android:textSize">@dimen/text_size_field_hint</item>
+        <item name="android:textColor">@color/text_secondary</item>
+    </style>
+
+    <!-- Big lime number on a dark summary card ("2:09"): 50sp ExtraBold, -0.03em. -->
+    <style name="TextAppearance.Fitness.SummaryHero" parent="TextAppearance.Fitness.Flat">
+        <item name="android:fontFamily">@font/plus_jakarta_sans_extrabold</item>
+        <item name="fontFamily">@font/plus_jakarta_sans_extrabold</item>
+        <item name="android:textSize">@dimen/text_size_summary_pace</item>
+        <item name="android:letterSpacing">-0.03</item>
+        <item name="android:textColor">@color/lime_accent</item>
+    </style>
+
+    <!-- Unit after the big number (" /100 m"): 16sp Regular, muted. -->
+    <style name="TextAppearance.Fitness.SummaryHeroUnit" parent="TextAppearance.Fitness.Flat">
+        <item name="android:textSize">@dimen/text_size_summary_pace_unit</item>
+        <item name="android:textColor">@color/text_muted_on_dark</item>
+    </style>
+
+    <!-- Value on a dark stat tile ("1,500 m", "270 kcal"): 20sp ExtraBold white. -->
+    <style name="TextAppearance.Fitness.SummaryTileValue" parent="TextAppearance.Fitness.Flat">
+        <item name="android:fontFamily">@font/plus_jakarta_sans_extrabold</item>
+        <item name="fontFamily">@font/plus_jakarta_sans_extrabold</item>
+        <item name="android:textSize">@dimen/text_size_summary_tile_value</item>
+        <item name="android:textColor">@color/text_on_dark</item>
+    </style>
+
+    <!-- Stepper value ("60"): 28sp ExtraBold. -->
+    <style name="TextAppearance.Fitness.StepperValue" parent="TextAppearance.Fitness.Flat">
+        <item name="android:fontFamily">@font/plus_jakarta_sans_extrabold</item>
+        <item name="fontFamily">@font/plus_jakarta_sans_extrabold</item>
+        <item name="android:textSize">@dimen/text_size_stepper_value</item>
+        <item name="android:textColor">@color/text_on_lime</item>
+    </style>
+
+    <!-- "−" / "+" on a stepper button: 22sp Bold. -->
+    <style name="TextAppearance.Fitness.StepperSymbol" parent="TextAppearance.Fitness.Flat">
+        <item name="android:fontFamily">@font/plus_jakarta_sans_bold</item>
+        <item name="fontFamily">@font/plus_jakarta_sans_bold</item>
+        <item name="android:textSize">@dimen/text_size_stepper_symbol</item>
+        <item name="android:textColor">@color/text_on_lime</item>
+    </style>
+
+    <!-- Duration cell number ("32"): 26sp ExtraBold. -->
+    <style name="TextAppearance.Fitness.DurationValue" parent="TextAppearance.Fitness.Flat">
+        <item name="android:fontFamily">@font/plus_jakarta_sans_extrabold</item>
+        <item name="fontFamily">@font/plus_jakarta_sans_extrabold</item>
+        <item name="android:textSize">@dimen/text_size_duration_value</item>
+        <item name="android:textColor">@color/text_on_lime</item>
+    </style>
+
+    <!-- Duration cell unit ("min"): 13sp Regular. -->
+    <style name="TextAppearance.Fitness.DurationUnit" parent="TextAppearance.Fitness.Flat">
+        <item name="android:textSize">@dimen/text_size_duration_unit</item>
+        <item name="android:textColor">@color/text_secondary</item>
+    </style>
+
+    <!-- ============ New goal sheet (NewGoal.dc.html) ============ -->
+
+    <!-- The live goal sentence ("Run 50 km in 30 days"): 21sp ExtraBold,
+         line height 1.25, -0.01em, white on the dark summary card. -->
+    <style name="TextAppearance.Fitness.GoalSentence" parent="TextAppearance.Fitness.Flat">
+        <item name="android:fontFamily">@font/plus_jakarta_sans_extrabold</item>
+        <item name="fontFamily">@font/plus_jakarta_sans_extrabold</item>
+        <item name="android:textSize">@dimen/text_size_goal_sentence</item>
+        <item name="android:letterSpacing">-0.01</item>
+        <item name="lineHeight">@dimen/line_height_goal_sentence</item>
+        <item name="android:lineHeight" tools:targetApi="28">@dimen/line_height_goal_sentence</item>
+        <item name="android:textColor">@color/text_on_dark</item>
+    </style>
+
+    <!-- Summary tile label ("Per week", "Ends", "Est. burn"): 11sp, muted on dark. -->
+    <style name="TextAppearance.Fitness.GoalTileLabel" parent="TextAppearance.Fitness.Flat">
+        <item name="android:textSize">@dimen/text_size_goal_tile_label</item>
+        <item name="android:textColor">@color/text_muted_on_dark</item>
+    </style>
+
+    <!-- Summary tile value ("11.7 km", "17 Nov"): 15sp ExtraBold white. -->
+    <style name="TextAppearance.Fitness.GoalTileValue" parent="TextAppearance.Fitness.Flat">
+        <item name="android:fontFamily">@font/plus_jakarta_sans_extrabold</item>
+        <item name="fontFamily">@font/plus_jakarta_sans_extrabold</item>
+        <item name="android:textSize">@dimen/text_size_goal_tile_value</item>
+        <item name="android:textColor">@color/text_on_dark</item>
+    </style>
+
+    <!-- Adjust-row label ("DISTANCE", "DAYS"): 12sp Bold caps, 0.06em. -->
+    <style name="TextAppearance.Fitness.AdjustLabel" parent="TextAppearance.Fitness.SectionLabel">
+        <item name="android:letterSpacing">0.06</item>
     </style>
 </resources>

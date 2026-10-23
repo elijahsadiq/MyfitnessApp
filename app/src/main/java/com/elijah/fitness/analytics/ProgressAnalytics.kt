@@ -2,8 +2,11 @@ package com.elijah.fitness.analytics
 
 import com.elijah.fitness.data.model.ActivityType
 import com.elijah.fitness.data.model.CyclingWorkout
+import com.elijah.fitness.data.model.DistanceWorkout
+import com.elijah.fitness.data.model.RowingWorkout
 import com.elijah.fitness.data.model.RunningWorkout
 import com.elijah.fitness.data.model.StrengthWorkout
+import com.elijah.fitness.data.model.SwimmingWorkout
 import com.elijah.fitness.data.model.Workout
 import java.time.DayOfWeek
 import java.time.Instant
@@ -13,6 +16,7 @@ import java.time.ZoneId
 import java.time.format.TextStyle
 import java.time.temporal.TemporalAdjusters
 import java.util.Locale
+import kotlin.math.roundToLong
 
 /**
  * Pure-Kotlin analytics for the Progress tab. Zero Android imports so
@@ -70,6 +74,8 @@ object ProgressAnalytics {
         return when (activityType) {
             ActivityType.RUNNING -> runStats(subset.filterIsInstance<RunningWorkout>(), count)
             ActivityType.CYCLING -> cycleStats(subset.filterIsInstance<CyclingWorkout>(), count)
+            ActivityType.SWIMMING -> splitStats(subset.filterIsInstance<SwimmingWorkout>(), count)
+            ActivityType.ROWING -> splitStats(subset.filterIsInstance<RowingWorkout>(), count)
             ActivityType.WEIGHTLIFTING -> strengthStats(subset.filterIsInstance<StrengthWorkout>(), count)
         }
     }
@@ -92,6 +98,8 @@ object ProgressAnalytics {
 
         val longestRun = runs.maxOfOrNull { it.distanceMeters }
         val longestRide = rides.maxOfOrNull { it.distanceMeters }
+        val longestSwim = allWorkouts.filterIsInstance<SwimmingWorkout>().maxOfOrNull { it.distanceMeters }
+        val longestRow = allWorkouts.filterIsInstance<RowingWorkout>().maxOfOrNull { it.distanceMeters }
 
         val bestOneRm: Map<String, Double> = strengths
             .flatMap { it.sets }
@@ -119,6 +127,8 @@ object ProgressAnalytics {
             longestRunMeters = longestRun,
             longestRideMeters = longestRide,
             bestOneRepMaxes = bestOneRm,
+            longestSwimMeters = longestSwim,
+            longestRowMeters = longestRow,
         )
     }
 
@@ -229,14 +239,16 @@ object ProgressAnalytics {
 
     private fun runStats(runs: List<RunningWorkout>, count: Int): ProgressStats {
         val totalMeters = runs.sumOf { it.distanceMeters }
+        val totalSeconds = runs.sumOf { it.duration.seconds }
         val totalMinutes = runs.sumOf { it.duration.toMinutes() }
         val paces = runs.map { it.paceSecondsPerKm() }.filter { it > 0 }
         return ProgressStats(
             workoutCount = count,
             totalDistanceMeters = totalMeters,
             totalDurationMinutes = totalMinutes,
+            // Whole seconds, rounded like each run's own pace.
             averagePaceSecondsPerKm = if (totalMeters > 0.0) {
-                ((totalMinutes * 60).toDouble() / (totalMeters / 1000.0)).toLong()
+                (totalSeconds.toDouble() / (totalMeters / 1000.0)).roundToLong()
             } else null,
             bestPaceSecondsPerKm = paces.minOrNull(),
             longestDistanceMeters = runs.maxOfOrNull { it.distanceMeters },
@@ -266,6 +278,35 @@ object ProgressAnalytics {
             totalSets = null,
             totalVolumeKg = null,
             mostFrequentExercise = null,
+        )
+    }
+
+    /**
+     * Swims and rows (phase 8d): totals plus pace per split. The split
+     * comes from each class's own [DistanceWorkout.paceSplitMeters]
+     * (100 m for a swim, 500 m for a row), so one function serves both.
+     */
+    private fun splitStats(workouts: List<DistanceWorkout>, count: Int): ProgressStats {
+        val totalMeters = workouts.sumOf { it.distanceMeters }
+        val totalSeconds = workouts.sumOf { it.duration.seconds }
+        val splitMeters = workouts.firstOrNull()?.paceSplitMeters
+        val splits = workouts.map { it.paceSecondsPerSplit() }.filter { it > 0 }
+        return ProgressStats(
+            workoutCount = count,
+            totalDistanceMeters = totalMeters,
+            totalDurationMinutes = workouts.sumOf { it.duration.toMinutes() },
+            averagePaceSecondsPerKm = null,
+            bestPaceSecondsPerKm = null,
+            longestDistanceMeters = workouts.maxOfOrNull { it.distanceMeters },
+            averageSpeedKmh = null,
+            maxSpeedKmh = null,
+            totalSets = null,
+            totalVolumeKg = null,
+            mostFrequentExercise = null,
+            averageSplitSeconds = if (splitMeters != null && totalMeters >= DistanceWorkout.MIN_PACE_DISTANCE_M) {
+                (totalSeconds.toDouble() / (totalMeters / splitMeters)).roundToLong()
+            } else null,
+            bestSplitSeconds = splits.minOrNull(),
         )
     }
 

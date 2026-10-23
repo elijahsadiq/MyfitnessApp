@@ -5,4 +5,47 @@
         <attr name="ringTrackColor" format="color" />
         <attr name="ringArcColor" format="color" />
     </declare-styleable>
+
+    <!--
+      PillSegmentedControl (phase 8d): a pill track holding 2–3 equal pill
+      segments. Names carry a "pill" prefix so they can't clash with
+      Material's own trackColor / segment attributes.
+    -->
+    <declare-styleable name="PillSegmentedControl">
+        <!-- Height of the visible segment pill (40dp on the log sheet). -->
+        <attr name="pillSegmentHeight" format="dimension" />
+        <!-- Space between the track border and the segments. -->
+        <attr name="pillTrackPadding" format="dimension" />
+        <!-- Space between two segments. -->
+        <attr name="pillSegmentGap" format="dimension" />
+        <!-- Fill of the track behind the unselected segments. -->
+        <attr name="pillTrackColor" format="color" />
+        <attr name="pillTextSize" format="dimension" />
+    </declare-styleable>
+
+    <!--
+      StepperView (phase 8d): "−  value  +" with hold-to-repeat buttons.
+    -->
+    <declare-styleable name="StepperView">
+        <!-- Size of the value text (28sp on Log a swim, 18sp on New goal). -->
+        <attr name="stepperValueTextSize" format="dimension" />
+        <!-- Narrowest the value may be, so the buttons don't jump (48dp / 92dp). -->
+        <attr name="stepperValueMinWidth" format="dimension" />
+        <!-- Size of the "−" / "+" symbols (22sp on Log a swim, 20sp on New goal). -->
+        <attr name="stepperSymbolTextSize" format="dimension" />
+        <!-- Space between the value and each 48dp button (whose 44dp circle
+             adds 2dp more): 8dp on Log a swim, 4dp on New goal. -->
+        <attr name="stepperValueGap" format="dimension" />
+        <!-- TalkBack labels of the two buttons ("One lap fewer" / "One lap more"). -->
+        <attr name="stepperDecrementDescription" format="string" />
+        <attr name="stepperIncrementDescription" format="string" />
+    </declare-styleable>
+
+    <!--
+      DurationInputView (phase 8d): the h / min / s cells of every log form.
+    -->
+    <declare-styleable name="DurationInputView">
+        <!-- The keyboard action of the seconds cell (next by default). -->
+        <attr name="android:imeOptions" />
+    </declare-styleable>
 </resources>

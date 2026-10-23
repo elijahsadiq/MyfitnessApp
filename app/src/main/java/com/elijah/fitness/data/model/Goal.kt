@@ -4,6 +4,7 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.temporal.ChronoUnit
+import kotlin.math.abs
 
 /**
  * Root of the goal hierarchy — a target amount within a bounded day
@@ -72,7 +73,11 @@ abstract class Goal(
     /** The LAST day included in the goal (inclusive). */
     val lastDay: LocalDate get() = startDate.plusDays((durationDays - 1).toLong())
 
-    /** Short unit string shown next to progress ("km", "sessions", "min", "kg"). */
+    /**
+     * The unit the stored [targetValue] is measured in ("km", "sessions",
+     * "min", "kg"). A data label, not screen text: screens word goals
+     * through `ui/goals/GoalDisplay` ("2 h 30 min", never "150 min").
+     */
     abstract val unitLabel: String
 
     /**
@@ -86,16 +91,20 @@ abstract class Goal(
     fun currentValue(workouts: List<Workout>, zone: ZoneId = ZoneId.systemDefault()): Double =
         measure(relevantWorkouts(workouts, zone))
 
-    /** Progress fraction, clamped to `[0.0, 1.0]`. */
+    /**
+     * Progress fraction, clamped to `[0.0, 1.0]`; exactly 1.0 once the
+     * target is met ([meetsTarget]), so a met goal never reads "99%".
+     */
     fun progressFraction(workouts: List<Workout>, zone: ZoneId = ZoneId.systemDefault()): Double {
         if (targetValue <= 0.0) return 0.0
-        val raw = currentValue(workouts, zone) / targetValue
-        return raw.coerceIn(0.0, 1.0)
+        val current = currentValue(workouts, zone)
+        if (meetsTarget(current, targetValue)) return 1.0
+        return (current / targetValue).coerceIn(0.0, 1.0)
     }
 
-    /** True when [currentValue] meets or exceeds [targetValue]. */
+    /** True when [currentValue] meets or exceeds [targetValue] ([meetsTarget]). */
     fun isComplete(workouts: List<Workout>, zone: ZoneId = ZoneId.systemDefault()): Boolean =
-        currentValue(workouts, zone) >= targetValue
+        meetsTarget(currentValue(workouts, zone), targetValue)
 
     /**
      * Days left including today — Monday with a last day of Sunday
@@ -177,7 +186,9 @@ abstract class Goal(
         today: LocalDate,
         zone: ZoneId = ZoneId.systemDefault(),
     ): Double {
-        val remainingValue = (targetValue - currentValue(workouts, zone)).coerceAtLeast(0.0)
+        val current = currentValue(workouts, zone)
+        if (meetsTarget(current, targetValue)) return 0.0
+        val remainingValue = (targetValue - current).coerceAtLeast(0.0)
         if (remainingValue <= 0.0) return 0.0
         val remainingDays = daysLeft(today)
         if (remainingDays <= 0L) return 0.0
@@ -194,15 +205,34 @@ abstract class Goal(
     }
 
     enum class Status { Active, Completed, Ended }
+
+    companion object {
+        /** Relative slack for [meetsTarget]: far below anything a screen shows. */
+        private const val TARGET_TOLERANCE = 1e-9
+
+        /**
+         * True when [current] meets [target], allowing for floating-point
+         * noise: workouts are summed as Doubles, so swims of 600 m, 700 m
+         * and 200 m can come to 1.4999999999999998 km rather than 1.5.
+         * The slack is a billionth of the target (at least 1e-9), never
+         * enough to count a real shortfall. `GoalDisplay` uses the same
+         * test, so a goal that reads "1.5 / 1.5 km" is always Completed.
+         */
+        fun meetsTarget(current: Double, target: Double): Boolean {
+            if (!current.isFinite() || !target.isFinite()) return false
+            return current >= target - TARGET_TOLERANCE * maxOf(1.0, abs(target))
+        }
+    }
 }
 
 /**
  * Sum of kilometres for [DistanceWorkout]s inside the window. Strength
  * workouts in a mixed list are ignored (no distance to measure).
  *
- * Only [ActivityType.RUNNING] or [ActivityType.CYCLING] are allowed as
- * an activity scope; anything else is rejected in [init]. "Any activity"
- * (null) is also rejected per the Phase-8b activity×goalType matrix.
+ * Only the distance activities ([DISTANCE_ACTIVITIES]: running, cycling,
+ * swimming, rowing) are allowed as an activity scope; anything else is
+ * rejected in [init]. "Any activity" (null) is also rejected per the
+ * activity×goalType matrix. Swim goals are stored and shown in km too.
  */
 class DistanceGoal(
     id: String,
@@ -218,15 +248,29 @@ class DistanceGoal(
     createdAt, completedNotified, isMain) {
 
     init {
-        require(activityType == ActivityType.RUNNING || activityType == ActivityType.CYCLING) {
-            "DistanceGoal requires RUNNING or CYCLING"
+        require(activityType in DISTANCE_ACTIVITIES) {
+            "DistanceGoal requires RUNNING, CYCLING, SWIMMING or ROWING"
         }
     }
 
     override val unitLabel: String = "km"
 
+    /**
+     * Sums metres and converts once: whole-metre swims (laps × 25 or 50 m)
+     * then add up exactly, where summing each workout's km would not
+     * (0.6 + 0.7 + 0.2 = 1.4999999999999998).
+     */
     override fun measure(workouts: List<Workout>): Double =
-        workouts.filterIsInstance<DistanceWorkout>().sumOf { it.distanceKm() }
+        workouts.filterIsInstance<DistanceWorkout>().sumOf { it.distanceMeters } / METRES_PER_KM
+
+    companion object {
+        private const val METRES_PER_KM = 1_000.0
+
+        /** Activities a distance goal can track (phase 8d adds swimming and rowing). */
+        val DISTANCE_ACTIVITIES: Set<ActivityType> = setOf(
+            ActivityType.RUNNING, ActivityType.CYCLING, ActivityType.SWIMMING, ActivityType.ROWING,
+        )
+    }
 }
 
 /**

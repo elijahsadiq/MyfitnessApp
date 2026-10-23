@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Longest workout note the server accepts (WorkoutController: maxLength('notes', 2000)). -->
+    <integer name="workout_notes_max_length">2000</integer>
+</resources>

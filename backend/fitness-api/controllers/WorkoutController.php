@@ -3,13 +3,34 @@
  * /workouts endpoints. All queries are scoped by the authenticated user_id.
  * POST /workouts is upsert-on-client_uuid — the same device-generated UUID
  * can be posted twice safely (idempotent, ready for phase-4 sync).
+ *
+ * ### Rules per activity type (phase 8d)
+ *   - distanceMeters: required (> 0) for every type except WEIGHTLIFTING
+ *   - sets:           required for WEIGHTLIFTING only
+ *   - routePoints:    RUNNING, CYCLING and ROWING only (GPS-tracked)
+ *   - laps + poolLengthM: SWIMMING only, optional, sent together
+ *     (distanceMeters = laps × poolLengthM)
+ *   - caloriesKcal:   optional on every type; worked out by the app at
+ *     save time from the profile weight
  */
 final class WorkoutController
 {
-    private const ALLOWED_TYPES = ['RUNNING', 'CYCLING', 'WEIGHTLIFTING'];
+    private const ALLOWED_TYPES = ['RUNNING', 'CYCLING', 'WEIGHTLIFTING', 'SWIMMING', 'ROWING'];
+
+    /** Activity types that can carry a GPS route. */
+    private const ROUTE_TYPES = ['RUNNING', 'CYCLING', 'ROWING'];
 
     /** Hard cap so a malformed client cannot flood route_points (~2.5 h at 1 Hz). */
     private const MAX_ROUTE_POINTS = 10000;
+
+    /** Swim-only bounds (laps fits SMALLINT, pool length fits TINYINT). */
+    private const LAPS_MIN        = 1;
+    private const LAPS_MAX        = 400;
+    private const POOL_LENGTH_MIN = 10;
+    private const POOL_LENGTH_MAX = 100;
+
+    /** Calories bound — fits the SMALLINT UNSIGNED column with room to spare. */
+    private const CALORIES_MAX = 20000;
 
     public static function health(array $_params, array $_body): void
     {
@@ -23,7 +44,8 @@ final class WorkoutController
 
         $type = self::stringOrNull($_GET['type'] ?? null);
         if ($type !== null && !in_array($type, self::ALLOWED_TYPES, true)) {
-            Response::error('Invalid type filter', 400, ['type' => 'Must be RUNNING, CYCLING or WEIGHTLIFTING']);
+            Response::error('Invalid type filter', 400,
+                ['type' => 'Must be one of: ' . implode(', ', self::ALLOWED_TYPES)]);
         }
         $from = self::stringOrNull($_GET['from'] ?? null);
         $to   = self::stringOrNull($_GET['to']   ?? null);
@@ -68,6 +90,9 @@ final class WorkoutController
             ->required('startTime')->isDatetime('startTime')
             ->required('durationSeconds')->integer('durationSeconds')->inRange('durationSeconds', 1, 86400)
             ->numeric('distanceMeters')->inRange('distanceMeters', 0, 300000)
+            ->integer('laps')->inRange('laps', self::LAPS_MIN, self::LAPS_MAX)
+            ->integer('poolLengthM')->inRange('poolLengthM', self::POOL_LENGTH_MIN, self::POOL_LENGTH_MAX)
+            ->integer('caloriesKcal')->inRange('caloriesKcal', 0, self::CALORIES_MAX)
             ->maxLength('notes', 2000);
 
         if ($v->fails()) {
@@ -79,12 +104,35 @@ final class WorkoutController
         $sets         = is_array($body['sets'] ?? null) ? $body['sets'] : [];
         $routePoints  = is_array($body['routePoints'] ?? null) ? $body['routePoints'] : [];
 
+        // Swim-only fields. A JSON null counts as "not sent", so a client
+        // that always serialises every key still passes for other types.
+        $hasLaps = isset($body['laps']);
+        $hasPool = isset($body['poolLengthM']);
+        if (($hasLaps || $hasPool) && $activityType !== 'SWIMMING') {
+            $fields = [];
+            if ($hasLaps) {
+                $fields['laps'] = 'Only swimming workouts can have laps';
+            }
+            if ($hasPool) {
+                $fields['poolLengthM'] = 'Only swimming workouts can have a pool length';
+            }
+            Response::error('Validation failed', 422, $fields);
+        }
+        if ($hasLaps && !$hasPool) {
+            Response::error('Validation failed', 422,
+                ['poolLengthM' => 'Pool length is required when laps are sent']);
+        }
+        if ($hasPool && !$hasLaps) {
+            Response::error('Validation failed', 422,
+                ['laps' => 'Laps are required when a pool length is sent']);
+        }
+
         // Validate the route payload once up front — easier for the client
         // than discovering errors deep inside the transaction.
         if (!empty($routePoints)) {
-            if ($activityType === 'WEIGHTLIFTING') {
+            if (!in_array($activityType, self::ROUTE_TYPES, true)) {
                 Response::error('Validation failed', 422,
-                    ['routePoints' => 'Weightlifting workouts cannot carry a route']);
+                    ['routePoints' => ucfirst(strtolower($activityType)) . ' workouts cannot carry a route']);
             }
             if (count($routePoints) > self::MAX_ROUTE_POINTS) {
                 Response::error('Validation failed', 422,
@@ -136,15 +184,17 @@ final class WorkoutController
                 }
             }
         } else {
-            // Distance workouts must have a positive distance.
+            // Every other type (run, ride, swim, row) is a distance
+            // workout and must have a positive distance.
             if (!isset($body['distanceMeters']) || (float) $body['distanceMeters'] <= 0) {
                 Response::error('Validation failed', 422, ['distanceMeters' => 'Distance is required for distance workouts']);
             }
         }
 
         // Upsert: if we already have a row with this (user_id, client_uuid),
-        // return it — do NOT create a duplicate. Route points on the retry
-        // are intentionally ignored; the first successful create wins.
+        // return it — do NOT create a duplicate. Everything on the retry
+        // (route points, laps, pool length, calories) is intentionally
+        // ignored; the first successful create wins.
         $existing = Workout::findByClientUuid($userId, $clientUuid);
         if ($existing !== null) {
             $existingSets = $existing['activity_type'] === 'WEIGHTLIFTING'
@@ -162,6 +212,9 @@ final class WorkoutController
                 (string) $body['startTime'],
                 (int) $body['durationSeconds'],
                 isset($body['distanceMeters']) ? (float) $body['distanceMeters'] : null,
+                $hasPool ? (int) $body['poolLengthM'] : null,
+                $hasLaps ? (int) $body['laps'] : null,
+                isset($body['caloriesKcal']) ? (int) $body['caloriesKcal'] : null,
                 isset($body['notes']) ? (string) $body['notes'] : null,
                 $sets,
                 $routePoints
@@ -232,17 +285,25 @@ final class WorkoutController
             }
         }
 
-        $ok = Workout::updateNotes($id, $userId, $notes);
-        if (!$ok) {
+        // Look the row up instead of trusting the UPDATE's row count:
+        // MySQL counts only rows that actually changed, so saving the same
+        // note again (or retrying after a lost response) would otherwise
+        // come back as 404 — and the app treats 404 as "deleted elsewhere"
+        // and drops its local copy.
+        if (Workout::findById($id, $userId) === null) {
             Response::error('Workout not found', 404);
         }
+        Workout::updateNotes($id, $userId, $notes);
 
         $row = Workout::findById($id, $userId);
-        $sets = ($row !== null && $row['activity_type'] === 'WEIGHTLIFTING')
+        if ($row === null) {
+            Response::error('Workout not found', 404);
+        }
+        $sets = $row['activity_type'] === 'WEIGHTLIFTING'
             ? Workout::setsFor($id)
             : [];
         $route = Workout::routeFor($id);
-        Response::success(Workout::toDto($row ?? [], $sets, $route));
+        Response::success(Workout::toDto($row, $sets, $route));
     }
 
     private static function stringOrNull(mixed $v): ?string

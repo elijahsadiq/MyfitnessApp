@@ -28,6 +28,6 @@
         android:paddingHorizontal="10dp"
         android:paddingVertical="4dp"
         android:textAllCaps="false"
-        android:textColor="@color/text_secondary"
+        android:textColor="@color/text_pill"
         tools:text="3 workouts · 37.2 km" />
 </LinearLayout>

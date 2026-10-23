@@ -1,34 +1,9 @@
--- Fitness API — schema (phase 9).
---
--- This file is the AUTHORITATIVE schema for a fresh install. The docker
--- compose service mounts `backend/sql/` as /docker-entrypoint-initdb.d,
--- so this file + 02_seed.sql are the only two files MySQL executes on
--- `docker compose down -v && docker compose up -d`. One-time migrations
--- that walked the historical shape live separately in
--- backend/sql/migrations/ and are NOT auto-run — they only exist so a
--- marker can rebuild the shape step-by-step if they want to inspect it.
---
--- Runs on both MySQL 8.4 (Docker) and MariaDB 10.x (XAMPP): utf8mb4
--- with utf8mb4_unicode_ci is declared explicitly on every table so the
--- XAMPP import doesn't fall back to MySQL 8's utf8mb4_0900_ai_ci default
--- (which MariaDB rejects).
---
--- XAMPP users: import 01_schema.sql then 02_seed.sql — nothing else.
-
 CREATE DATABASE IF NOT EXISTS fitness_app
     DEFAULT CHARACTER SET utf8mb4
     DEFAULT COLLATE utf8mb4_unicode_ci;
 
 USE fitness_app;
 
--- ---------------------------------------------------------------------
--- users
---   avatar_path is the relative path the app loads the photo from
---   (`avatars/<random>.jpg`, served by GET /avatars/{file}); avatar_jpeg
---   holds the image itself. Keeping the bytes in MySQL means photos
---   survive restarts on hosts that wipe their disk (Render).
---   NULL = no custom avatar.
--- ---------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS users (
     id              BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     email           VARCHAR(191) NOT NULL,
@@ -69,10 +44,13 @@ CREATE TABLE IF NOT EXISTS workouts (
     id                BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     user_id           BIGINT UNSIGNED NOT NULL,
     client_uuid       CHAR(36) NOT NULL,
-    activity_type     ENUM('RUNNING', 'CYCLING', 'WEIGHTLIFTING') NOT NULL,
+    activity_type     ENUM('RUNNING', 'CYCLING', 'WEIGHTLIFTING', 'SWIMMING', 'ROWING') NOT NULL,
     start_time        DATETIME NOT NULL,
     duration_seconds  INT UNSIGNED NOT NULL,
     distance_meters   DECIMAL(9,2) NULL,
+    pool_length_m     TINYINT UNSIGNED NULL,
+    laps              SMALLINT UNSIGNED NULL,
+    calories_kcal     SMALLINT UNSIGNED NULL,
     notes             TEXT NULL,
     created_at        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -120,7 +98,7 @@ CREATE TABLE IF NOT EXISTS route_points (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ---------------------------------------------------------------------
--- goals (phase 8b shape)
+-- goals
 --   Goals cover a chosen number of days (duration_days: 1 to 365)
 --   starting on start_date. last_day is the LAST day included — so a
 --   7-day goal starting Mon has last_day = Sun of the same week.
@@ -140,7 +118,7 @@ CREATE TABLE IF NOT EXISTS goals (
     id                 BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     user_id            BIGINT UNSIGNED NOT NULL,
     title              VARCHAR(120) NOT NULL DEFAULT '',
-    activity_type      ENUM('RUNNING', 'CYCLING', 'WEIGHTLIFTING') NULL,
+    activity_type      ENUM('RUNNING', 'CYCLING', 'WEIGHTLIFTING', 'SWIMMING', 'ROWING') NULL,
     goal_type          VARCHAR(40) NOT NULL,
     target_value       DECIMAL(10,2) NOT NULL,
     start_date         DATE NOT NULL,

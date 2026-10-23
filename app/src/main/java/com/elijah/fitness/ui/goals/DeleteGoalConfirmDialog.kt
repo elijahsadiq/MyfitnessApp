@@ -11,6 +11,7 @@ import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.setFragmentResult
 import com.elijah.fitness.R
 import com.elijah.fitness.data.model.ActivityType
+import com.elijah.fitness.data.remote.mapper.activityTypeOrNull
 import com.elijah.fitness.databinding.DialogDeleteGoalBinding
 
 /**
@@ -35,7 +36,8 @@ class DeleteGoalConfirmDialog : DialogFragment() {
             ?: error("Missing goal id")
         val title = requireArguments().getString(ARG_TITLE).orEmpty()
         val activityName = requireArguments().getString(ARG_ACTIVITY_TYPE)
-        val activity = activityName?.let { ActivityType.valueOf(it) }
+        // An unknown value reads as "workouts" rather than crashing.
+        val activity = activityTypeOrNull(activityName)
 
         binding.deleteGoalBody.text = getString(
             R.string.goals_delete_confirm_body,
@@ -81,6 +83,8 @@ class DeleteGoalConfirmDialog : DialogFragment() {
         when (type) {
             ActivityType.RUNNING -> R.string.goals_delete_activity_word_runs
             ActivityType.CYCLING -> R.string.goals_delete_activity_word_rides
+            ActivityType.SWIMMING -> R.string.goals_delete_activity_word_swims
+            ActivityType.ROWING -> R.string.goals_delete_activity_word_rows
             ActivityType.WEIGHTLIFTING -> R.string.goals_delete_activity_word_workouts
             null -> R.string.goals_delete_activity_word_sessions
         }

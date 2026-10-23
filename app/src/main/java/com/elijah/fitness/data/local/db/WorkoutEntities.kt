@@ -37,6 +37,10 @@ enum class SyncState { SYNCED, PENDING_CREATE, PENDING_UPDATE, PENDING_DELETE }
  * @property uploadAttempted true once a POST for this row has been
  *   sent. A row deleted before that point never reached the server
  *   and can be dropped without a DELETE.
+ * @property laps swims only (phase 8d, database version 2).
+ * @property poolLengthM swims only (phase 8d, database version 2).
+ * @property caloriesKcal calories stored at save time (phase 8d,
+ *   database version 2); `null` on older workouts.
  */
 @Entity(tableName = "workouts", indices = [Index("startTimeMs")])
 data class WorkoutEntity(
@@ -51,6 +55,9 @@ data class WorkoutEntity(
     val routeCached: Boolean,
     val localVersion: Int = 0,
     val uploadAttempted: Boolean = false,
+    val laps: Int? = null,
+    val poolLengthM: Int? = null,
+    val caloriesKcal: Int? = null,
 )
 
 /** One set of a weightlifting workout. Deleted with its workout. */

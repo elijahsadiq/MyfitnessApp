@@ -8,7 +8,7 @@
  * belongs to another user returns 404, never 403 — refusing to reveal
  * that the id even exists.
  *
- * ### Server-side validation (phase-8b)
+ * ### Server-side validation (phase-8b, activities extended in 8d)
  *   - title: required, ≤ 120 chars
  *   - goal_type: one of distance / count / duration / volume
  *   - target_value: > 0, ≤ per-type upper bound (mirrors the Kotlin UI)
@@ -16,11 +16,12 @@
  *   - start_date: within ±1 day of the server's current date (DATE), so
  *     a user in UTC+3 creating a goal just after midnight gets the
  *     right start day while the containers run in UTC
+ *   - activity_type: one of Goal::ACTIVITY_TYPES, or null for "any"
  *   - activity_type × goal_type matrix:
- *       distance  ⇒ activity ∈ {RUNNING, CYCLING}
+ *       distance  ⇒ activity ∈ {RUNNING, CYCLING, SWIMMING, ROWING}
  *       volume    ⇒ activity = WEIGHTLIFTING
- *       duration  ⇒ activity ∈ {RUNNING, CYCLING, WEIGHTLIFTING, null}
- *       count     ⇒ activity ∈ {RUNNING, CYCLING, WEIGHTLIFTING, null}
+ *       duration  ⇒ any activity type, or null
+ *       count     ⇒ any activity type, or null
  *     See validateActivityGoalTypeCombo for the matrix.
  */
 final class GoalController
@@ -112,9 +113,19 @@ final class GoalController
             ->modify('+' . ($durationDays - 1) . ' days')
             ->format('Y-m-d');
 
+        // A new target, metric, activity or span is a new goal to reach:
+        // clear completed_notified so finishing it is celebrated again.
+        // A title-only edit (or saving unchanged values) keeps the flag.
+        $definitionChanged =
+            self::stringOrNull($existing['activity_type'] ?? null) !== $activityType
+            || (string) $existing['goal_type'] !== $goalType
+            || abs((float) $existing['target_value'] - $target) >= 0.005
+            || (int) $existing['duration_days'] !== $durationDays;
+
         Goal::update(
             $id, $userId, (string) $body['title'],
-            $activityType, $goalType, $target, $durationDays, $lastDate
+            $activityType, $goalType, $target, $durationDays, $lastDate,
+            $definitionChanged
         );
         $row = Goal::findById($id, $userId);
         Response::success(Goal::toDto($row ?? []));
@@ -198,16 +209,28 @@ final class GoalController
      * Flip the `completed_notified` flag to 1. Called by the client the
      * first time it celebrates a goal reaching 100% so a subsequent
      * refresh (or a new session) doesn't fire the celebration again.
+     *
+     * Idempotent: a second call (another device, or a retry after a lost
+     * response) also gets 200. 404 only when the goal doesn't exist or
+     * belongs to someone else.
      */
     public static function markNotified(array $params, array $_body): void
     {
         $userId = Auth::requireUser();
-        $ok = Goal::markCompletedNotified((int) $params['id'], $userId);
-        if (!$ok) {
+        $id = (int) $params['id'];
+        // Look the goal up instead of trusting the UPDATE's row count:
+        // MySQL counts only rows that actually changed, so a flag that is
+        // already 1 would otherwise come back as 404.
+        if (Goal::findById($id, $userId) === null) {
             Response::error('Goal not found', 404);
         }
-        $row = Goal::findById((int) $params['id'], $userId);
-        Response::success(Goal::toDto($row ?? []));
+        Goal::markCompletedNotified($id, $userId);
+
+        $row = Goal::findById($id, $userId);
+        if ($row === null) {
+            Response::error('Goal not found', 404);
+        }
+        Response::success(Goal::toDto($row));
     }
 
     // ---------------------------------------------------------------------
@@ -270,21 +293,21 @@ final class GoalController
     /**
      * Enforce the activity × goalType matrix from the brief:
      *
-     *   distance  ⇒ RUNNING / CYCLING          (NOT null, NOT WEIGHTLIFTING)
-     *   volume    ⇒ WEIGHTLIFTING              (NOT null, NOT RUNNING, NOT CYCLING)
-     *   duration  ⇒ RUNNING / CYCLING / WEIGHTLIFTING / null
-     *   count     ⇒ RUNNING / CYCLING / WEIGHTLIFTING / null
+     *   distance  ⇒ RUNNING / CYCLING / SWIMMING / ROWING  (NOT null, NOT WEIGHTLIFTING)
+     *   volume    ⇒ WEIGHTLIFTING                          (NOT null, no other type)
+     *   duration  ⇒ any activity type / null
+     *   count     ⇒ any activity type / null
      */
     private static function validateActivityGoalTypeCombo(string $goalType, ?string $activityType): void
     {
-        $distanceAllowed = ['RUNNING', 'CYCLING'];
+        $distanceAllowed = ['RUNNING', 'CYCLING', 'SWIMMING', 'ROWING'];
         $volumeAllowed   = ['WEIGHTLIFTING'];
 
         if ($goalType === 'distance' && !in_array($activityType, $distanceAllowed, true)) {
             Response::error(
                 'Validation failed',
                 422,
-                ['activityType' => 'Distance goals require Running or Cycling']
+                ['activityType' => 'Distance goals require Running, Cycling, Swimming or Rowing']
             );
         }
         if ($goalType === 'volume' && !in_array($activityType, $volumeAllowed, true)) {

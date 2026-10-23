@@ -8,10 +8,13 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.elijah.fitness.AppContainer
 import com.elijah.fitness.R
+import com.elijah.fitness.data.model.ActivityType
 import com.elijah.fitness.data.model.StrengthSet
 import com.elijah.fitness.data.model.StrengthWorkout
 import com.elijah.fitness.data.remote.ApiResult
 import com.elijah.fitness.data.repository.WorkoutRepository
+import com.elijah.fitness.util.CalorieEstimator
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -22,7 +25,6 @@ import kotlinx.coroutines.launch
 import java.time.Clock
 import java.time.Duration
 import java.time.LocalDate
-import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.ZoneId
 import java.util.UUID
@@ -37,7 +39,11 @@ import java.util.UUID
 class LogStrengthWorkoutViewModel(
     private val repository: WorkoutRepository,
     private val clock: Clock = Clock.systemDefaultZone(),
-    private val zone: ZoneId = ZoneId.systemDefault()
+    private val zone: ZoneId = ZoneId.systemDefault(),
+    /** [com.elijah.fitness.data.repository.UserSettings.weightForSavingKgOrNull] at save time. */
+    private val weightForSavingKg: () -> Double? = { null },
+    /** [AppContainer.rememberLoggedActivity]: called once the save worked. */
+    private val rememberActivity: (ActivityType) -> Unit = {},
 ) : ViewModel() {
 
     private val _date = MutableStateFlow(LocalDate.now(clock))
@@ -88,6 +94,13 @@ class LogStrengthWorkoutViewModel(
         }
     }
 
+    /**
+     * Validates the form and saves the workout: the shared [LogFormRules]
+     * (start not in the future; minutes and seconds 0–59; duration above
+     * zero and at most 24 h) and at least one set. Emits [Event.Saved],
+     * [Event.ValidationFailed] or — when the save itself fails, including
+     * a local database error — [Event.SaveFailed] on [events].
+     */
     fun save(
         hours: Int,
         minutes: Int,
@@ -95,24 +108,18 @@ class LogStrengthWorkoutViewModel(
         notes: String
     ) {
         if (_isSaving.value) return
-        val startInstant = LocalDateTime.of(_date.value, _time.value)
-            .atZone(zone)
-            .toInstant()
-        val duration = Duration.ofSeconds(
-            hours * 3_600L + minutes * 60L + seconds.toLong()
-        )
+        val startInstant = LogFormRules.startInstant(_date.value, _time.value, zone)
+        val duration = Duration.ofSeconds(LogFormRules.durationSeconds(hours, minutes, seconds))
         val currentSets = _sets.value
 
         val errors = buildList {
-            if (startInstant.isAfter(clock.instant())) {
-                add(FieldError(Field.DATE, R.string.log_error_date_in_future))
+            LogFormRules.startError(startInstant, clock.instant())?.let {
+                add(FieldError(Field.DATE, it))
             }
-            // Same value checks as the run / ride form: 75 minutes is not
-            // a valid "minutes" entry, it's 1 h 15 min.
-            if (minutes !in 0..59 || seconds !in 0..59 || hours < 0) {
-                add(FieldError(Field.DURATION, R.string.log_error_duration_out_of_range))
-            } else if (duration.isZero || duration.isNegative) {
-                add(FieldError(Field.DURATION, R.string.log_error_duration_zero))
+            // Same value checks as every log form: 75 minutes is not a
+            // valid "minutes" entry, it's 1 h 15 min.
+            LogFormRules.durationError(hours, minutes, seconds)?.let {
+                add(FieldError(Field.DURATION, it))
             }
             if (currentSets.isEmpty()) {
                 add(FieldError(Field.SETS, R.string.log_error_sets_required))
@@ -123,19 +130,41 @@ class LogStrengthWorkoutViewModel(
             return
         }
 
-        val workout = StrengthWorkout(
+        val probe = StrengthWorkout(
             id = workoutId,
             startTime = startInstant,
             duration = duration,
             sets = currentSets.toList(),
             notes = notes.trim().takeIf { it.isNotEmpty() }
         )
+        // Phase 8d: store the calories with the workout (none while the
+        // profile weight isn't known — screens work them out later).
+        val workout = StrengthWorkout(
+            id = probe.id,
+            startTime = probe.startTime,
+            duration = probe.duration,
+            sets = probe.sets,
+            notes = probe.notes,
+            caloriesKcal = CalorieEstimator.storedWorkoutKcal(probe, weightForSavingKg()),
+        )
         _isSaving.value = true
         viewModelScope.launch {
-            val result = repository.addWorkout(workout)
+            // A Room / disk failure must show an error with Retry, never
+            // crash the app (same as Log a swim).
+            val result = try {
+                repository.addWorkout(workout)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                ApiResult.Error(message = "", status = 0)
+            }
             _isSaving.value = false
             when (result) {
-                is ApiResult.Success -> _events.send(Event.Saved(workout.id))
+                is ApiResult.Success -> {
+                    // The Log a workout sheet opens on Workout next time.
+                    rememberActivity(workout.type)
+                    _events.send(Event.Saved(workout.id))
+                }
                 ApiResult.NetworkError ->
                     _events.send(Event.SaveFailed(R.string.log_error_save_network))
                 is ApiResult.Error ->
@@ -154,7 +183,9 @@ class LogStrengthWorkoutViewModel(
                 LogStrengthWorkoutViewModel(
                     repository = container.workoutRepository,
                     clock = clock,
-                    zone = zone
+                    zone = zone,
+                    weightForSavingKg = { container.userSettings.weightForSavingKgOrNull() },
+                    rememberActivity = container::rememberLoggedActivity,
                 )
             }
         }

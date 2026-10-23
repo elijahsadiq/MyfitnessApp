@@ -73,7 +73,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="2dp"
                         android:ellipsize="end"
-                        android:maxLines="1"
+                        android:maxLines="2"
                         android:textColor="@color/text_secondary"
                         tools:text="Today, Wed 7 Oct · 06:30" />
 

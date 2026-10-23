@@ -134,10 +134,30 @@
         <item name="bottomSheetStyle">@style/Widget.Fitness.BottomSheet</item>
     </style>
 
+    <!-- Log a workout sheet (LogSheet.dc.html): the page behind is dimmed
+         to 50 %, darker than Material's default 32 %. -->
+    <style name="ThemeOverlay.Fitness.BottomSheetDialog.LogSheet">
+        <item name="android:backgroundDimAmount">0.5</item>
+    </style>
+
+    <!--
+      New goal sheet (NewGoal.dc.html): a warm canvas sheet. The page
+      behind it is dimmed to the design's #3A3E36 strip (76 % black over
+      the #F5F6F2 canvas).
+    -->
+    <style name="ThemeOverlay.Fitness.BottomSheetDialog.NewGoal">
+        <item name="android:backgroundDimAmount">0.76</item>
+        <item name="bottomSheetStyle">@style/Widget.Fitness.BottomSheet.Warm</item>
+    </style>
+
     <style name="Widget.Fitness.BottomSheet" parent="Widget.Material3.BottomSheet.Modal">
         <item name="backgroundTint">@color/surface_white</item>
         <item name="shapeAppearance">@style/ShapeAppearance.Fitness.BottomSheet</item>
         <item name="paddingBottomSystemWindowInsets">true</item>
+    </style>
+
+    <style name="Widget.Fitness.BottomSheet.Warm">
+        <item name="backgroundTint">@color/background_warm</item>
     </style>
 
     <style name="ShapeAppearance.Fitness.BottomSheet" parent="ShapeAppearance.Material3.Corner.None">
@@ -281,12 +301,18 @@
         <item name="colorPrimary">@color/text_primary</item>
         <item name="colorOnPrimary">@color/white</item>
         <item name="colorAccent">@color/text_primary</item>
+        <!-- "Select date" / "Select time" sit on the grey picker
+             surface: text_secondary is only 4.2:1 there, this is 5.8:1. -->
+        <item name="colorOnSurfaceVariant">@color/text_body_muted</item>
     </style>
 
     <style name="ThemeOverlay.Fitness.MaterialTimePicker" parent="ThemeOverlay.Material3.MaterialTimePicker">
         <item name="colorPrimary">@color/text_primary</item>
         <item name="colorOnPrimary">@color/white</item>
         <item name="colorAccent">@color/text_primary</item>
+        <!-- "Select date" / "Select time" sit on the grey picker
+             surface: text_secondary is only 4.2:1 there, this is 5.8:1. -->
+        <item name="colorOnSurfaceVariant">@color/text_body_muted</item>
     </style>
 
     <!--
@@ -413,44 +439,51 @@
         <item name="android:accessibilityLiveRegion">polite</item>
     </style>
 
-    <!-- One big hours / minutes / seconds box. -->
+    <!--
+      Duration cells (phase 8d, LogSwim.dc.html) — the h / min / s boxes of
+      DurationInputView, shared by every log form. One white card per
+      unit: the number (26sp ExtraBold) with its unit right after it. The
+      border turns 2dp dark while the number has focus.
+    -->
     <style name="Widget.Fitness.DurationCell" parent="">
-        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_width">0dp</item>
         <item name="android:layout_height">wrap_content</item>
-        <item name="android:minHeight">64dp</item>
-        <item name="android:background">@drawable/bg_log_duration_cell</item>
-        <item name="android:gravity">center</item>
-        <item name="android:imeOptions">actionNext</item>
-        <item name="android:importantForAutofill">no</item>
-        <item name="android:inputType">number</item>
-        <item name="android:maxLines">1</item>
-        <!-- Both attributes: AppCompat prefers the app-namespace font, and
-             the theme sets that one to the regular family. -->
-        <item name="android:fontFamily">@font/plus_jakarta_sans_extrabold</item>
-        <item name="fontFamily">@font/plus_jakarta_sans_extrabold</item>
-        <item name="android:textColor">@color/text_primary</item>
-        <item name="android:textSize">34sp</item>
-        <item name="android:hint">@string/log_duration_hint</item>
-        <item name="android:textColorHint">@color/outline_variant</item>
-    </style>
-
-    <style name="Widget.Fitness.DurationCellLabel" parent="TextAppearance.Fitness.LabelMd">
-        <item name="android:layout_width">wrap_content</item>
-        <item name="android:layout_height">wrap_content</item>
-        <item name="android:layout_marginTop">6dp</item>
-        <item name="android:textColor">@color/text_secondary</item>
+        <item name="android:layout_weight">1</item>
+        <item name="android:orientation">horizontal</item>
+        <!-- Top gravity: LinearLayout only lines children up on their
+             baselines for top / bottom gravity ("32" and "min"). -->
+        <item name="android:gravity">top|start</item>
+        <item name="android:baselineAligned">true</item>
+        <item name="android:background">@drawable/bg_input_card</item>
+        <item name="android:paddingStart">@dimen/duration_cell_padding_horizontal</item>
+        <item name="android:paddingEnd">@dimen/duration_cell_padding_horizontal</item>
+        <item name="android:paddingTop">@dimen/duration_cell_padding_vertical</item>
+        <item name="android:paddingBottom">@dimen/duration_cell_padding_vertical</item>
+        <!-- The cell shows the number's focus (its border). -->
+        <item name="android:addStatesFromChildren">true</item>
+        <!-- TalkBack reads the number field itself, labelled "Hours" etc. -->
         <item name="android:importantForAccessibility">no</item>
     </style>
 
-    <style name="Widget.Fitness.DurationColon" parent="TextAppearance.Fitness.DisplayMetric">
+    <!-- The number inside a duration cell. -->
+    <style name="Widget.Fitness.DurationCellInput" parent="TextAppearance.Fitness.DurationValue">
         <item name="android:layout_width">wrap_content</item>
-        <item name="android:layout_height">64dp</item>
-        <item name="android:gravity">center</item>
-        <item name="android:paddingStart">@dimen/space_xs</item>
-        <item name="android:paddingEnd">@dimen/space_xs</item>
-        <item name="android:text">:</item>
-        <item name="android:textColor">@color/goal_main_muted</item>
-        <item name="android:textSize">28sp</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:background">@null</item>
+        <item name="android:padding">0dp</item>
+        <item name="android:imeOptions">actionNext</item>
+        <item name="android:inputType">number</item>
+        <item name="android:maxLength">2</item>
+        <item name="android:maxLines">1</item>
+        <item name="android:textColorHint">@color/text_placeholder</item>
+    </style>
+
+    <!-- The unit after the number ("h", "min", "s"). -->
+    <style name="Widget.Fitness.DurationCellUnit" parent="TextAppearance.Fitness.DurationUnit">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginStart">@dimen/duration_unit_gap</item>
+        <item name="android:maxLines">1</item>
         <item name="android:importantForAccessibility">no</item>
     </style>
 
@@ -541,5 +574,392 @@
         <item name="fontFamily">@font/plus_jakarta_sans_semibold</item>
         <item name="android:textAllCaps">false</item>
         <item name="rippleColor">@color/lime_ripple</item>
+    </style>
+    <!-- ================= Phase 8d — activities-v3 building blocks ================= -->
+
+    <!--
+      56dp lime call-to-action pill with a 16sp ExtraBold label (Log a
+      workout sheet, Log a swim, New goal). No vertical insets, so the
+      visible pill is the full 56dp. The 52dp Primary style is unchanged.
+    -->
+    <style name="Widget.Fitness.Button.Primary.Large">
+        <item name="android:layout_height">@dimen/button_cta_height</item>
+        <item name="android:minHeight">@dimen/button_cta_height</item>
+        <item name="android:insetTop">0dp</item>
+        <item name="android:insetBottom">0dp</item>
+        <item name="android:maxLines">1</item>
+        <item name="android:ellipsize">end</item>
+        <item name="android:textAppearance">@style/TextAppearance.Fitness.ButtonLarge</item>
+        <!-- Set on the widget itself: AppCompat lets the theme's default
+             font override a weight that only comes from textAppearance. -->
+        <item name="android:fontFamily">@font/plus_jakarta_sans_extrabold</item>
+        <item name="fontFamily">@font/plus_jakarta_sans_extrabold</item>
+    </style>
+
+    <!--
+      Round prev / next arrow: a 40dp white circle with a 1dp divider
+      border inside a 48dp touch target, 18dp chevron. Faded to 35 % and
+      disabled at the ends of a carousel (CarouselNavButtons).
+    -->
+    <style name="Widget.Fitness.RoundIconButton" parent="">
+        <item name="android:layout_width">@dimen/touch_target_min</item>
+        <item name="android:layout_height">@dimen/touch_target_min</item>
+        <item name="android:background">@drawable/bg_round_icon_button</item>
+        <item name="android:padding">@dimen/round_icon_button_icon_padding</item>
+        <item name="android:scaleType">fitCenter</item>
+        <item name="tint">@color/text_on_lime</item>
+    </style>
+
+    <!-- Header back button on full-screen forms: a 44dp white circle with a
+         1dp divider border inside a 48dp touch target, 20dp chevron. -->
+    <style name="Widget.Fitness.HeaderBackButton" parent="">
+        <item name="android:layout_width">@dimen/touch_target_min</item>
+        <item name="android:layout_height">@dimen/touch_target_min</item>
+        <item name="android:background">@drawable/bg_round_icon_button_large</item>
+        <item name="android:padding">@dimen/header_icon_button_icon_padding</item>
+        <item name="android:scaleType">fitCenter</item>
+        <item name="android:src">@drawable/ic_chevron_left_24</item>
+        <item name="android:contentDescription">@string/action_back_content_description</item>
+        <item name="tint">@color/text_on_lime</item>
+    </style>
+
+    <!--
+      Header row of every log form (LogSwim.dc.html): a HeaderBackButton
+      and a 22sp ExtraBold PageTitle. The row starts 2dp before the 20dp
+      margin so the button's 44dp circle lines up with it.
+    -->
+    <style name="Widget.Fitness.LogHeaderRow" parent="">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginStart">@dimen/header_row_outset</item>
+        <item name="android:gravity">center_vertical</item>
+        <item name="android:orientation">horizontal</item>
+    </style>
+
+    <style name="Widget.Fitness.LogHeaderTitle" parent="TextAppearance.Fitness.PageTitle">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_weight">1</item>
+        <item name="android:layout_marginStart">@dimen/log_header_title_gap</item>
+        <item name="android:ellipsize">end</item>
+        <item name="android:maxLines">1</item>
+    </style>
+
+    <!-- 40x4dp drag handle at the top of a bottom sheet. -->
+    <style name="Widget.Fitness.SheetHandle" parent="">
+        <item name="android:layout_width">@dimen/sheet_handle_width</item>
+        <item name="android:layout_height">@dimen/sheet_handle_height</item>
+        <item name="android:layout_gravity">center_horizontal</item>
+        <item name="android:background">@drawable/bg_sheet_drag_handle</item>
+        <item name="android:importantForAccessibility">no</item>
+    </style>
+
+    <!--
+      PillSegmentedControl configurations (activities-v3). Selected segment
+      is always surface_dark with white text; these only change the track
+      and the sizes.
+    -->
+    <style name="Widget.Fitness.PillSegmented" parent="">
+        <item name="pillSegmentHeight">@dimen/segment_log_height</item>
+        <item name="pillTrackPadding">@dimen/segment_log_track_padding</item>
+        <item name="pillSegmentGap">@dimen/segment_log_gap</item>
+        <item name="pillTrackColor">@color/surface_white</item>
+        <item name="pillTextSize">@dimen/segment_text_size</item>
+    </style>
+
+    <!-- Log a workout sheet: "Live with GPS" / "Add manually". -->
+    <style name="Widget.Fitness.PillSegmented.LogSheet">
+        <item name="pillTrackColor">@color/background_warm</item>
+    </style>
+
+    <!-- Log a swim: "25 m" / "50 m". -->
+    <style name="Widget.Fitness.PillSegmented.PoolLength">
+        <item name="pillSegmentHeight">@dimen/segment_pool_height</item>
+        <item name="pillTextSize">@dimen/segment_text_size_large</item>
+    </style>
+
+    <!-- New goal: "Distance" / "Time" / "Sessions". -->
+    <style name="Widget.Fitness.PillSegmented.MeasureBy">
+        <item name="pillSegmentHeight">@dimen/segment_measure_height</item>
+        <item name="pillTrackPadding">@dimen/segment_measure_track_padding</item>
+        <item name="pillSegmentGap">@dimen/segment_measure_gap</item>
+    </style>
+
+    <!--
+      StepperView (phase 8d): − value +. The defaults are the Log a swim
+      laps stepper (28sp value, at least 48dp wide); the New goal sheet
+      passes 18sp and 92dp through the stepper* attributes.
+    -->
+    <style name="Widget.Fitness.Stepper" parent="">
+        <item name="stepperValueTextSize">@dimen/text_size_stepper_value</item>
+        <item name="stepperValueMinWidth">@dimen/stepper_value_min_width</item>
+        <item name="stepperSymbolTextSize">@dimen/text_size_stepper_symbol</item>
+        <item name="stepperValueGap">@dimen/stepper_value_gap</item>
+    </style>
+
+    <!-- New goal sheet: 18sp value at least 92dp wide, 20sp symbols, 6dp gaps. -->
+    <style name="Widget.Fitness.Stepper.Goal">
+        <item name="stepperValueTextSize">@dimen/text_size_goal_stepper_value</item>
+        <item name="stepperValueMinWidth">@dimen/goal_stepper_value_min_width</item>
+        <item name="stepperSymbolTextSize">@dimen/text_size_goal_stepper_symbol</item>
+        <item name="stepperValueGap">@dimen/goal_stepper_value_gap</item>
+    </style>
+
+    <!-- One stepper button: a 44dp circle inside a 48dp touch target. -->
+    <style name="Widget.Fitness.StepperButton" parent="TextAppearance.Fitness.StepperSymbol">
+        <item name="android:layout_width">@dimen/touch_target_min</item>
+        <item name="android:layout_height">@dimen/touch_target_min</item>
+        <item name="android:gravity">center</item>
+        <item name="android:clickable">true</item>
+        <item name="android:focusable">true</item>
+        <item name="android:maxLines">1</item>
+    </style>
+
+    <!-- "−": background_warm circle with a 1dp divider border. -->
+    <style name="Widget.Fitness.StepperButton.Minus">
+        <item name="android:background">@drawable/bg_stepper_minus</item>
+        <item name="android:text">@string/stepper_minus_symbol</item>
+    </style>
+
+    <!-- "+": lime circle. -->
+    <style name="Widget.Fitness.StepperButton.Plus">
+        <item name="android:background">@drawable/bg_stepper_plus</item>
+        <item name="android:text">@string/stepper_plus_symbol</item>
+    </style>
+
+    <style name="Widget.Fitness.StepperValue" parent="TextAppearance.Fitness.StepperValue">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginStart">@dimen/stepper_value_gap</item>
+        <item name="android:layout_marginEnd">@dimen/stepper_value_gap</item>
+        <item name="android:gravity">center</item>
+        <item name="android:maxLines">1</item>
+        <item name="android:accessibilityLiveRegion">polite</item>
+    </style>
+
+    <!-- ================= Log a swim (LogSwim.dc.html) ================= -->
+
+    <!-- Section label above form cards ("WHEN", "LAPS", "DURATION",
+         "NOTES"): a TalkBack heading, like FormSectionTitle on the older
+         forms, so heading navigation jumps between sections. -->
+    <style name="Widget.Fitness.SectionLabel" parent="TextAppearance.Fitness.SectionLabel">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:accessibilityHeading" tools:ignore="NewApi">true</item>
+    </style>
+
+    <!-- Dark live-summary card: surface_charcoal, radius 26, padding 20. -->
+    <style name="Widget.Fitness.SummaryCard" parent="">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:background">@drawable/bg_summary_card</item>
+        <item name="android:orientation">vertical</item>
+        <item name="android:padding">@dimen/summary_card_padding</item>
+    </style>
+
+    <!-- 36dp lime tile with a 20dp icon (36 - 2 x 8dp padding), top right
+         of the summary card. -->
+    <style name="Widget.Fitness.SummaryIconTile" parent="">
+        <item name="android:layout_width">@dimen/summary_icon_tile_size</item>
+        <item name="android:layout_height">@dimen/summary_icon_tile_size</item>
+        <item name="android:background">@drawable/bg_summary_icon_tile</item>
+        <item name="android:padding">@dimen/space_sm</item>
+        <item name="android:scaleType">fitCenter</item>
+        <item name="android:importantForAccessibility">no</item>
+        <item name="tint">@color/text_on_lime</item>
+    </style>
+
+    <!-- Stat tile inside the summary card ("Distance", "Calories"). -->
+    <style name="Widget.Fitness.SummaryTile" parent="">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_weight">1</item>
+        <item name="android:background">@drawable/bg_summary_tile</item>
+        <item name="android:orientation">vertical</item>
+        <item name="android:paddingStart">@dimen/summary_tile_padding_horizontal</item>
+        <item name="android:paddingEnd">@dimen/summary_tile_padding_horizontal</item>
+        <item name="android:paddingTop">@dimen/summary_tile_padding_vertical</item>
+        <item name="android:paddingBottom">@dimen/summary_tile_padding_vertical</item>
+    </style>
+
+    <!-- Tappable white card (Date / Start time): radius 20, padding 14. -->
+    <style name="Widget.Fitness.FieldCard" parent="">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_height">match_parent</item>
+        <item name="android:layout_weight">1</item>
+        <item name="android:background">@drawable/bg_field_card_tappable</item>
+        <item name="android:clickable">true</item>
+        <item name="android:focusable">true</item>
+        <item name="android:orientation">vertical</item>
+        <item name="android:padding">@dimen/field_card_padding</item>
+    </style>
+
+    <!-- Notes field: white card, at least 84dp tall, 15sp text. -->
+    <style name="Widget.Fitness.NotesField" parent="TextAppearance.Fitness.BodyMd">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:minHeight">@dimen/notes_field_min_height</item>
+        <item name="android:background">@drawable/bg_input_card</item>
+        <item name="android:padding">@dimen/field_card_padding</item>
+        <item name="android:gravity">top|start</item>
+        <item name="android:inputType">textMultiLine|textCapSentences</item>
+        <item name="android:maxLength">@integer/workout_notes_max_length</item>
+        <item name="android:textSize">@dimen/text_size_notes</item>
+        <!-- BodyMd carries Material 3's letter spacing; the design has none. -->
+        <item name="android:letterSpacing">0</item>
+        <item name="android:textColor">@color/text_on_lime</item>
+        <item name="android:textColorHint">@color/text_placeholder</item>
+    </style>
+
+    <!-- ================= New goal sheet (NewGoal.dc.html) ================= -->
+
+    <!-- Dark live summary on the New goal sheet: padding 18 (Log a swim uses 20). -->
+    <style name="Widget.Fitness.SummaryCard.Goal">
+        <item name="android:padding">@dimen/goal_summary_padding</item>
+    </style>
+
+    <!-- One of the three summary tiles: padding 10 / 12, all as tall as the tallest. -->
+    <style name="Widget.Fitness.GoalSummaryTile" parent="">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_height">match_parent</item>
+        <item name="android:layout_weight">1</item>
+        <item name="android:background">@drawable/bg_summary_tile</item>
+        <item name="android:orientation">vertical</item>
+        <item name="android:paddingStart">@dimen/goal_summary_tile_padding_horizontal</item>
+        <item name="android:paddingEnd">@dimen/goal_summary_tile_padding_horizontal</item>
+        <item name="android:paddingTop">@dimen/goal_summary_tile_padding_vertical</item>
+        <item name="android:paddingBottom">@dimen/goal_summary_tile_padding_vertical</item>
+    </style>
+
+    <!-- A summary tile value ("11.7 km", "18 Nov", "3,430 kcal"): 15sp
+         ExtraBold that wraps when long ("2.8" / "workouts"), as the
+         design's CSS does. Lines are the font's own height (no font
+         padding: the design's normal line height, 1.26em), and the three
+         tiles stay as tall as the tallest (GoalSummaryTile). -->
+    <style name="Widget.Fitness.GoalTileValue" parent="TextAppearance.Fitness.GoalTileValue">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginTop">@dimen/summary_tile_label_gap</item>
+    </style>
+
+    <!-- The burn estimate tile value, in lime. -->
+    <style name="Widget.Fitness.GoalTileValue.Lime">
+        <item name="android:textColor">@color/lime_accent</item>
+    </style>
+
+    <!-- One row of the Adjust card: label + hint on the start side, a stepper at the end. -->
+    <style name="Widget.Fitness.AdjustRow" parent="">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:gravity">center_vertical</item>
+        <item name="android:orientation">horizontal</item>
+        <item name="android:baselineAligned">false</item>
+        <item name="android:paddingStart">@dimen/adjust_row_padding_start</item>
+        <item name="android:paddingEnd">@dimen/adjust_row_padding_end</item>
+        <item name="android:paddingTop">@dimen/adjust_row_padding_vertical</item>
+        <item name="android:paddingBottom">@dimen/adjust_row_padding_vertical</item>
+    </style>
+
+    <!-- ================================================================
+         History (activities-v3, phase 8d step 8)
+         ================================================================ -->
+
+    <!-- Filter chip with an activity icon: 40dp pill, 14sp Bold, selected
+         #121411 with white text, otherwise white with the card border.
+         Touch target stays 48dp (Material adds the inset). -->
+    <style name="Widget.Fitness.Chip.History" parent="Widget.Material3.Chip.Filter">
+        <item name="chipBackgroundColor">@color/history_chip_bg</item>
+        <item name="chipStrokeColor">@color/history_chip_stroke</item>
+        <item name="chipStrokeWidth">@dimen/stroke_hairline</item>
+        <item name="shapeAppearance">@style/ShapeAppearance.Fitness.Pill</item>
+        <item name="chipMinHeight">@dimen/history_chip_height</item>
+        <item name="chipIconVisible">true</item>
+        <item name="chipIconSize">@dimen/history_chip_icon</item>
+        <item name="chipIconTint">@color/history_chip_content</item>
+        <item name="checkedIconVisible">false</item>
+        <item name="chipStartPadding">@dimen/history_chip_padding_start</item>
+        <item name="iconStartPadding">0dp</item>
+        <item name="iconEndPadding">0dp</item>
+        <item name="textStartPadding">@dimen/history_chip_text_gap</item>
+        <item name="textEndPadding">0dp</item>
+        <item name="chipEndPadding">@dimen/history_chip_padding_end</item>
+        <item name="android:textColor">@color/history_chip_content</item>
+        <item name="android:textSize">@dimen/text_size_history_chip</item>
+        <item name="rippleColor">@color/lime_ripple</item>
+        <!-- Set on the widget itself: AppCompat lets the theme's default
+             font override a weight that only comes from textAppearance. -->
+        <item name="android:fontFamily">@font/plus_jakarta_sans_bold</item>
+        <item name="fontFamily">@font/plus_jakarta_sans_bold</item>
+    </style>
+
+    <!-- The "All" chip: no icon, 16dp each side. -->
+    <style name="Widget.Fitness.Chip.History.Text">
+        <item name="chipIconVisible">false</item>
+        <item name="chipEndPadding">@dimen/history_chip_padding_end_text</item>
+    </style>
+
+    <!-- History row card: white, 20dp corners, 1dp border, 10dp apart,
+         20dp from the screen edges. -->
+    <style name="Widget.Fitness.HistoryRow" parent="Widget.Material3.CardView.Outlined">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginStart">@dimen/screen_margin</item>
+        <item name="android:layout_marginEnd">@dimen/screen_margin</item>
+        <item name="android:layout_marginBottom">@dimen/history_row_gap</item>
+        <item name="cardBackgroundColor">@color/surface_white</item>
+        <item name="cardCornerRadius">@dimen/radius_row</item>
+        <item name="cardElevation">0dp</item>
+        <item name="strokeColor">@color/divider</item>
+        <item name="strokeWidth">@dimen/stroke_hairline</item>
+        <item name="android:clickable">true</item>
+        <item name="android:focusable">true</item>
+    </style>
+
+    <style name="Widget.Fitness.HistoryRowTitle" parent="">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:maxLines">1</item>
+        <item name="android:ellipsize">end</item>
+        <item name="android:textSize">@dimen/text_size_history_row_title</item>
+        <item name="android:textColor">@color/text_on_lime</item>
+        <item name="android:fontFamily">@font/plus_jakarta_sans_bold</item>
+        <item name="fontFamily">@font/plus_jakarta_sans_bold</item>
+    </style>
+
+    <style name="Widget.Fitness.HistoryRowSubtitle" parent="">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginTop">2dp</item>
+        <item name="android:maxLines">1</item>
+        <item name="android:ellipsize">end</item>
+        <item name="android:textSize">@dimen/text_size_history_row_subtitle</item>
+        <item name="android:textColor">@color/text_secondary</item>
+        <item name="android:fontFamily">@font/plus_jakarta_sans</item>
+        <item name="fontFamily">@font/plus_jakarta_sans</item>
+    </style>
+
+    <style name="Widget.Fitness.HistoryRowValue" parent="">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginStart">@dimen/history_row_text_gap</item>
+        <item name="android:maxLines">1</item>
+        <item name="android:textSize">@dimen/text_size_history_row_value</item>
+        <item name="android:textColor">@color/text_on_lime</item>
+        <item name="android:fontFamily">@font/plus_jakarta_sans_extrabold</item>
+        <item name="fontFamily">@font/plus_jakarta_sans_extrabold</item>
+    </style>
+
+    <!-- History FAB (activities-v3): 60dp lime rounded square (20dp corners),
+         26dp plus. The other screens keep the round Widget.Fitness.FAB. -->
+    <style name="Widget.Fitness.FAB.History">
+        <item name="fabCustomSize">@dimen/history_fab_size</item>
+        <item name="maxImageSize">@dimen/history_fab_icon</item>
+        <item name="shapeAppearance">@style/ShapeAppearance.Fitness.HistoryFab</item>
+        <item name="elevation">@dimen/history_fab_elevation</item>
+    </style>
+
+    <style name="ShapeAppearance.Fitness.HistoryFab" parent="ShapeAppearance.Material3.Corner.None">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">@dimen/history_fab_radius</item>
     </style>
 </resources>

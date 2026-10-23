@@ -34,6 +34,7 @@ import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
+import com.elijah.fitness.testutil.StringsXmlText
 
 /**
  * Phase 8b: the top of the list is always a Header row carrying the
@@ -230,58 +231,10 @@ class GoalsViewModelTest {
         assertEquals(listOf("ended-unmet"), ended)
     }
 
-    // ---------- completion Snackbar ----------
+    // ---------- completions (phase 8d: GoalCelebrationManager owns them) ----------
 
     @Test
-    fun `no celebration when the seed pass finds a goal already notified`() = runTest {
-        val g = WorkoutCountGoal(
-            id = "done", title = "done", activityType = null,
-            targetValue = 1.0, startDate = startDate, durationDays = 7,
-            createdAt = startDate.atStartOfDay(ZoneOffset.UTC).toInstant(),
-            completedNotified = true,
-        )
-        val w = com.elijah.fitness.data.model.RunningWorkout(
-            id = "w1", startTime = Instant.parse("2026-09-15T10:00:00Z"),
-            duration = Duration.ofMinutes(30), distanceMeters = 5_000.0,
-        )
-        val goalsFlow = MutableStateFlow<List<Goal>>(listOf(g))
-        val workoutsFlow = MutableStateFlow<List<Workout>>(listOf(w))
-        val repo = FakeGoalRepo(goalsFlow)
-        val vm = buildWith(goalsFlow, workoutsFlow, repo)
-        val events = collectEvents(vm)
-
-        assertTrue(events.none { it is GoalsViewModel.ErrorEvent.GoalCompleted })
-        assertEquals(0, repo.markNotifiedCallCount)
-    }
-
-    @Test
-    fun `celebrate on seed pass when the goal is complete but not yet notified`() = runTest {
-        val g = WorkoutCountGoal(
-            id = "pending", title = "pending", activityType = null,
-            targetValue = 1.0, startDate = startDate, durationDays = 7,
-            createdAt = startDate.atStartOfDay(ZoneOffset.UTC).toInstant(),
-            completedNotified = false,
-        )
-        val w = com.elijah.fitness.data.model.RunningWorkout(
-            id = "w1", startTime = Instant.parse("2026-09-15T10:00:00Z"),
-            duration = Duration.ofMinutes(30), distanceMeters = 5_000.0,
-        )
-        val goalsFlow = MutableStateFlow<List<Goal>>(listOf(g))
-        val workoutsFlow = MutableStateFlow<List<Workout>>(listOf(w))
-        val repo = FakeGoalRepo(goalsFlow)
-        val vm = buildWith(goalsFlow, workoutsFlow, repo)
-        val events = collectEvents(vm)
-
-        val completions = events.filterIsInstance<GoalsViewModel.ErrorEvent.GoalCompleted>()
-        assertEquals(1, completions.size)
-        // The snackbar shows the title rebuilt from the goal's fields
-        // (the stored title goes stale after "Add 7 more days").
-        assertEquals("1 session in 7 days", completions[0].title)
-        assertEquals(1, repo.markNotifiedCallCount)
-    }
-
-    @Test
-    fun `celebrate on transition from incomplete to complete during the session`() = runTest {
+    fun `the Goals tab leaves completions to the app-wide celebration`() = runTest {
         val g = WorkoutCountGoal(
             id = "grow", title = "grow", activityType = null,
             targetValue = 1.0, startDate = startDate, durationDays = 7,
@@ -297,8 +250,8 @@ class GoalsViewModelTest {
         val job = kotlinx.coroutines.CoroutineScope(dispatcher).launch {
             vm.errorEvents.collect { events.add(it) }
         }
+        val itemsJob = kotlinx.coroutines.CoroutineScope(dispatcher).launch { vm.items.collect { } }
         dispatcher.scheduler.advanceUntilIdle()
-        assertTrue(events.filterIsInstance<GoalsViewModel.ErrorEvent.GoalCompleted>().isEmpty())
 
         workoutsFlow.value = listOf(
             com.elijah.fitness.data.model.RunningWorkout(
@@ -308,11 +261,12 @@ class GoalsViewModelTest {
         )
         dispatcher.scheduler.advanceUntilIdle()
         job.cancel()
+        itemsJob.cancel()
 
-        val completions = events.filterIsInstance<GoalsViewModel.ErrorEvent.GoalCompleted>()
-        assertEquals(1, completions.size)
-        assertEquals("1 session in 7 days", completions[0].title)
-        assertEquals(1, repo.markNotifiedCallCount)
+        // No Snackbar event and no "notified" flag from this screen: the
+        // pop-up (or the notification) saves the flag instead.
+        assertTrue(events.isEmpty())
+        assertEquals(0, repo.markNotifiedCallCount)
     }
 
     // ---------- helpers ----------
@@ -328,16 +282,6 @@ class GoalsViewModelTest {
         return out
     }
 
-    private suspend fun collectEvents(vm: GoalsViewModel): MutableList<GoalsViewModel.ErrorEvent> {
-        val bag = mutableListOf<GoalsViewModel.ErrorEvent>()
-        val job = kotlinx.coroutines.CoroutineScope(dispatcher).launch {
-            vm.errorEvents.collect { bag.add(it) }
-        }
-        dispatcher.scheduler.advanceUntilIdle()
-        job.cancel()
-        return bag
-    }
-
     private fun distanceGoal(id: String, target: Double, createdAt: Instant): Goal =
         DistanceGoal(
             id = id, title = "goal $id", activityType = ActivityType.RUNNING,
@@ -351,7 +295,7 @@ class GoalsViewModelTest {
         val goalRepo = FakeGoalRepo(goalsFlow)
         val workoutRepo = FakeWorkoutRepo(workoutsFlow)
         val calc = GoalProgressCalculator(goalRepo, workoutRepo, clock, ZoneOffset.UTC)
-        return GoalsViewModel(goalRepo, calc, newDeleteCoordinator(goalRepo))
+        return GoalsViewModel(goalRepo, calc, newDeleteCoordinator(goalRepo), StringsXmlText)
     }
 
     private fun buildWith(
@@ -361,7 +305,7 @@ class GoalsViewModelTest {
     ): GoalsViewModel {
         val workoutRepo = FakeWorkoutRepo(workouts)
         val calc = GoalProgressCalculator(repo, workoutRepo, clock, ZoneOffset.UTC)
-        return GoalsViewModel(repo, calc, newDeleteCoordinator(repo))
+        return GoalsViewModel(repo, calc, newDeleteCoordinator(repo), StringsXmlText)
     }
 
     private fun newDeleteCoordinator(repo: GoalRepository): GoalDeleteCoordinator =

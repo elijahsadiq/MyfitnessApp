@@ -1,9 +1,11 @@
 package com.elijah.fitness.data.repository
 
 import com.elijah.fitness.data.model.CyclingWorkout
+import com.elijah.fitness.data.model.RowingWorkout
 import com.elijah.fitness.data.model.RunningWorkout
 import com.elijah.fitness.data.model.StrengthSet
 import com.elijah.fitness.data.model.StrengthWorkout
+import com.elijah.fitness.data.model.SwimmingWorkout
 import com.elijah.fitness.data.model.Workout
 import com.elijah.fitness.data.remote.ApiResult
 import kotlinx.coroutines.flow.Flow
@@ -73,6 +75,7 @@ class FakeWorkoutRepository(
                 duration = existing.duration,
                 distanceMeters = existing.distanceMeters,
                 notes = cleaned,
+                caloriesKcal = existing.caloriesKcal,
             )
             is CyclingWorkout -> CyclingWorkout(
                 id = existing.id,
@@ -80,6 +83,25 @@ class FakeWorkoutRepository(
                 duration = existing.duration,
                 distanceMeters = existing.distanceMeters,
                 notes = cleaned,
+                caloriesKcal = existing.caloriesKcal,
+            )
+            is SwimmingWorkout -> SwimmingWorkout(
+                id = existing.id,
+                startTime = existing.startTime,
+                duration = existing.duration,
+                distanceMeters = existing.distanceMeters,
+                notes = cleaned,
+                poolLengthM = existing.poolLengthM,
+                laps = existing.laps,
+                caloriesKcal = existing.caloriesKcal,
+            )
+            is RowingWorkout -> RowingWorkout(
+                id = existing.id,
+                startTime = existing.startTime,
+                duration = existing.duration,
+                distanceMeters = existing.distanceMeters,
+                notes = cleaned,
+                caloriesKcal = existing.caloriesKcal,
             )
             is StrengthWorkout -> StrengthWorkout(
                 id = existing.id,
@@ -87,6 +109,7 @@ class FakeWorkoutRepository(
                 duration = existing.duration,
                 sets = existing.sets,
                 notes = cleaned,
+                caloriesKcal = existing.caloriesKcal,
             )
             else -> existing
         }

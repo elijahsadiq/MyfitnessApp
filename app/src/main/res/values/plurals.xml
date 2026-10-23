@@ -2,15 +2,7 @@
 <resources>
     <!-- History weightlifting row: "2 exercises · 6 sets". Two plurals,
          because each word follows its own number. -->
-    <plurals name="history_row_exercise_count">
-        <item quantity="one">%1$d exercise</item>
-        <item quantity="other">%1$d exercises</item>
-    </plurals>
 
-    <plurals name="history_row_set_count">
-        <item quantity="one">%1$d set</item>
-        <item quantity="other">%1$d sets</item>
-    </plurals>
 
     <plurals name="home_metric_sessions_unit">
         <item quantity="one">workout</item>
@@ -47,5 +39,99 @@
     <plurals name="profile_logout_unsynced_body">
         <item quantity="one">%d workout hasn\'t synced yet. Logging out now removes it from this phone.</item>
         <item quantity="other">%d workouts haven\'t synced yet. Logging out now removes them from this phone.</item>
+    </plurals>
+
+    <!-- Phase 8d: goal titles. "Complete 12 runs in 30 days": %1$s = the
+         count, %2$s = the days from goal_title_days. -->
+    <plurals name="goal_title_days">
+        <item quantity="one">%1$d day</item>
+        <item quantity="other">%1$d days</item>
+    </plurals>
+    <plurals name="goal_title_sessions_run">
+        <item quantity="one">Complete %1$s run in %2$s</item>
+        <item quantity="other">Complete %1$s runs in %2$s</item>
+    </plurals>
+    <plurals name="goal_title_sessions_ride">
+        <item quantity="one">Complete %1$s ride in %2$s</item>
+        <item quantity="other">Complete %1$s rides in %2$s</item>
+    </plurals>
+    <plurals name="goal_title_sessions_swim">
+        <item quantity="one">Complete %1$s swim in %2$s</item>
+        <item quantity="other">Complete %1$s swims in %2$s</item>
+    </plurals>
+    <plurals name="goal_title_sessions_row">
+        <item quantity="one">Complete %1$s row in %2$s</item>
+        <item quantity="other">Complete %1$s rows in %2$s</item>
+    </plurals>
+    <plurals name="goal_title_sessions_lift">
+        <item quantity="one">Complete %1$s workout in %2$s</item>
+        <item quantity="other">Complete %1$s workouts in %2$s</item>
+    </plurals>
+    <!-- Any activity: every kind of workout counts. -->
+    <plurals name="goal_title_sessions_any">
+        <item quantity="one">Complete %1$s workout in %2$s</item>
+        <item quantity="other">Complete %1$s workouts in %2$s</item>
+    </plurals>
+
+    <!-- New goal sheet: the Days stepper value, "30 days". -->
+    <plurals name="new_goal_days_value">
+        <item quantity="one">%1$d day</item>
+        <item quantity="other">%1$d days</item>
+    </plurals>
+
+    <!-- Phase 8d: Home insights. -->
+    <plurals name="insight_pace_improved">
+        <item quantity="one">Your average pace improved by %1$d second per kilometre this month.</item>
+        <item quantity="other">Your average pace improved by %1$d seconds per kilometre this month.</item>
+    </plurals>
+    <plurals name="insight_dormant_run">
+        <item quantity="one">You haven\'t run in %1$d day.</item>
+        <item quantity="other">You haven\'t run in %1$d days.</item>
+    </plurals>
+    <plurals name="insight_dormant_ride">
+        <item quantity="one">You haven\'t cycled in %1$d day.</item>
+        <item quantity="other">You haven\'t cycled in %1$d days.</item>
+    </plurals>
+    <plurals name="insight_dormant_swim">
+        <item quantity="one">You haven\'t swum in %1$d day.</item>
+        <item quantity="other">You haven\'t swum in %1$d days.</item>
+    </plurals>
+    <plurals name="insight_dormant_row">
+        <item quantity="one">You haven\'t rowed in %1$d day.</item>
+        <item quantity="other">You haven\'t rowed in %1$d days.</item>
+    </plurals>
+
+    <!-- Goal-complete pop-up (phase 8d step 7) -->
+    <plurals name="goal_complete_body_early">
+        <item quantity="one">%1$s, finished %2$d day early.</item>
+        <item quantity="other">%1$s, finished %2$d days early.</item>
+    </plurals>
+    <plurals name="goal_complete_days_taken">
+        <item quantity="one">day taken</item>
+        <item quantity="other">days taken</item>
+    </plurals>
+    <plurals name="goal_complete_runs">
+        <item quantity="one">run</item>
+        <item quantity="other">runs</item>
+    </plurals>
+    <plurals name="goal_complete_rides">
+        <item quantity="one">ride</item>
+        <item quantity="other">rides</item>
+    </plurals>
+    <plurals name="goal_complete_swims">
+        <item quantity="one">swim</item>
+        <item quantity="other">swims</item>
+    </plurals>
+    <plurals name="goal_complete_rows">
+        <item quantity="one">row</item>
+        <item quantity="other">rows</item>
+    </plurals>
+    <plurals name="goal_complete_workouts">
+        <item quantity="one">workout</item>
+        <item quantity="other">workouts</item>
+    </plurals>
+    <plurals name="goal_complete_sessions">
+        <item quantity="one">session</item>
+        <item quantity="other">sessions</item>
     </plurals>
 </resources>

@@ -18,7 +18,10 @@ import com.elijah.fitness.databinding.ItemProgressActivityCardBinding
 import com.elijah.fitness.databinding.ItemProgressStatRowBinding
 import com.elijah.fitness.ui.base.BaseFragment
 import com.elijah.fitness.ui.base.SnackKind
+import com.elijah.fitness.util.ActivityLabels
+import com.elijah.fitness.util.DurationFormatter
 import com.elijah.fitness.util.Formatters
+import com.elijah.fitness.util.MeasureText
 
 /**
  * Progress tab — period/activity filter, bar chart of active minutes
@@ -61,6 +64,8 @@ class ProgressFragment : BaseFragment<FragmentProgressBinding>() {
             val f = when (checked.firstOrNull()) {
                 binding.filterRunning.id -> ActivityFilter.RUNNING
                 binding.filterCycling.id -> ActivityFilter.CYCLING
+                binding.filterSwimming.id -> ActivityFilter.SWIMMING
+                binding.filterRowing.id -> ActivityFilter.ROWING
                 binding.filterWeightlifting.id -> ActivityFilter.WEIGHTLIFTING
                 else -> ActivityFilter.ALL
             }
@@ -116,11 +121,7 @@ class ProgressFragment : BaseFragment<FragmentProgressBinding>() {
         }
     }
 
-    private fun activityNameRes(type: ActivityType): Int = when (type) {
-        ActivityType.RUNNING -> R.string.activity_type_running
-        ActivityType.CYCLING -> R.string.activity_type_cycling
-        ActivityType.WEIGHTLIFTING -> R.string.activity_type_weightlifting
-    }
+    private fun activityNameRes(type: ActivityType): Int = ActivityLabels.nameRes(type)
 
     private fun fillStatRows(
         container: ViewGroup,
@@ -133,7 +134,7 @@ class ProgressFragment : BaseFragment<FragmentProgressBinding>() {
                 addRow(container, inflater, R.string.progress_stat_total_distance,
                     stats.totalDistanceMeters?.let { formatDistance(it) })
                 addRow(container, inflater, R.string.progress_stat_total_time,
-                    stats.totalDurationMinutes?.let { getString(R.string.progress_stat_value_duration_minutes, it.toInt()) })
+                    stats.totalDurationMinutes?.let { formatMinutes(it) })
                 addRow(container, inflater, R.string.progress_stat_average_pace,
                     stats.averagePaceSecondsPerKm?.let { Formatters.formatPace(it) })
                 addRow(container, inflater, R.string.progress_stat_best_pace,
@@ -145,12 +146,38 @@ class ProgressFragment : BaseFragment<FragmentProgressBinding>() {
                 addRow(container, inflater, R.string.progress_stat_total_distance,
                     stats.totalDistanceMeters?.let { formatDistance(it) })
                 addRow(container, inflater, R.string.progress_stat_total_time,
-                    stats.totalDurationMinutes?.let { getString(R.string.progress_stat_value_duration_minutes, it.toInt()) })
+                    stats.totalDurationMinutes?.let { formatMinutes(it) })
                 addRow(container, inflater, R.string.progress_stat_average_speed,
                     stats.averageSpeedKmh?.let { Formatters.formatSpeed(it) })
                 addRow(container, inflater, R.string.progress_stat_max_speed,
                     stats.maxSpeedKmh?.let { Formatters.formatSpeed(it) })
                 addRow(container, inflater, R.string.progress_stat_longest_ride,
+                    stats.longestDistanceMeters?.let { formatDistance(it) })
+            }
+            // Swims: metres and pace per 100 m.
+            ActivityType.SWIMMING -> {
+                addRow(container, inflater, R.string.progress_stat_total_distance,
+                    stats.totalDistanceMeters?.let { formatMetres(it) })
+                addRow(container, inflater, R.string.progress_stat_total_time,
+                    stats.totalDurationMinutes?.let { formatMinutes(it) })
+                addRow(container, inflater, R.string.progress_stat_average_pace,
+                    stats.averageSplitSeconds?.let { MeasureText.pacePer100m(requireContext(), it) })
+                addRow(container, inflater, R.string.progress_stat_best_pace,
+                    stats.bestSplitSeconds?.let { MeasureText.pacePer100m(requireContext(), it) })
+                addRow(container, inflater, R.string.progress_stat_longest_swim,
+                    stats.longestDistanceMeters?.let { formatMetres(it) })
+            }
+            // Rows: km and pace per 500 m.
+            ActivityType.ROWING -> {
+                addRow(container, inflater, R.string.progress_stat_total_distance,
+                    stats.totalDistanceMeters?.let { formatDistance(it) })
+                addRow(container, inflater, R.string.progress_stat_total_time,
+                    stats.totalDurationMinutes?.let { formatMinutes(it) })
+                addRow(container, inflater, R.string.progress_stat_average_pace,
+                    stats.averageSplitSeconds?.let { MeasureText.pacePer500m(requireContext(), it) })
+                addRow(container, inflater, R.string.progress_stat_best_pace,
+                    stats.bestSplitSeconds?.let { MeasureText.pacePer500m(requireContext(), it) })
+                addRow(container, inflater, R.string.progress_stat_longest_row,
                     stats.longestDistanceMeters?.let { formatDistance(it) })
             }
             ActivityType.WEIGHTLIFTING -> {
@@ -159,7 +186,7 @@ class ProgressFragment : BaseFragment<FragmentProgressBinding>() {
                 addRow(container, inflater, R.string.progress_stat_total_volume,
                     stats.totalVolumeKg?.let { getString(R.string.progress_stat_value_volume, it) })
                 addRow(container, inflater, R.string.progress_stat_total_time,
-                    stats.totalDurationMinutes?.let { getString(R.string.progress_stat_value_duration_minutes, it.toInt()) })
+                    stats.totalDurationMinutes?.let { formatMinutes(it) })
                 addRow(container, inflater, R.string.progress_stat_most_frequent,
                     stats.mostFrequentExercise)
             }
@@ -187,6 +214,8 @@ class ProgressFragment : BaseFragment<FragmentProgressBinding>() {
         val anyRecord = records.fastest5kSecondsPerKm != null ||
             records.longestRunMeters != null ||
             records.longestRideMeters != null ||
+            records.longestSwimMeters != null ||
+            records.longestRowMeters != null ||
             records.bestOneRepMaxes.isNotEmpty()
 
         if (!anyRecord) {
@@ -203,6 +232,12 @@ class ProgressFragment : BaseFragment<FragmentProgressBinding>() {
         records.longestRideMeters?.let {
             addRow(container, inflater, R.string.progress_pr_longest_ride, formatDistance(it))
         }
+        records.longestSwimMeters?.let {
+            addRow(container, inflater, R.string.progress_pr_longest_swim, formatMetres(it))
+        }
+        records.longestRowMeters?.let {
+            addRow(container, inflater, R.string.progress_pr_longest_row, formatDistance(it))
+        }
         records.bestOneRepMaxes.entries
             .sortedByDescending { it.value }
             .take(3)
@@ -216,4 +251,11 @@ class ProgressFragment : BaseFragment<FragmentProgressBinding>() {
 
     private fun formatDistance(meters: Double): String =
         getString(R.string.progress_stat_value_distance, meters / 1000.0)
+
+    /** Swims: "1,500 m". */
+    private fun formatMetres(meters: Double): String = MeasureText.metres(requireContext(), meters)
+
+    /** "2 h 30 min", never "150 min". */
+    private fun formatMinutes(minutes: Long): String =
+        DurationFormatter.format(requireContext(), minutes)
 }

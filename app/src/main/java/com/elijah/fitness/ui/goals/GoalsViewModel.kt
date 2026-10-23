@@ -14,6 +14,7 @@ import com.elijah.fitness.data.model.GoalWithProgress
 import com.elijah.fitness.data.remote.ApiResult
 import com.elijah.fitness.data.repository.GoalDeleteCoordinator
 import com.elijah.fitness.data.repository.GoalRepository
+import com.elijah.fitness.util.TextResolver
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -21,8 +22,6 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.launchIn
-import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -51,6 +50,8 @@ class GoalsViewModel(
     private val goalRepository: GoalRepository,
     private val calculator: GoalProgressCalculator,
     private val deleteCoordinator: GoalDeleteCoordinator,
+    /** Reads the goal-title wording for the snackbars (phase 8d). */
+    private val text: TextResolver,
 ) : ViewModel() {
 
     val items: StateFlow<List<GoalListItem>> = combine(
@@ -70,14 +71,10 @@ class GoalsViewModel(
     private val _errorEvents = Channel<ErrorEvent>(Channel.BUFFERED)
     val errorEvents: Flow<ErrorEvent> = _errorEvents.receiveAsFlow()
 
-    private val celebratedThisSession: MutableSet<String> = mutableSetOf()
-    private var completionsSeeded = false
-
+    // Goal completions are celebrated app-wide by GoalCelebrationManager
+    // (phase 8d, Step 7: the goal-complete pop-up), not by this screen.
     init {
         refresh()
-        calculator.observe()
-            .onEach { snapshots -> detectCompletions(snapshots) }
-            .launchIn(viewModelScope)
     }
 
     fun refresh() {
@@ -102,40 +99,13 @@ class GoalsViewModel(
     fun deleteWithUndo(goal: Goal) {
         deleteCoordinator.scheduleDelete(goal)
         viewModelScope.launch {
-            _errorEvents.send(ErrorEvent.DeletedWithUndo(goal.id, goal.displayTitle()))
+            _errorEvents.send(ErrorEvent.DeletedWithUndo(goal.id, goal.displayTitle(text)))
         }
     }
 
     /** Cancel a pending delete; the goal reappears on the next emission. */
     fun undoDelete(goalId: String) {
         deleteCoordinator.undo(goalId)
-    }
-
-    /**
-     * Called when the Snackbar fully dismisses (either timed out OR
-     * actively undone). No-op here — the coordinator already fired or
-     * cancelled based on which action happened; the Snackbar lifecycle
-     * is purely visual.
-     */
-    private fun detectCompletions(snapshots: List<GoalWithProgress>) {
-        if (!completionsSeeded) {
-            snapshots.filter { it.isCompleted && !it.goal.completedNotified }
-                .forEach { announceCompletion(it) }
-            snapshots.filter { it.isCompleted }.forEach { celebratedThisSession.add(it.goal.id) }
-            completionsSeeded = true
-            return
-        }
-        snapshots.filter {
-            it.isCompleted && it.goal.id !in celebratedThisSession
-        }.forEach { announceCompletion(it) }
-    }
-
-    private fun announceCompletion(gwp: GoalWithProgress) {
-        celebratedThisSession.add(gwp.goal.id)
-        viewModelScope.launch {
-            _errorEvents.send(ErrorEvent.GoalCompleted(gwp.goal.displayTitle()))
-            goalRepository.markCompletedNotified(gwp.goal.id)
-        }
     }
 
     /**
@@ -242,7 +212,6 @@ class GoalsViewModel(
          * app-level scope.
          */
         data class DeletedWithUndo(val goalId: String, val title: String) : ErrorEvent
-        data class GoalCompleted(val title: String) : ErrorEvent
         /** The server confirmed a new main goal. */
         data object MainGoalChanged : ErrorEvent
         /** The server confirmed "Add 7 more days". */
@@ -258,6 +227,7 @@ class GoalsViewModel(
                     goalRepository = container.goalRepository,
                     calculator = container.goalProgressCalculator,
                     deleteCoordinator = container.goalDeleteCoordinator,
+                    text = container.text,
                 )
             }
         }

@@ -79,11 +79,16 @@ final class Validator
         return $this;
     }
 
+    /**
+     * A whole number (JSON int, or a string of digits). A JSON boolean is
+     * rejected: filter_var() would read `true` as 1, and inRange() skips
+     * anything that is not numeric, so `true` would slip past every bound.
+     */
     public function integer(string $field): self
     {
         if (isset($this->errors[$field])) return $this;
         $value = $this->data[$field] ?? null;
-        if ($value !== null && filter_var($value, FILTER_VALIDATE_INT) === false) {
+        if ($value !== null && (is_bool($value) || filter_var($value, FILTER_VALIDATE_INT) === false)) {
             $this->errors[$field] = 'Must be a whole number';
         }
         return $this;
